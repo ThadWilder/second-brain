@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: second-brain
+    env: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: AIRTABLE_TOKEN
+        sync: false
+      - key: AIRTABLE_BASE_ID
+        value: app3fQnVHX8w2BOD4
