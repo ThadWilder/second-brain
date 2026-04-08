@@ -24,7 +24,7 @@ You never touch the backend. You dump content in, the brain handles the rest.
 | Channel | How |
 |---|---|
 | Manual / Teams / Meeting notes | Fill out the Inbox form: https://airtable.com/app3fQnVHX8w2BOD4/shrWMWmzTzL257izu |
-| Email forward | Forward to your Postmark inbound address → lands in Inbox with full body + attachments |
+| Email forward | Forward to `8887764d24c05426ea28ca03630b999e@inbound.postmarkapp.com` → lands in Inbox with full body + attachments |
 | Direct Airtable entry | Add a record directly to the Inbox table |
 
 ### Email Forwarding — What Gets Preserved
@@ -150,8 +150,9 @@ New → Triaged → Tasks Created → Archived
 - Auto-renews every 6 days (Airtable webhooks expire after 7)
 
 ### Postmark Inbound Email
-- Set Postmark inbound webhook URL to: `https://second-brain-xow4.onrender.com/inbound-email`
-- Forward emails to your Postmark inbound address
+- Inbound address: `8887764d24c05426ea28ca03630b999e@inbound.postmarkapp.com`
+- Postmark inbound webhook URL: `https://second-brain-xow4.onrender.com/inbound-email`
+- Forward emails to the inbound address above
 - Server parses: From, Subject, body text, and all readable attachments
 - Creates Inbox record then immediately triggers brain analysis
 
