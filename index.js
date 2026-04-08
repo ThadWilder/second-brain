@@ -367,6 +367,13 @@ app.post('/process-inbox', async (req, res) => {
   }
 });
 
+// ─── Debug endpoint — logs raw Postmark payload ─────────────────────────
+app.post('/debug-email', async (req, res) => {
+  console.log('DEBUG POSTMARK PAYLOAD:');
+  console.log(JSON.stringify(req.body, null, 2));
+  return res.status(200).json({ received: true });
+});
+
 // ─── Postmark inbound email endpoint ─────────────────────────────────────
 app.post('/inbound-email', async (req, res) => {
   try {
