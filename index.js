@@ -6,7 +6,7 @@ const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 const airtableToken = process.env.AIRTABLE_TOKEN;
 const BASE_ID = process.env.AIRTABLE_BASE_ID || 'app3fQnVHX8w2BOD4';
