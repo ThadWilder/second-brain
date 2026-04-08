@@ -1,6 +1,6 @@
 # Marketing Second Brain
 
-Automated knowledge base and task engine for Threshold Brands marketing operations. Built on Airtable + OpenAI + Render.
+Automated knowledge base and task engine for Threshold Brands marketing operations. Built on Airtable + OpenAI + Postmark + Render.
 
 **Brands managed:** MaidPro · Mold Medics · Granite Garage Floors · USA Insulation · Miracle Method · Heating & Air Paramedics · Plumbing Paramedics · Men in Kilts · Pestmaster
 
@@ -8,14 +8,30 @@ Automated knowledge base and task engine for Threshold Brands marketing operatio
 
 ## How It Works
 
-1. Raw content enters the **Inbox** — via form, email forward, or manual entry
+1. Raw content enters the **Inbox** via form, email forward, or manual entry
 2. Airtable's native AI fields run automatically and enrich the record
 3. A webhook fires to this server the moment a new record is created
-4. The server calls GPT-4o, which reads the full content and analyzes it
+4. The server calls GPT-4o, which reads the full content — including attachment text — and analyzes it
 5. Tasks and Decisions are created automatically in the right tables
 6. The Inbox record is marked Triaged or Tasks Created
 
 You never touch the backend. You dump content in, the brain handles the rest.
+
+---
+
+## Input Channels
+
+| Channel | How |
+|---|---|
+| Manual / Teams / Meeting notes | Fill out the Inbox form: https://airtable.com/app3fQnVHX8w2BOD4/shrWMWmzTzL257izu |
+| Email forward | Forward to your Postmark inbound address → lands in Inbox with full body + attachments |
+| Direct Airtable entry | Add a record directly to the Inbox table |
+
+### Email Forwarding — What Gets Preserved
+- Full email body (plain text preferred, HTML stripped cleanly)
+- All URLs in the body — intact, no stripping
+- Attachments: PDF, Word (.docx/.doc), and .txt files are fully read and their text appended to Raw Content so the brain analyzes them
+- Images and binary files: logged by name so you know they exist
 
 ---
 
@@ -49,19 +65,32 @@ You never touch the backend. You dump content in, the brain handles the rest.
 
 ## Inbox AI Fields
 
-These three fields live on the Inbox table and run automatically when a record is created or updated. They are configured in Airtable UI under "Create custom agent" using `{Raw Content}` as input.
+Three fields on the Inbox table that run automatically when a record is created or updated. Set up in Airtable UI under **"Create custom agent"** using `{Raw Content}` as input.
 
 ### AI Summary
-> Summarize the following notes in 2-3 sentences. Focus on what matters operationally — key updates, decisions, or context.
-> {Raw Content}
+```
+Summarize the following notes in 2-3 sentences. Focus on what matters operationally — key updates, decisions, or context.
+
+{Raw Content}
+```
 
 ### AI Next Actions
-> Extract every action item from the following notes as a bulleted list. Format each as: [Owner if mentioned] — [Action] — [Deadline if mentioned]. If no owner is clear, write "Brandy."
-> {Raw Content}
+```
+Extract every action item from the following notes as a bulleted list. Format each as:
+[Owner if mentioned] — [Action] — [Deadline if mentioned]
+If no owner is clear, write "Brandy."
+
+{Raw Content}
+```
 
 ### AI Priority Signal
-> Classify the following notes into exactly one of these categories: "Urgent — Act Today", "Needs Task", "FYI Only", or "Archive." Return only the category label, nothing else.
-> {Raw Content}
+```
+Classify the following notes into exactly one of these categories:
+"Urgent — Act Today", "Needs Task", "FYI Only", or "Archive."
+Return only the category label, nothing else.
+
+{Raw Content}
+```
 
 ---
 
@@ -94,29 +123,59 @@ New → Triaged → Tasks Created → Archived
 | ⏳ Waiting on Others | Status = Waiting on Other |
 | ✅ Done This Week | Status = Done, completed this week |
 
+### Leadership Board Interface Pages
+| Page | Contents |
+|---|---|
+| Brand Leadership Board | Brand grid with Open Tasks + Blocked counts |
+| 📋 Decisions Log | All decisions sorted by date, by brand |
+| 🔍 By Brand | All tasks grouped by brand |
+
 ---
 
 ## Webhook Server (this repo)
 
-### Endpoint
-```
-POST https://second-brain-xow4.onrender.com/process-inbox
-```
+### Endpoints
 
-### Trigger
-Fires when a new record is created in the Inbox table (`tbloCoqAPsj1MF680`). Registered as an Airtable webhook with ID `achQd6c5zkr0h0sFm`.
+| Endpoint | Trigger | Purpose |
+|---|---|---|
+| `GET /` | Health check | Returns "Second Brain is running." |
+| `POST /process-inbox` | Airtable webhook | Fires when new Inbox record created |
+| `POST /inbound-email` | Postmark webhook | Fires when email is forwarded in |
 
-### What the server does
-1. Fetches the new Inbox record (Raw Content, Brand, Title, Source)
-2. Loads all existing Tasks (for deduplication)
-3. Loads all Initiatives (for cross-linking)
-4. Calls GPT-4o with the full brain prompt (see below)
-5. Creates Tasks in the Tasks table
+**Base URL:** `https://second-brain-xow4.onrender.com`
+
+### Airtable Webhook
+- Webhook ID: `achQd6c5zkr0h0sFm`
+- Fires on: new record created in Inbox table (`tbloCoqAPsj1MF680`)
+- Auto-renews every 6 days (Airtable webhooks expire after 7)
+
+### Postmark Inbound Email
+- Set Postmark inbound webhook URL to: `https://second-brain-xow4.onrender.com/inbound-email`
+- Forward emails to your Postmark inbound address
+- Server parses: From, Subject, body text, and all readable attachments
+- Creates Inbox record then immediately triggers brain analysis
+
+### What the server does on each Inbox record
+1. Fetches the record (Raw Content, Brand, Title, Source)
+2. Loads all existing Tasks — for deduplication
+3. Loads all Initiatives — for cross-linking
+4. Calls GPT-4o with the full brain prompt
+5. Creates Tasks in the Tasks table (all of them, no limit)
 6. Creates Decisions in the Decisions Log table
-7. Updates Inbox record Status to Triaged or Tasks Created
+7. Updates Inbox Status to Triaged or Tasks Created
 
-### Webhook Auto-Renewal
-Airtable webhooks expire every 7 days. The server automatically refreshes the webhook on startup and every 7 days using the `/refresh` endpoint. No manual intervention needed.
+### Attachment Handling (email only)
+| File type | Behavior |
+|---|---|
+| PDF | Full text extracted via `pdf-parse`, appended to Raw Content |
+| Word (.docx / .doc) | Full text extracted via `mammoth`, appended to Raw Content |
+| Plain text (.txt) | Read directly, appended to Raw Content |
+| Images / Excel / other | Logged by filename — brain knows it exists |
+
+### Brand Auto-Detection (email)
+The server detects brand from email subject + body automatically. Supports:
+- Full brand names (case-insensitive)
+- Abbreviations: `ggf` → Granite Garage Floors, `usai` → USA Insulation, `mik` → Men in Kilts, `h&a` → Heating & Air Paramedics
 
 ---
 
@@ -142,7 +201,7 @@ EXISTING INITIATIVES (match by topic/name if relevant):
 Return ONLY a valid JSON object with this exact structure:
 {
   "category": "one of: Decision | Action | Update | Blocker | FYI | Idea | Finance",
-  "topic": "2-5 word topic tag (e.g. 'McDuffie Invoice Dispute', 'USAI Territory Transfer')",
+  "topic": "2-5 word topic tag",
   "summary": "2-3 sentence summary with enough detail to act without reading the original",
   "urgency": "Today | This Week | This Month | No Rush",
   "related_initiative": "exact initiative name if matched, or null",
@@ -174,12 +233,12 @@ Rules:
 
 ---
 
-## Cross-Brand Weekly Prompt
+## Cross-Brand Weekly Review Prompt
 
-Use this manually in ChatGPT or add it as a weekly automation. Paste in a dump of your current Inbox and Tasks to get a cross-brand risk summary.
+Use manually in ChatGPT or add as a weekly automation. Paste a dump of current Inbox + Tasks.
 
 ```
-You are reviewing the weekly marketing operations status for Threshold Brands. 
+You are reviewing the weekly marketing operations status for Threshold Brands.
 Below is a summary of active inbox items and open tasks across all brands.
 
 [PASTE INBOX + TASKS EXPORT HERE]
@@ -205,25 +264,28 @@ Return:
 
 ---
 
-## Inbox Input Channels
-
-| Channel | How |
-|---|---|
-| Manual | Fill out the Inbox form: https://airtable.com/app3fQnVHX8w2BOD4/shrWMWmzTzL257izu |
-| Email forward | Forward emails to your Airtable Inbox sync email address (set up via Airtable sync) |
-| Teams / meeting notes | Paste into Raw Content field via form |
-
----
-
 ## Deployment
 
 Hosted on Render. Auto-deploys from `brandymurch/second-brain` on every push to `master`.
 
 ```bash
-# To deploy an update
+# Deploy an update
 git add .
 git commit -m "your message"
 git push
 ```
 
 Render picks it up automatically within ~2 minutes.
+
+---
+
+## Dependencies
+
+| Package | Purpose |
+|---|---|
+| `express` | HTTP server |
+| `airtable` | Airtable API client |
+| `openai` | GPT-4o API client |
+| `pdf-parse` | Extract text from PDF attachments |
+| `mammoth` | Extract text from Word (.docx/.doc) attachments |
+| `dotenv` | Local environment variable loading |
