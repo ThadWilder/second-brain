@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const Airtable = require('airtable');
 const OpenAI = require('openai');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 
 const app = express();
 app.use(express.json());
@@ -102,6 +104,59 @@ function detectBrand(text) {
   if (lower.includes('mik')) return 'Men in Kilts';
   if (lower.includes('h&a') || lower.includes('hvac paramedic')) return 'Heating & Air Paramedics';
   return null;
+}
+
+// ─── Attachment text extraction ─────────────────────────────────────────
+async function extractAttachmentText(attachments) {
+  if (!attachments || attachments.length === 0) return '';
+
+  const parts = [];
+
+  for (const attachment of attachments) {
+    const name = attachment.Name || 'unnamed';
+    const contentType = (attachment.ContentType || '').toLowerCase();
+    const content = attachment.Content; // base64 encoded
+
+    if (!content) continue;
+
+    const buffer = Buffer.from(content, 'base64');
+
+    try {
+      if (contentType.includes('pdf') || name.toLowerCase().endsWith('.pdf')) {
+        const data = await pdfParse(buffer);
+        if (data.text && data.text.trim()) {
+          parts.push(`--- Attachment: ${name} ---\n${data.text.trim()}`);
+          console.log(`Extracted text from PDF: ${name}`);
+        }
+      } else if (
+        contentType.includes('word') ||
+        contentType.includes('officedocument') ||
+        name.toLowerCase().endsWith('.docx') ||
+        name.toLowerCase().endsWith('.doc')
+      ) {
+        const result = await mammoth.extractRawText({ buffer });
+        if (result.value && result.value.trim()) {
+          parts.push(`--- Attachment: ${name} ---\n${result.value.trim()}`);
+          console.log(`Extracted text from Word doc: ${name}`);
+        }
+      } else if (contentType.includes('text/plain') || name.toLowerCase().endsWith('.txt')) {
+        const text = buffer.toString('utf8').trim();
+        if (text) {
+          parts.push(`--- Attachment: ${name} ---\n${text}`);
+          console.log(`Extracted text from TXT: ${name}`);
+        }
+      } else {
+        // Can't read this type — just log it exists
+        parts.push(`--- Attachment: ${name} (${contentType}) — binary file, not readable ---`);
+        console.log(`Skipped binary attachment: ${name} (${contentType})`);
+      }
+    } catch (err) {
+      console.error(`Failed to parse attachment ${name}:`, err.message);
+      parts.push(`--- Attachment: ${name} — could not be read ---`);
+    }
+  }
+
+  return parts.join('\n\n');
 }
 
 // Strip HTML tags from email body
@@ -326,13 +381,23 @@ app.post('/inbound-email', async (req, res) => {
     // Prefer plain text; fall back to stripped HTML
     const bodyText = textBody || stripHtml(htmlBody);
 
-    // Build rich raw content that preserves URLs
-    // URLs in plain text emails come through intact
-    const rawContent = `From: ${fromName} <${fromEmail}>
+    // Extract text from attachments
+    const attachments = email.Attachments || [];
+    const attachmentText = await extractAttachmentText(attachments);
+    const attachmentNames = attachments.map(a => a.Name).filter(Boolean);
+
+    // Build rich raw content — body + all attachment text
+    let rawContent = `From: ${fromName} <${fromEmail}>
 Date: ${date}
 Subject: ${subject}
 
 ${bodyText}`;
+
+    if (attachmentText) {
+      rawContent += `\n\n${attachmentText}`;
+    } else if (attachmentNames.length > 0) {
+      rawContent += `\n\nAttachments (not readable): ${attachmentNames.join(', ')}`;
+    }
 
     // Auto-detect brand from subject + body
     const detectedBrand = detectBrand(subject + ' ' + bodyText);
