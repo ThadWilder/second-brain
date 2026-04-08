@@ -22,6 +22,7 @@ const TABLES = {
   CAMPAIGNS:    'tblGTzCJrwvs2PF2A',
   DECISIONS:    'tbl0sVS3CI8sJrrEn',
   INITIATIVES:  'tblkR37ej5Di2htQo',
+  VENDORS:      'tbly4PWXTM3g2jbqC',
 };
 
 // Webhook state
@@ -104,6 +105,65 @@ function detectBrand(text) {
   if (lower.includes('mik')) return 'Men in Kilts';
   if (lower.includes('h&a') || lower.includes('hvac paramedic')) return 'Heating & Air Paramedics';
   return null;
+}
+
+// ─── Vendor upsert — update existing or create new ─────────────────────
+async function upsertVendor({ vendorName, serviceType, brandId, contractValue, issue, recordId }) {
+  if (!vendorName) return null;
+
+  // Search for existing vendor record
+  const existing = await base(TABLES.VENDORS).select({
+    filterByFormula: `LOWER({Vendor Name}) = "${vendorName.toLowerCase().replace(/"/g, '')}"`,
+    maxRecords: 1
+  }).firstPage();
+
+  const today = new Date().toISOString().split('T')[0];
+
+  if (existing.length > 0) {
+    // Update existing record
+    const record = existing[0];
+    const updateFields = { 'Last Seen': today };
+
+    // Append new issue if there is one and it's not already noted
+    if (issue) {
+      const existingIssues = record.get('Issues') || '';
+      if (!existingIssues.toLowerCase().includes(issue.toLowerCase().substring(0, 20))) {
+        updateFields['Issues'] = existingIssues ? `${existingIssues}\n\n${today}: ${issue}` : `${today}: ${issue}`;
+        updateFields['Status'] = 'Under Review';
+      }
+    }
+
+    // Update contract value if newly mentioned
+    if (contractValue && !record.get('Contract Value')) {
+      updateFields['Contract Value'] = contractValue;
+    }
+
+    // Link this inbox record as a source
+    if (recordId) {
+      const existingSources = record.get('Source Inbox') || [];
+      updateFields['Source Inbox'] = [...existingSources.map(r => r.id || r), recordId];
+    }
+
+    await base(TABLES.VENDORS).update(record.id, updateFields);
+    console.log(`Updated vendor: ${vendorName}`);
+    return record.id;
+  } else {
+    // Create new vendor record
+    const fields = {
+      'Vendor Name': vendorName,
+      'Service Type': serviceType || '',
+      'Status': issue ? 'Under Review' : 'Active',
+      'Last Seen': today
+    };
+    if (contractValue) fields['Contract Value'] = contractValue;
+    if (issue) fields['Issues'] = `${today}: ${issue}`;
+    if (brandId) fields['Brands Served'] = [brandId];
+    if (recordId) fields['Source Inbox'] = [recordId];
+
+    const newRecord = await base(TABLES.VENDORS).create(fields);
+    console.log(`Created vendor: ${vendorName}`);
+    return newRecord.id;
+  }
 }
 
 // ─── Attachment text extraction ─────────────────────────────────────────
@@ -232,6 +292,14 @@ Return ONLY a valid JSON object with this exact structure:
   "summary": "2-3 sentence summary with enough detail to act without reading the original",
   "urgency": "Today | This Week | This Month | No Rush",
   "related_initiative": "exact initiative name if matched, or null",
+  "vendors": [
+    {
+      "vendor_name": "exact vendor or agency name",
+      "service_type": "what they do (e.g. Paid Media, SEO, Web Dev, Print, PR)",
+      "contract_value": "dollar amount if mentioned, or null",
+      "issue": "describe any problem, dispute, overbilling, delay, or concern — or null if none"
+    }
+  ],
   "tasks": [
     {
       "task_name": "clear short action title",
@@ -252,6 +320,7 @@ Return ONLY a valid JSON object with this exact structure:
 }
 
 Rules:
+- vendors: include ANY vendor, agency, or service provider mentioned by name. Leave as empty array [] if none.
 - tasks: include ALL actionable items. Leave as empty array [] if nothing to do.
 - decisions: include only if a real decision was documented. Leave as empty array [] if none.
 - Do NOT create tasks that already exist in the existing tasks list.
@@ -327,6 +396,23 @@ Rules:
     }
   }
 
+  // 9. Upsert vendors
+  const upsertedVendors = [];
+  if (Array.isArray(analysis.vendors)) {
+    for (const vendor of analysis.vendors) {
+      if (!vendor.vendor_name) continue;
+      const vendorId = await upsertVendor({
+        vendorName: vendor.vendor_name,
+        serviceType: vendor.service_type,
+        brandId: brandId,
+        contractValue: vendor.contract_value,
+        issue: vendor.issue,
+        recordId
+      });
+      if (vendorId) upsertedVendors.push({ id: vendorId, name: vendor.vendor_name });
+    }
+  }
+
   if (createdTasks.length > 0) {
     await base(TABLES.INBOX).update(recordId, { 'Status': 'Tasks Created' });
   }
@@ -336,8 +422,10 @@ Rules:
     topic: analysis.topic,
     tasks_created: createdTasks.length,
     decisions_created: createdDecisions.length,
+    vendors_upserted: upsertedVendors.length,
     tasks: createdTasks,
-    decisions: createdDecisions
+    decisions: createdDecisions,
+    vendors: upsertedVendors
   };
 }
 
