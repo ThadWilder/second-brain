@@ -297,6 +297,7 @@ Rules:
         'Owner': task.owner || 'Brandy',
         'Status': 'Not Started',
         'Priority': task.priority || 'P2 Soon',
+        'Source Inbox': [recordId]
       };
       if (task.notes) fields['Blocker Notes'] = task.notes;
       if (task.due_date) fields['Due Date'] = task.due_date;
@@ -315,7 +316,8 @@ Rules:
         'Made By': decision.made_by || '',
         'Rationale': decision.rationale || '',
         'Impact': decision.impact || 'Medium',
-        'Date': new Date().toISOString().split('T')[0]
+        'Date': new Date().toISOString().split('T')[0],
+        'Source Inbox': [recordId]
       };
       if (brandId) fields['Brand'] = [brandId];
 
@@ -410,7 +412,7 @@ ${bodyText}`;
       'Raw Content': rawContent,
       'Source': 'Email',
       'Status': 'New',
-      'Date': new Date(date).toISOString().split('T')[0]
+      'Date Captured': new Date(date).toISOString().split('T')[0]
     };
 
     // If brand detected, find and link it
