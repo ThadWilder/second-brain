@@ -1,55 +1,197 @@
 /**
- * Managed Agents integration.
+ * Managed Agents — real REST implementation.
+ * API launched April 8, 2026. Beta header: managed-agents-2026-04-01
  *
- * Agent + Environment are created ONCE via `ant` CLI (Anthropic CLI).
- * IDs are stored as env vars. Sessions are created per-conversation.
+ * One-time setup (run scripts/setup-agent.ts once):
+ *   POST /v1/agents      → MANAGED_AGENT_ID
+ *   POST /v1/environments → MANAGED_ENVIRONMENT_ID
  *
- * Tool execution model: client-executed.
- * The events route intercepts tool_use events and executes them against Supabase.
+ * Per-conversation:
+ *   POST /v1/sessions                   → session_id
+ *   POST /v1/sessions/:id/events        → send user.message / tool results
+ *   GET  /v1/sessions/:id/stream        → SSE event stream
  */
 
-import Anthropic from '@anthropic-ai/sdk'
-import { anthropic, MANAGED_AGENT_ID, MANAGED_ENVIRONMENT_ID } from './claude'
+const BASE = 'https://api.anthropic.com'
+const BETA = 'managed-agents-2026-04-01'
+const VERSION = '2023-06-01'
 
-// Agent tools definition (executed server-side in the events bridge)
-// read_wiki and search_wiki are always called FIRST before querying structured rows.
-export const AGENT_TOOLS: Anthropic.Tool[] = [
+function headers() {
+  return {
+    'x-api-key': process.env.ANTHROPIC_API_KEY!,
+    'anthropic-version': VERSION,
+    'anthropic-beta': BETA,
+    'content-type': 'application/json',
+  }
+}
+
+// ─────────────────────────────────────────
+// One-time setup — run scripts/setup-agent.ts
+// ─────────────────────────────────────────
+
+export async function createAgent(wikiIndex?: string): Promise<string> {
+  const system = `You are a brand operations assistant for a marketing agency managing 7 brands: MaidPro, USA Insulation, Pestmaster, Men In Kilts, Mold Medics, Miracle Method, and Granite Garage Floors.
+
+You have access to structured data (tasks, decisions, entries) and a synthesized wiki with narrative knowledge about each brand.
+
+${wikiIndex ? `WIKI INDEX:\n${wikiIndex}\n\n` : ''}Tool usage order:
+1. For questions about a specific brand/vendor/contact: call read_wiki FIRST, then query structured data if needed.
+2. For broad questions: call search_wiki first, then read relevant pages.
+3. For operational specifics (exact task lists, due dates): use query_tasks / query_decisions after reading wiki.
+
+Be concise. Lead with the answer. The wiki is your primary knowledge source.`
+
+  const res = await fetch(`${BASE}/v1/agents`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({
+      name: 'Second Brain Assistant',
+      model: 'claude-sonnet-4-5',
+      system,
+      tools: AGENT_TOOL_DEFINITIONS,
+    }),
+  })
+
+  if (!res.ok) throw new Error(`createAgent failed: ${res.status} ${await res.text()}`)
+  const data = await res.json()
+  return data.id
+}
+
+export async function createEnvironment(): Promise<string> {
+  const res = await fetch(`${BASE}/v1/environments`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({
+      name: 'second-brain-prod',
+      config: {
+        type: 'cloud',
+        networking: { type: 'unrestricted' },
+      },
+    }),
+  })
+
+  if (!res.ok) throw new Error(`createEnvironment failed: ${res.status} ${await res.text()}`)
+  const data = await res.json()
+  return data.id
+}
+
+// ─────────────────────────────────────────
+// Per-conversation session management
+// ─────────────────────────────────────────
+
+export async function createSession(): Promise<string> {
+  const agentId = process.env.MANAGED_AGENT_ID
+  const envId = process.env.MANAGED_ENVIRONMENT_ID
+
+  if (!agentId || !envId) {
+    throw new Error('MANAGED_AGENT_ID and MANAGED_ENVIRONMENT_ID must be set. Run: npx tsx scripts/setup-agent.ts')
+  }
+
+  const res = await fetch(`${BASE}/v1/sessions`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({
+      agent: agentId,
+      environment_id: envId,
+      title: `Second Brain session ${new Date().toISOString()}`,
+    }),
+  })
+
+  if (!res.ok) throw new Error(`createSession failed: ${res.status} ${await res.text()}`)
+  const data = await res.json()
+  return data.id
+}
+
+/** Send a user message to an existing session. */
+export async function sendUserMessage(sessionId: string, text: string): Promise<void> {
+  const res = await fetch(`${BASE}/v1/sessions/${sessionId}/events?beta=true`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({
+      events: [
+        {
+          type: 'user.message',
+          content: [{ type: 'text', text }],
+        },
+      ],
+    }),
+  })
+  if (!res.ok) throw new Error(`sendUserMessage failed: ${res.status} ${await res.text()}`)
+}
+
+/** Submit a custom tool result back to the session. */
+export async function sendToolResult(
+  sessionId: string,
+  toolUseId: string,
+  result: unknown
+): Promise<void> {
+  const res = await fetch(`${BASE}/v1/sessions/${sessionId}/events?beta=true`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({
+      events: [
+        {
+          type: 'user.custom_tool_result',
+          custom_tool_use_id: toolUseId,
+          content: [{ type: 'text', text: JSON.stringify(result) }],
+        },
+      ],
+    }),
+  })
+  if (!res.ok) throw new Error(`sendToolResult failed: ${res.status} ${await res.text()}`)
+}
+
+/**
+ * Open the SSE event stream for a session.
+ * Returns the raw Response so the caller can stream it.
+ */
+export async function openSessionStream(sessionId: string): Promise<Response> {
+  const res = await fetch(`${BASE}/v1/sessions/${sessionId}/stream?beta=true`, {
+    method: 'GET',
+    headers: {
+      ...headers(),
+      Accept: 'text/event-stream',
+    },
+  })
+  if (!res.ok) throw new Error(`openSessionStream failed: ${res.status} ${await res.text()}`)
+  return res
+}
+
+// ─────────────────────────────────────────
+// Tool definitions — passed to agent on creation
+// Executed client-side (our server) when agent emits agent.custom_tool_use
+// ─────────────────────────────────────────
+
+export const AGENT_TOOL_DEFINITIONS = [
   {
+    type: 'custom_20260401',
     name: 'read_wiki',
     description:
       'Read the synthesized wiki page for a brand, vendor, contact, or topic. ' +
       'ALWAYS call this first when answering a question about a specific entity. ' +
-      'The wiki contains synthesized narrative knowledge accumulated over time — ' +
-      'it is faster and more complete than querying individual rows. ' +
       'Use the slug from the wiki index (e.g. "miracle-method", "maidpro", "moe-seo").',
     input_schema: {
       type: 'object',
       properties: {
-        slug: {
-          type: 'string',
-          description: 'The wiki page slug, e.g. "miracle-method", "maidpro", "moe-seo"',
-        },
+        slug: { type: 'string', description: 'Wiki page slug, e.g. "miracle-method"' },
       },
       required: ['slug'],
     },
   },
   {
+    type: 'custom_20260401',
     name: 'search_wiki',
-    description:
-      'Search wiki page summaries for a topic or keyword. ' +
-      'Use when you need to find which entities are relevant to a question before reading specific pages.',
+    description: 'Search wiki page summaries for a topic or keyword.',
     input_schema: {
       type: 'object',
       properties: {
-        query: {
-          type: 'string',
-          description: 'Search term or topic to look for across wiki summaries',
-        },
+        query: { type: 'string', description: 'Search term to look for across wiki summaries' },
       },
       required: ['query'],
     },
   },
   {
+    type: 'custom_20260401',
     name: 'query_tasks',
     description: 'Query tasks with optional filters. Returns task list.',
     input_schema: {
@@ -59,12 +201,12 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
         status: { type: 'string', enum: ['open', 'done', 'blocked'] },
         escalation: { type: 'boolean' },
         due_before: { type: 'string', description: 'ISO date' },
-        assigned_to: { type: 'string' },
-        limit: { type: 'number', default: 20 },
+        limit: { type: 'number' },
       },
     },
   },
   {
+    type: 'custom_20260401',
     name: 'query_entries',
     description: 'Query raw entries (emails, dumps) with filters.',
     input_schema: {
@@ -72,35 +214,26 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
       properties: {
         brand_name: { type: 'string' },
         source: { type: 'string' },
-        limit: { type: 'number', default: 10 },
-        since: { type: 'string', description: 'ISO datetime — entries created after this' },
+        limit: { type: 'number' },
+        since: { type: 'string', description: 'ISO datetime' },
       },
     },
   },
   {
-    name: 'query_entities',
-    description: 'Query entities (brands, vendors, contacts, topics).',
-    input_schema: {
-      type: 'object',
-      properties: {
-        type: { type: 'string' },
-        name: { type: 'string', description: 'Partial name match' },
-      },
-    },
-  },
-  {
+    type: 'custom_20260401',
     name: 'query_decisions',
-    description: 'Query logged decisions with optional filters.',
+    description: 'Query logged decisions.',
     input_schema: {
       type: 'object',
       properties: {
         brand_name: { type: 'string' },
-        limit: { type: 'number', default: 10 },
+        limit: { type: 'number' },
         since: { type: 'string' },
       },
     },
   },
   {
+    type: 'custom_20260401',
     name: 'update_task',
     description: 'Update a task status, due date, or other fields.',
     input_schema: {
@@ -116,6 +249,7 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    type: 'custom_20260401',
     name: 'create_task',
     description: 'Create a new task.',
     input_schema: {
@@ -130,6 +264,7 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    type: 'custom_20260401',
     name: 'log_decision',
     description: 'Record a decision that was made.',
     input_schema: {
@@ -143,6 +278,7 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    type: 'custom_20260401',
     name: 'flag_pending_response',
     description: 'Flag that something needs a response.',
     input_schema: {
@@ -155,58 +291,3 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
     },
   },
 ]
-
-// ─────────────────────────────────────────
-// Session management
-// ─────────────────────────────────────────
-
-/** Build system prompt with wiki index for a new session. */
-export async function buildSessionSystemPrompt(wikiIndex: string): Promise<string> {
-  return `You are a brand operations assistant for a marketing agency.
-You have access to structured data (tasks, decisions, entries) and a synthesized wiki with narrative knowledge about each brand.
-
-WIKI INDEX (read this first to understand what's available):
-${wikiIndex}
-
-Tool usage order:
-1. For questions about a specific brand/vendor/contact: call read_wiki FIRST, then query structured data if needed.
-2. For broad questions: call search_wiki to find relevant pages, then read those pages.
-3. For operational data (exact task counts, specific due dates): query_tasks / query_decisions after reading the wiki.
-
-Be concise. Lead with the answer. Use the wiki as your primary knowledge source — it compounds everything that's been ingested.`
-}
-
-/** Create a new Managed Agent session. Returns session ID. */
-export async function createAgentSession(wikiIndex?: string): Promise<string> {
-  void wikiIndex // will be used in system prompt when SDK supports it
-  // @ts-expect-error — beta SDK path
-  const session = await anthropic.beta.agents.sessions.create({
-    agent_id: MANAGED_AGENT_ID,
-    environment_id: MANAGED_ENVIRONMENT_ID,
-  })
-  return session.id
-}
-
-/** Send a message to an existing session. Returns a streaming response. */
-export async function sendMessageToSession(
-  sessionId: string,
-  message: string
-): Promise<AsyncIterable<Anthropic.MessageStreamEvent>> {
-  // @ts-expect-error — beta SDK path
-  return anthropic.beta.agents.sessions.stream(sessionId, {
-    messages: [{ role: 'user', content: message }],
-    tools: AGENT_TOOLS,
-  })
-}
-
-/** Submit a tool result back to the session. */
-export async function submitToolResult(
-  sessionId: string,
-  toolUseId: string,
-  result: unknown
-): Promise<AsyncIterable<Anthropic.MessageStreamEvent>> {
-  // @ts-expect-error — beta SDK path
-  return anthropic.beta.agents.sessions.stream(sessionId, {
-    tool_results: [{ tool_use_id: toolUseId, content: JSON.stringify(result) }],
-  })
-}
