@@ -244,10 +244,19 @@ async function analyzeAndProcess(recordId) {
   const inboxRecord = await base(TABLES.INBOX).find(recordId);
   const rawContent = inboxRecord.get('Raw Content') || '';
   const brandRaw = inboxRecord.get('Brand') || '';
-  const title = inboxRecord.get('Title') || '';
-  const source = inboxRecord.get('Source') || '';
+  const source = inboxRecord.get('Source') || 'Manual';
 
-  const brandName = Array.isArray(brandRaw) ? brandRaw[0] : brandRaw;
+  // Auto-generate title from first line if not set
+  let title = inboxRecord.get('Title') || '';
+  if (!title && rawContent) {
+    title = rawContent.split('\n')[0].substring(0, 80).trim();
+  }
+
+  // Auto-detect brand if not set
+  let brandName = Array.isArray(brandRaw) ? brandRaw[0] : brandRaw;
+  if (!brandName && rawContent) {
+    brandName = detectBrand(rawContent) || '';
+  }
 
   if (!rawContent) {
     return { message: 'No raw content — skipping.' };
