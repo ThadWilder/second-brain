@@ -21,6 +21,7 @@ import {
   normalize,
 } from './entities'
 import { deEscalateTask, escalateTask } from './escalation'
+import { updateWikiPagesForEntry } from './wiki'
 import { ORG_ID } from './supabase'
 import type {
   ClassifyEntityInput,
@@ -211,6 +212,9 @@ Be conservative — only extract what is clearly stated.`
       entities_created: 0,
     }
 
+    // Track touched entities for wiki update step
+    const touchedEntityIds = new Set<string>()
+
     // Entity resolution map: name → entity
     const entityMap: Map<string, { id: string; isNew: boolean }> = new Map()
 
@@ -234,6 +238,8 @@ Be conservative — only extract what is clearly stated.`
             },
             { onConflict: 'entry_id,entity_id,relationship', ignoreDuplicates: true }
           )
+
+          touchedEntityIds.add(entity.id)
 
           if (isNew) result.entities_created++
           else result.entities_resolved++
@@ -383,6 +389,14 @@ Be conservative — only extract what is clearly stated.`
 
         result.pending_responses_created++
       }
+    }
+
+    // ── Step 5: Wiki update (non-blocking — failure doesn't fail the ingest) ──
+    // Runs after all structured data is written so Claude has full context.
+    if (touchedEntityIds.size > 0) {
+      updateWikiPagesForEntry(db, entryId, [...touchedEntityIds]).catch((err) => {
+        console.error('Wiki update error (non-fatal):', err)
+      })
     }
 
     // Finalize

@@ -8,11 +8,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { createAgentSession } from '@/lib/managed-agents'
+import { buildWikiIndex } from '@/lib/wiki'
 
 export async function POST(_req: NextRequest): Promise<NextResponse> {
   try {
-    const sessionId = await createAgentSession()
     const db = getServiceClient()
+    const wikiIndex = await buildWikiIndex(db)
+    const sessionId = await createAgentSession(wikiIndex)
 
     const { data: conversation, error } = await db
       .from('conversations')

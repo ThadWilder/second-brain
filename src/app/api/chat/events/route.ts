@@ -17,6 +17,7 @@ import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { sendMessageToSession, submitToolResult } from '@/lib/managed-agents'
 import { normalize } from '@/lib/entities'
 import { deEscalateTask } from '@/lib/escalation'
+import { readWikiPage, getAllWikiPages } from '@/lib/wiki'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -142,6 +143,10 @@ async function executeTool(
   input: any
 ): Promise<unknown> {
   switch (toolName) {
+    case 'read_wiki':
+      return readWikiTool(db, input)
+    case 'search_wiki':
+      return searchWikiTool(db, input)
     case 'query_tasks':
       return queryTasks(db, input)
     case 'query_entries':
@@ -160,6 +165,64 @@ async function executeTool(
       return flagPendingResponse(db, input)
     default:
       return { error: `Unknown tool: ${toolName}` }
+  }
+}
+
+// ─────────────────────────────────────────
+// Wiki tools
+// ─────────────────────────────────────────
+
+async function readWikiTool(
+  db: SupabaseClient,
+  input: { slug: string }
+): Promise<unknown> {
+  const { found, page, links } = await readWikiPage(db, input.slug)
+  if (!found || !page) {
+    return {
+      found: false,
+      message: `No wiki page found for slug "${input.slug}". Try search_wiki to find the right slug.`,
+    }
+  }
+  return {
+    found: true,
+    slug: page.slug,
+    title: page.title,
+    summary: page.summary,
+    content: page.content,
+    source_count: page.source_count,
+    updated_at: page.updated_at,
+    linked_pages: links,
+  }
+}
+
+async function searchWikiTool(
+  db: SupabaseClient,
+  input: { query: string }
+): Promise<unknown> {
+  const pages = await getAllWikiPages(db)
+  const query = input.query.toLowerCase()
+
+  const matches = pages
+    .filter((p) =>
+      p.title.toLowerCase().includes(query) ||
+      p.summary.toLowerCase().includes(query) ||
+      p.slug.includes(query)
+    )
+    .map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      summary: p.summary,
+      source_count: p.source_count,
+      updated_at: p.updated_at,
+    }))
+
+  return {
+    query: input.query,
+    matches,
+    total: matches.length,
+    hint: matches.length > 0
+      ? `Call read_wiki with slug "${matches[0].slug}" to get full content.`
+      : 'No matches found. Try a broader search term.',
   }
 }
 
