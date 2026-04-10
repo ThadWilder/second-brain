@@ -219,16 +219,12 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
               <span className="text-sm font-medium text-[var(--text)] truncate block">
                 {item.entity.name}
               </span>
-              {type === 'contact' && item.entity.metadata && (
+              {(type === 'contact' || type === 'vendor_team' || type === 'freelancer') && (
                 <div className="flex items-center gap-1.5">
-                  {(item.entity.metadata as Record<string, string>).category && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
-                      getCategoryStyle((item.entity.metadata as Record<string, string>).category)
-                    }`}>
-                      {formatCategory((item.entity.metadata as Record<string, string>).category)}
-                    </span>
-                  )}
-                  {(item.entity.metadata as Record<string, string>).role && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${getCategoryStyle(item.entity.type)}`}>
+                    {formatCategory(item.entity.type)}
+                  </span>
+                  {item.entity.metadata && (item.entity.metadata as Record<string, string>).role && (
                     <span className="text-[11px] text-[var(--muted)]">
                       {(item.entity.metadata as Record<string, string>).role}
                     </span>
