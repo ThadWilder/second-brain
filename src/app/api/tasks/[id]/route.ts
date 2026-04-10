@@ -3,6 +3,31 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const { id } = await params
+  const { add_note } = await req.json()
+  const db = getServiceClient()
+
+  if (add_note) {
+    // Add a note as a task_event
+    await db.from('task_events').insert({
+      task_id: id,
+      event_type: 'note_added',
+      metadata: { note: add_note },
+    })
+
+    // Update task's updated_at
+    await db.from('tasks').update({ updated_at: new Date().toISOString() }).eq('id', id)
+
+    return NextResponse.json({ success: true })
+  }
+
+  return NextResponse.json({ error: 'No action specified' }, { status: 400 })
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -56,6 +56,28 @@ export async function PATCH(
   const body = await req.json()
   const db = getServiceClient()
 
+  // Add note — store in metadata.notes array
+  if (body.add_note) {
+    const { data: pr } = await db
+      .from('pending_responses')
+      .select('metadata')
+      .eq('id', id)
+      .eq('org_id', ORG_ID)
+      .single()
+
+    const meta = (pr?.metadata ?? {}) as Record<string, unknown>
+    const notes = (meta.notes as Array<{ text: string; created_at: string }>) ?? []
+    notes.push({ text: body.add_note, created_at: new Date().toISOString() })
+
+    await db
+      .from('pending_responses')
+      .update({ metadata: { ...meta, notes } })
+      .eq('id', id)
+      .eq('org_id', ORG_ID)
+
+    return NextResponse.json({ success: true })
+  }
+
   const updates: Record<string, unknown> = {}
   if (body.responded !== undefined) updates.responded = body.responded
 

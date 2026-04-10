@@ -26,13 +26,17 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [data, setData] = useState<TaskData | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [savingNote, setSavingNote] = useState(false)
+
+  async function loadData() {
+    const r = await fetch(`/api/tasks/${taskId}`)
+    setData(await r.json())
+  }
 
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/tasks/${taskId}`)
-      .then((r) => r.json())
-      .then((d) => setData(d))
-      .finally(() => setLoading(false))
+    loadData().finally(() => setLoading(false))
   }, [taskId])
 
   async function updateTask(updates: Record<string, unknown>) {
@@ -43,8 +47,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       body: JSON.stringify({ id: taskId, ...updates }),
     })
     // Re-fetch detail
-    const r = await fetch(`/api/tasks/${taskId}`)
-    setData(await r.json())
+    await loadData()
     setUpdating(false)
     onUpdate?.()
   }
@@ -174,6 +177,40 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
           </div>
         </Section>
       )}
+
+      {/* Notes */}
+      <Section label="Notes">
+        <div className="space-y-2">
+          <textarea
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            placeholder="Add a note..."
+            rows={2}
+            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
+          />
+          <button
+            onClick={async () => {
+              if (!noteText.trim()) return
+              setSavingNote(true)
+              try {
+                await fetch(`/api/tasks/${taskId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ add_note: noteText.trim() }),
+                })
+                setNoteText('')
+                loadData()
+              } finally {
+                setSavingNote(false)
+              }
+            }}
+            disabled={!noteText.trim() || savingNote}
+            className="px-3 py-1.5 text-xs rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
+          >
+            {savingNote ? 'Saving...' : 'Add Note'}
+          </button>
+        </div>
+      </Section>
 
       {/* Timestamps */}
       <Section label="Timestamps">
