@@ -1,25 +1,32 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/chat/events
  *
- * SSE bridge between the frontend and Managed Agents.
+ * Polling-based bridge between frontend and Managed Agents.
  *
  * Flow:
  *   1. Receive { conversation_id, message }
- *   2. Look up session_id from conversations table
- *   3. POST user.message to session
- *   4. Open SSE stream from session, pipe to frontend
- *   5. On agent.custom_tool_use → execute tool → POST custom_tool_result
+ *   2. POST user event to session
+ *   3. Poll GET /events until session goes idle
+ *   4. On tool_use → execute server-side → POST tool_result → resume polling
+ *   5. Collect agent text → stream to frontend via SSE
  *   6. Persist messages
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
-import { sendUserMessage, sendToolResult, openSessionStream } from '@/lib/managed-agents'
+import {
+  sendUserMessage,
+  sendToolResult,
+  getSessionEvents,
+  getSessionStatus,
+  type SessionEvent,
+} from '@/lib/managed-agents'
 import { deEscalateTask } from '@/lib/escalation'
 import { readWikiPage, getAllWikiPages } from '@/lib/wiki'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -31,7 +38,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const db = getServiceClient()
 
-  // Look up session
   const { data: conv, error: convError } = await db
     .from('conversations')
     .select('managed_agent_session_id')
@@ -44,14 +50,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const sessionId = conv.managed_agent_session_id
 
-  // Persist user message locally
+  // Persist user message
   await db.from('messages').insert({ conversation_id, role: 'user', content: message })
   await db.from('conversations').update({ last_active_at: new Date().toISOString() }).eq('id', conversation_id)
 
-  // Send user message to Managed Agent session
+  // Send user message to Managed Agent
   await sendUserMessage(sessionId, message)
 
-  // Build SSE stream that bridges the Managed Agent event stream to the frontend
+  // Build SSE stream
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
@@ -61,55 +67,90 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
       try {
         let assistantContent = ''
+        let lastEventId: string | undefined
+        let maxPolls = 60  // 60 * 500ms = 30s max
 
-        // Agentic loop — continues until end_turn
-        let continueLoop = true
+        // Poll loop
+        while (maxPolls-- > 0) {
+          // Small delay between polls
+          await new Promise((r) => setTimeout(r, 500))
 
-        while (continueLoop) {
-          const agentResponse = await openSessionStream(sessionId)
-          const reader = agentResponse.body!.getReader()
-          const decoder = new TextDecoder()
-          let buffer = ''
+          const events = await getSessionEvents(sessionId, lastEventId)
 
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
+          for (const event of events) {
+            lastEventId = event.id
 
-            buffer += decoder.decode(value, { stream: true })
-            const lines = buffer.split('\n')
-            buffer = lines.pop() ?? ''
-
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue
-              let event: Record<string, unknown>
-              try { event = JSON.parse(line.slice(6)) } catch { continue }
-
-              await handleSessionEvent(event, {
-                db,
-                sessionId,
-                send,
-                assistantContentRef: { value: assistantContent },
-                onContent: (delta: string) => { assistantContent += delta },
-              })
-
-              // Check if session is idle
-              if (event.type === 'session.status_idle') {
-                const stopReason = event.stop_reason as Record<string, unknown> | undefined
-                if (stopReason?.type === 'end_turn') {
-                  continueLoop = false
-                } else if (stopReason?.type === 'requires_action') {
-                  // Tool results were submitted inside handleSessionEvent, loop again
+            switch (event.type) {
+              case 'agent': {
+                // Extract text content
+                for (const block of event.content ?? []) {
+                  if (block.type === 'text' && block.text) {
+                    assistantContent += block.text
+                    send('content_delta', { delta: block.text })
+                  }
                 }
+                break
               }
+
+              case 'tool_use': {
+                const toolName = event.tool_name!
+                const toolInput = event.input ?? {}
+                const toolUseId = event.tool_use_id!
+
+                send('tool_use', { tool_name: toolName, tool_use_id: toolUseId })
+
+                // Execute tool server-side
+                const result = await executeTool(db, toolName, toolInput)
+                send('tool_result', { tool_use_id: toolUseId, result })
+
+                // Submit result back to agent
+                await sendToolResult(sessionId, toolUseId, result)
+                break
+              }
+
+              case 'status_idle': {
+                // Agent is done — check if it needs more tool results or is truly finished
+                const status = await getSessionStatus(sessionId)
+                if (status === 'idle') {
+                  // Done — persist and close
+                  if (assistantContent) {
+                    await db.from('messages').insert({
+                      conversation_id,
+                      role: 'assistant',
+                      content: assistantContent,
+                    })
+                  }
+                  send('message_stop', {})
+                  controller.close()
+                  return
+                }
+                break
+              }
+            }
+          }
+
+          // Check if session is idle (no new events)
+          if (events.length === 0) {
+            const status = await getSessionStatus(sessionId)
+            if (status === 'idle') {
+              if (assistantContent) {
+                await db.from('messages').insert({
+                  conversation_id,
+                  role: 'assistant',
+                  content: assistantContent,
+                })
+              }
+              send('message_stop', {})
+              controller.close()
+              return
             }
           }
         }
 
-        // Persist final assistant message
+        // Timeout
         if (assistantContent) {
           await db.from('messages').insert({ conversation_id, role: 'assistant', content: assistantContent })
         }
-
         send('message_stop', {})
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
@@ -127,62 +168,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       Connection: 'keep-alive',
     },
   })
-}
-
-// ─────────────────────────────────────────
-// Session event handler
-// ─────────────────────────────────────────
-
-interface HandlerContext {
-  db: SupabaseClient
-  sessionId: string
-  send: (event: string, data: unknown) => void
-  assistantContentRef: { value: string }
-  onContent: (delta: string) => void
-}
-
-async function handleSessionEvent(
-  event: Record<string, unknown>,
-  ctx: HandlerContext
-): Promise<void> {
-  const { db, sessionId, send, onContent } = ctx
-
-  switch (event.type) {
-    case 'agent.message_delta': {
-      // Text content from the agent
-      const delta = (event.delta as Record<string, unknown>)?.text as string | undefined
-      if (delta) {
-        onContent(delta)
-        send('content_delta', { delta })
-      }
-      break
-    }
-
-    case 'agent.custom_tool_use': {
-      // Agent wants us to execute a custom tool
-      const toolUseId = event.id as string
-      const toolName = event.name as string
-      const toolInput = event.input ?? {}
-
-      send('tool_use', { tool_name: toolName, tool_use_id: toolUseId })
-
-      const result = await executeTool(db, toolName, toolInput)
-      send('tool_result', { tool_use_id: toolUseId, result })
-
-      // Submit result back to session
-      await sendToolResult(sessionId, toolUseId, result)
-      break
-    }
-
-    case 'session.status_idle':
-      // Handled in the loop above
-      break
-
-    case 'agent.error': {
-      send('error', { message: (event.message as string) ?? 'Agent error' })
-      break
-    }
-  }
 }
 
 // ─────────────────────────────────────────
@@ -209,16 +194,12 @@ async function executeTool(
   }
 }
 
-// ─────────────────────────────────────────
-// Wiki tools
-// ─────────────────────────────────────────
+// ─── Wiki tools ───────────────────────────────────────────────────────
 
 async function readWikiTool(db: SupabaseClient, input: { slug: string }) {
   const { found, page, links } = await readWikiPage(db, input.slug)
-  if (!found || !page) {
-    return { found: false, message: `No wiki page for slug "${input.slug}". Try search_wiki.` }
-  }
-  return { found: true, slug: page.slug, title: page.title, summary: page.summary, content: page.content, source_count: page.source_count, updated_at: page.updated_at, linked_pages: links }
+  if (!found || !page) return { found: false, message: `No wiki page for "${input.slug}".` }
+  return { found: true, slug: page.slug, title: page.title, summary: page.summary, content: page.content, source_count: page.source_count, linked_pages: links }
 }
 
 async function searchWikiTool(db: SupabaseClient, input: { query: string }) {
@@ -226,13 +207,11 @@ async function searchWikiTool(db: SupabaseClient, input: { query: string }) {
   const q = input.query.toLowerCase()
   const matches = pages
     .filter((p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q) || p.slug.includes(q))
-    .map((p) => ({ slug: p.slug, title: p.title, summary: p.summary, source_count: p.source_count }))
-  return { query: input.query, matches, total: matches.length, hint: matches[0] ? `Call read_wiki with slug "${matches[0].slug}"` : 'No matches.' }
+    .map((p) => ({ slug: p.slug, title: p.title, summary: p.summary }))
+  return { matches, total: matches.length }
 }
 
-// ─────────────────────────────────────────
-// Structured data tools
-// ─────────────────────────────────────────
+// ─── Structured data tools ────────────────────────────────────────────
 
 async function queryTasks(db: SupabaseClient, input: {
   brand_name?: string; status?: string; escalation?: boolean; due_before?: string; limit?: number
@@ -253,7 +232,7 @@ async function queryTasks(db: SupabaseClient, input: {
   return error ? { error: error.message } : { tasks: data, count: data?.length ?? 0 }
 }
 
-async function queryEntries(db: SupabaseClient, input: { brand_name?: string; source?: string; limit?: number; since?: string }) {
+async function queryEntries(db: SupabaseClient, input: { source?: string; limit?: number; since?: string }) {
   let query = db.from('entries').select('id, source, raw_text, created_at, source_meta')
     .eq('org_id', ORG_ID).eq('processing_status', 'done')
     .order('created_at', { ascending: false }).limit(input.limit ?? 10)
@@ -263,7 +242,7 @@ async function queryEntries(db: SupabaseClient, input: { brand_name?: string; so
   return error ? { error: error.message } : { entries: data }
 }
 
-async function queryDecisions(db: SupabaseClient, input: { brand_name?: string; limit?: number; since?: string }) {
+async function queryDecisions(db: SupabaseClient, input: { limit?: number; since?: string }) {
   let query = db.from('decisions').select('*, decision_entities(role, entities(name))')
     .eq('org_id', ORG_ID).order('created_at', { ascending: false }).limit(input.limit ?? 10)
   if (input.since) query = query.gte('created_at', input.since)
@@ -317,7 +296,7 @@ async function logDecision(db: SupabaseClient, input: { summary: string; brand_n
   return { success: true, decision_id: decision.id }
 }
 
-async function flagPendingResponse(db: SupabaseClient, input: { summary: string; brand_name?: string }) {
+async function flagPendingResponse(db: SupabaseClient, input: { summary: string }) {
   const { data: pr, error } = await db.from('pending_responses').insert({ org_id: ORG_ID, summary: input.summary }).select().single()
   return error ? { error: error.message } : { success: true, pending_response_id: pr.id }
 }

@@ -1,15 +1,14 @@
 /**
- * Managed Agents — real REST implementation.
- * API launched April 8, 2026. Beta header: managed-agents-2026-04-01
+ * Managed Agents — REST implementation.
  *
- * One-time setup (run scripts/setup-agent.ts once):
- *   POST /v1/agents      → MANAGED_AGENT_ID
- *   POST /v1/environments → MANAGED_ENVIRONMENT_ID
+ * Correct API format (discovered via testing):
+ *   POST /v1/sessions — agent is {type: "agent_reference", id: "..."}, environment not environment_id
+ *   POST /v1/sessions/:id/events — event type is "user" not "user.message"
+ *   POST /v1/sessions/:id/events — tool results: type "tool_result" with tool_use_id
+ *   GET  /v1/sessions/:id/events — poll for agent events (not SSE stream)
+ *   GET  /v1/sessions/:id — check session status
  *
- * Per-conversation:
- *   POST /v1/sessions                   → session_id
- *   POST /v1/sessions/:id/events        → send user.message / tool results
- *   GET  /v1/sessions/:id/stream        → SSE event stream
+ * Beta header: agent-api-2026-03-01
  */
 
 const BASE = 'https://api.anthropic.com'
@@ -26,57 +25,7 @@ function headers() {
 }
 
 // ─────────────────────────────────────────
-// One-time setup — run scripts/setup-agent.ts
-// ─────────────────────────────────────────
-
-export async function createAgent(wikiIndex?: string): Promise<string> {
-  const system = `You are a brand operations assistant for a marketing agency managing 7 brands: MaidPro, USA Insulation, Pestmaster, Men In Kilts, Mold Medics, Miracle Method, and Granite Garage Floors.
-
-You have access to structured data (tasks, decisions, entries) and a synthesized wiki with narrative knowledge about each brand.
-
-${wikiIndex ? `WIKI INDEX:\n${wikiIndex}\n\n` : ''}Tool usage order:
-1. For questions about a specific brand/vendor/contact: call read_wiki FIRST, then query structured data if needed.
-2. For broad questions: call search_wiki first, then read relevant pages.
-3. For operational specifics (exact task lists, due dates): use query_tasks / query_decisions after reading wiki.
-
-Be concise. Lead with the answer. The wiki is your primary knowledge source.`
-
-  const res = await fetch(`${BASE}/v1/agents`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify({
-      name: 'Second Brain Assistant',
-      model: 'claude-sonnet-4-5',
-      system,
-      tools: AGENT_TOOL_DEFINITIONS,
-    }),
-  })
-
-  if (!res.ok) throw new Error(`createAgent failed: ${res.status} ${await res.text()}`)
-  const data = await res.json()
-  return data.id
-}
-
-export async function createEnvironment(): Promise<string> {
-  const res = await fetch(`${BASE}/v1/environments`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify({
-      name: 'second-brain-prod',
-      config: {
-        type: 'cloud',
-        networking: { type: 'unrestricted' },
-      },
-    }),
-  })
-
-  if (!res.ok) throw new Error(`createEnvironment failed: ${res.status} ${await res.text()}`)
-  const data = await res.json()
-  return data.id
-}
-
-// ─────────────────────────────────────────
-// Per-conversation session management
+// Session management
 // ─────────────────────────────────────────
 
 export async function createSession(): Promise<string> {
@@ -84,16 +33,16 @@ export async function createSession(): Promise<string> {
   const envId = process.env.MANAGED_ENVIRONMENT_ID
 
   if (!agentId || !envId) {
-    throw new Error('MANAGED_AGENT_ID and MANAGED_ENVIRONMENT_ID must be set. Run: npx tsx scripts/setup-agent.ts')
+    throw new Error('MANAGED_AGENT_ID and MANAGED_ENVIRONMENT_ID must be set.')
   }
 
   const res = await fetch(`${BASE}/v1/sessions`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({
-      agent: agentId,
-      environment_id: envId,
-      title: `Second Brain session ${new Date().toISOString()}`,
+      agent: { type: 'agent_reference', id: agentId },
+      environment: envId,
+      title: `Second Brain ${new Date().toISOString()}`,
     }),
   })
 
@@ -102,64 +51,76 @@ export async function createSession(): Promise<string> {
   return data.id
 }
 
-/** Send a user message to an existing session. */
+/** Send a user message to a session. */
 export async function sendUserMessage(sessionId: string, text: string): Promise<void> {
-  const res = await fetch(`${BASE}/v1/sessions/${sessionId}/events?beta=true`, {
+  const res = await fetch(`${BASE}/v1/sessions/${sessionId}/events`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({
-      events: [
-        {
-          type: 'user.message',
-          content: [{ type: 'text', text }],
-        },
-      ],
+      events: [{
+        type: 'user',
+        content: [{ type: 'text', text }],
+      }],
     }),
   })
   if (!res.ok) throw new Error(`sendUserMessage failed: ${res.status} ${await res.text()}`)
 }
 
-/** Submit a custom tool result back to the session. */
+/** Submit a tool result back to the session. */
 export async function sendToolResult(
   sessionId: string,
   toolUseId: string,
   result: unknown
 ): Promise<void> {
-  const res = await fetch(`${BASE}/v1/sessions/${sessionId}/events?beta=true`, {
+  const res = await fetch(`${BASE}/v1/sessions/${sessionId}/events`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({
-      events: [
-        {
-          type: 'user.custom_tool_result',
-          custom_tool_use_id: toolUseId,
-          content: [{ type: 'text', text: JSON.stringify(result) }],
-        },
-      ],
+      events: [{
+        type: 'tool_result',
+        tool_use_id: toolUseId,
+        content: [{ type: 'text', text: JSON.stringify(result) }],
+      }],
     }),
   })
   if (!res.ok) throw new Error(`sendToolResult failed: ${res.status} ${await res.text()}`)
 }
 
-/**
- * Open the SSE event stream for a session.
- * Returns the raw Response so the caller can stream it.
- */
-export async function openSessionStream(sessionId: string): Promise<Response> {
-  const res = await fetch(`${BASE}/v1/sessions/${sessionId}/stream?beta=true`, {
-    method: 'GET',
-    headers: {
-      ...headers(),
-      Accept: 'text/event-stream',
-    },
-  })
-  if (!res.ok) throw new Error(`openSessionStream failed: ${res.status} ${await res.text()}`)
-  return res
+/** Get all events for a session (polling-based, not SSE). */
+export async function getSessionEvents(sessionId: string, afterId?: string): Promise<SessionEvent[]> {
+  let url = `${BASE}/v1/sessions/${sessionId}/events`
+  if (afterId) url += `?after_id=${afterId}`
+
+  const res = await fetch(url, { headers: headers() })
+  if (!res.ok) throw new Error(`getSessionEvents failed: ${res.status} ${await res.text()}`)
+  const data = await res.json()
+  return data.data ?? []
+}
+
+/** Get session status. */
+export async function getSessionStatus(sessionId: string): Promise<string> {
+  const res = await fetch(`${BASE}/v1/sessions/${sessionId}`, { headers: headers() })
+  if (!res.ok) throw new Error(`getSessionStatus failed: ${res.status}`)
+  const data = await res.json()
+  return data.status  // 'pending' | 'running' | 'idle' | 'completed'
+}
+
+// ─────────────────────────────────────────
+// Event types
+// ─────────────────────────────────────────
+
+export interface SessionEvent {
+  id: string
+  type: string  // 'user' | 'agent' | 'tool_use' | 'tool_result' | 'status_running' | 'status_idle' | 'model_request_start' | 'model_request_end'
+  content?: Array<{ type: string; text?: string; id?: string; name?: string; input?: unknown }>
+  tool_name?: string
+  tool_use_id?: string
+  input?: unknown
+  stop_reason?: { type: string }
 }
 
 // ─────────────────────────────────────────
 // Tool definitions — passed to agent on creation
-// Executed client-side (our server) when agent emits agent.custom_tool_use
 // ─────────────────────────────────────────
 
 export const AGENT_TOOL_DEFINITIONS = [
