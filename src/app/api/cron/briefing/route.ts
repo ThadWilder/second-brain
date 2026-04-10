@@ -24,6 +24,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  try {
   const db = getServiceClient()
 
   // Run escalation pass to keep flags fresh
@@ -138,4 +139,13 @@ Total open: X tasks
     escalations: briefingData.escalation_count,
     open_tasks: briefingData.open_task_count,
   })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    const stack = err instanceof Error ? err.stack : undefined
+    console.error('[cron/briefing] Failed:', message, stack)
+    return NextResponse.json(
+      { error: 'Briefing cron failed', details: message },
+      { status: 500 }
+    )
+  }
 }

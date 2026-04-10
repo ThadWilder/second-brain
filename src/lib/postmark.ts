@@ -66,17 +66,21 @@ export async function sendNudgeEmail(params: {
     })
   }
 
-  const response = await postmarkClient.sendEmail({
-    From: FROM_EMAIL,
-    To: TO_EMAIL,
-    Subject: params.subject,
-    HtmlBody: params.htmlBody,
-    TextBody: params.textBody,
-    Headers: headers,
-    MessageStream: 'outbound',
-  })
-
-  return response.MessageID
+  try {
+    const response = await postmarkClient.sendEmail({
+      From: FROM_EMAIL,
+      To: TO_EMAIL,
+      Subject: params.subject,
+      HtmlBody: params.htmlBody,
+      TextBody: params.textBody,
+      Headers: headers,
+      MessageStream: 'outbound',
+    })
+    return response.MessageID
+  } catch (err) {
+    console.error('[postmark] Failed to send nudge email:', err)
+    throw err
+  }
 }
 
 // ─────────────────────────────────────────
@@ -87,14 +91,19 @@ export async function sendBriefingEmail(params: {
   htmlBody: string
   textBody: string
 }): Promise<void> {
-  await postmarkClient.sendEmail({
-    From: FROM_EMAIL,
-    To: TO_EMAIL,
-    Subject: params.subject,
-    HtmlBody: params.htmlBody,
-    TextBody: params.textBody,
-    MessageStream: 'outbound',
-  })
+  try {
+    await postmarkClient.sendEmail({
+      From: FROM_EMAIL,
+      To: TO_EMAIL,
+      Subject: params.subject,
+      HtmlBody: params.htmlBody,
+      TextBody: params.textBody,
+      MessageStream: 'outbound',
+    })
+  } catch (err) {
+    console.error('[postmark] Failed to send briefing email:', err)
+    throw err
+  }
 }
 
 // ─────────────────────────────────────────

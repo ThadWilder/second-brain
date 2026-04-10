@@ -112,7 +112,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   if (source === 'email') {
     const inbound = parsePostmarkInbound(body)
-    rawText = inbound.StrippedTextReply ?? inbound.TextBody
+    rawText = inbound.StrippedTextReply || inbound.TextBody
     dedupeKey = inbound.MessageID
     inReplyTo = inbound.InReplyTo
     sourceMeta = {
@@ -124,6 +124,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Upload image attachments from email
     if (inbound.Attachments.length > 0) {
       attachments = await uploadPostmarkAttachments(inbound.Attachments)
+    }
+
+    // Bail early if email has no usable text and no attachments
+    if (!rawText?.trim() && attachments.length === 0) {
+      return NextResponse.json({ error: 'Email had no text or attachments' }, { status: 400 })
     }
   } else {
     // paste / chat / meeting_notes
