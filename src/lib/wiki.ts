@@ -241,6 +241,16 @@ async function updateWikiPageForEntity(
   const existingContent = (page as WikiPage).content || ''
   const isFirstEntry = !existingContent.trim()
 
+  // Load pinned sections — human-written content preserved across rewrites
+  const pinnedSections: Array<{ title: string; content: string }> =
+    (page as WikiPage & { pinned_sections?: unknown }).pinned_sections as Array<{ title: string; content: string }> ?? []
+
+  let pinnedBlock = ''
+  if (pinnedSections.length > 0) {
+    pinnedBlock = `\n\nPINNED SECTIONS (written by the user — preserve these VERBATIM at the top of the page, before your generated content):
+${pinnedSections.map((s) => `### 📌 ${s.title}\n${s.content}`).join('\n\n')}`
+  }
+
   const systemPrompt = `You maintain a persistent wiki for a marketing agency operator.
 Your job: integrate new information into the existing wiki page for "${entity.name}".
 
@@ -248,7 +258,7 @@ Rules:
 - The wiki page is markdown. Use ## headers, bullet points, and [[slug]] cross-references.
 - Integrate new info — don't just append. Update existing sections if they conflict or need revision.
 - Keep the page focused and useful. Remove stale/resolved items when superseded.
-- Always keep these sections in order:
+${pinnedSections.length > 0 ? '- IMPORTANT: The user has pinned sections. Do NOT include them in your output — they are managed separately and will be prepended automatically. Do NOT duplicate, rewrite, or summarize pinned content.\n' : ''}- Always keep these sections in order:
   1. ## Overview — one paragraph current state
   2. ## Open Items — current open tasks and escalations (if any)
   3. ## Recent Activity — last 5-10 things that happened, newest first
@@ -266,9 +276,9 @@ At the end, output a separate JSON block for:
 ${existingContent ? `EXISTING CONTENT:\n${existingContent}\n\n` : ''}NEW ENTRY (${entry.source}, ${entry.created_at.slice(0, 10)}):\n${entry.raw_text}
 
 CURRENT STRUCTURED DATA:
-${structuredContext}
+${structuredContext}${pinnedBlock}
 
-Write the full updated wiki page markdown. Then output a JSON block like:
+Write the full updated wiki page markdown (do NOT include pinned sections — they are prepended automatically). Then output a JSON block like:
 \`\`\`json
 {"summary": "...", "links": [{"slug": "...", "context": "..."}]}
 \`\`\``
@@ -298,7 +308,16 @@ Write the full updated wiki page markdown. Then output a JSON block like:
   }
 
   // Strip the JSON block from the content
-  const content = rawOutput.replace(/```json\n[\s\S]*?\n```/g, '').trim()
+  const generatedContent = rawOutput.replace(/```json\n[\s\S]*?\n```/g, '').trim()
+
+  // Prepend pinned sections before AI-generated content
+  let content = generatedContent
+  if (pinnedSections.length > 0) {
+    const pinnedMarkdown = pinnedSections
+      .map((s) => `## 📌 ${s.title}\n\n${s.content}`)
+      .join('\n\n')
+    content = pinnedMarkdown + '\n\n---\n\n' + generatedContent
+  }
 
   // Save updated page
   await db
