@@ -214,11 +214,28 @@ export async function processEntry(
     const existingEntities = await loadAllEntities(db)
     const entityContext = buildEntityContext(existingEntities)
 
+    // Identify the sender/user from email or session
+    const sourceMeta = (entry.source_meta ?? {}) as Record<string, string>
+    const senderEmail = sourceMeta.from?.match(/<([^>]+)>/)?.[1] ?? sourceMeta.from ?? ''
+    let senderContext = ''
+    if (senderEmail) {
+      // Look up sender by email alias
+      const { data: aliasMatch } = await db
+        .from('entity_aliases')
+        .select('entity_id, entities(name, type)')
+        .eq('normalized_alias', senderEmail.toLowerCase())
+        .limit(1)
+      const match = aliasMatch?.[0] as unknown as { entity_id: string; entities: { name: string; type: string } } | undefined
+      if (match?.entities) {
+        senderContext = `\n\nThe sender of this content is ${match.entities.name} (${match.entities.type}). First-person references like "I", "me", "my", "I'll" refer to ${match.entities.name}.`
+      }
+    }
+
     const today = new Date().toISOString().slice(0, 10)
     const systemPrompt = `You are an AI assistant processing operational notes for a marketing agency.
-Today's date is ${today}.
+Today's date is ${today}.${senderContext}
 
-The user manages these brands and contacts:
+The organization manages these brands and contacts:
 
 ${entityContext}
 

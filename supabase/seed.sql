@@ -49,6 +49,12 @@ UNION ALL
   SELECT id, 'bmurch', 'bmurch'
   FROM entities WHERE name = 'Brandy Murch' AND org_id = '00000000-0000-0000-0000-000000000001'
 UNION ALL
+  SELECT id, 'bmurch@thresholdbrands.com', 'bmurch@thresholdbrands.com'
+  FROM entities WHERE name = 'Brandy Murch' AND org_id = '00000000-0000-0000-0000-000000000001'
+UNION ALL
+  SELECT id, 'brandymurch@gmail.com', 'brandymurch@gmail.com'
+  FROM entities WHERE name = 'Brandy Murch' AND org_id = '00000000-0000-0000-0000-000000000001'
+UNION ALL
   SELECT id, 'Threshold Marketing Services', 'threshold marketing services'
   FROM entities WHERE name = 'TMS' AND org_id = '00000000-0000-0000-0000-000000000001'
 UNION ALL
