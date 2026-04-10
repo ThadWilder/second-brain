@@ -394,7 +394,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           {/* ── Entity Cards ── */}
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-6" id="entity-cards-section">
             <BrandCards brands={brands} />
-            <EntityCards title="Departments" entities={departments} type="department" allEntities={allEntities} />
+            <EntityCards title="Internal Team" entities={departments} type="department" allEntities={allEntities} />
             <EntityCards title="Franchisees" entities={franchisees} type="franchisee" allEntities={allEntities} />
             <EntityCards title="People" entities={people} type="contact" allEntities={allEntities} />
             <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} />

@@ -17,7 +17,7 @@ INSERT INTO entities (org_id, name, normalized_name, type, first_seen, last_seen
   ('00000000-0000-0000-0000-000000000001', 'PHP', 'php', 'brand', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'HAP', 'hap', 'brand', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'PLP', 'plp', 'brand', now(), now()),
-  ('00000000-0000-0000-0000-000000000001', 'HQ', 'hq', 'brand', now(), now()),
+  ('00000000-0000-0000-0000-000000000001', 'Threshold Brands HQ', 'threshold brands hq', 'department', now(), now()),
   -- Team
   ('00000000-0000-0000-0000-000000000001', 'Brandy Murch', 'brandy murch', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Michelle', 'michelle', 'contact', now(), now()),
@@ -52,7 +52,10 @@ UNION ALL
   FROM entities WHERE name = 'TMS' AND org_id = '00000000-0000-0000-0000-000000000001'
 UNION ALL
   SELECT id, 'Threshold Brands', 'threshold brands'
-  FROM entities WHERE name = 'HQ' AND org_id = '00000000-0000-0000-0000-000000000001'
+  FROM entities WHERE name = 'Threshold Brands HQ' AND org_id = '00000000-0000-0000-0000-000000000001'
+UNION ALL
+  SELECT id, 'HQ', 'hq'
+  FROM entities WHERE name = 'Threshold Brands HQ' AND org_id = '00000000-0000-0000-0000-000000000001'
 UNION ALL
   SELECT id, 'TMA', 'tma'
   FROM entities WHERE name = 'The Marketing Agency' AND org_id = '00000000-0000-0000-0000-000000000001';
