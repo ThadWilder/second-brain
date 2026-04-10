@@ -148,9 +148,6 @@ export default function WikiPageView() {
 
 /** Render wiki markdown content with [[slug]] link support */
 function WikiContent({ content }: { content: string }) {
-  // Split on [[slug]] patterns and render as links
-  const parts = content.split(/(\[\[[\w-]+\]\])/g)
-
   return (
     <div className="text-sm text-slate-300 leading-relaxed space-y-3">
       {content.split('\n\n').map((block, i) => {
@@ -184,24 +181,24 @@ function WikiContent({ content }: { content: string }) {
 }
 
 function renderInlineLinks(text: string): React.ReactNode {
-  const parts = text.split(/(\[\[[\w-]+\]\])/g)
+  // Split on [[slug]] and **bold** patterns
+  const parts = text.split(/(\[\[[\w-]+\]\]|\*\*.*?\*\*)/g)
   return parts.map((part, i) => {
-    const match = part.match(/^\[\[([\w-]+)\]\]$/)
-    if (match) {
+    const wikiMatch = part.match(/^\[\[([\w-]+)\]\]$/)
+    if (wikiMatch) {
       return (
         <Link
           key={i}
-          href={`/wiki/${match[1]}`}
+          href={`/wiki/${wikiMatch[1]}`}
           className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
         >
-          {match[1].replace(/-/g, ' ')}
+          {wikiMatch[1].replace(/-/g, ' ')}
         </Link>
       )
     }
-    // Bold
-    const bolded = part.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-200 font-medium">$1</strong>')
-    if (bolded !== part) {
-      return <span key={i} dangerouslySetInnerHTML={{ __html: bolded }} />
+    const boldMatch = part.match(/^\*\*(.*?)\*\*$/)
+    if (boldMatch) {
+      return <strong key={i} className="text-slate-200 font-medium">{boldMatch[1]}</strong>
     }
     return part
   })

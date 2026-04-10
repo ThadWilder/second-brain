@@ -68,7 +68,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     response.content[0].type === 'text' ? response.content[0].text : ''
 
   const subject = `Follow up needed — ${staleTasks.length} open items`
-  const htmlBody = `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${nudgeText}</pre>`
+  const escapedText = nudgeText
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const htmlBody = `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${escapedText}</pre>`
 
   const messageId = await sendNudgeEmail({
     subject,

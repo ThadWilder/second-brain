@@ -61,8 +61,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
+      let closed = false
       const send = (event: string, data: unknown) => {
+        if (closed) return
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
+      }
+      const safeClose = () => {
+        if (!closed) { closed = true; controller.close() }
       }
 
       try {
@@ -158,7 +163,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               })
             }
             send('message_stop', {})
-            controller.close()
+            safeClose()
             return
           }
         }
@@ -172,7 +177,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const msg = err instanceof Error ? err.message : String(err)
         send('error', { message: msg })
       } finally {
-        controller.close()
+        safeClose()
       }
     },
   })
@@ -238,7 +243,9 @@ async function queryTasks(db: SupabaseClient, input: {
   if (input.escalation !== undefined) query = query.eq('escalation', input.escalation)
   if (input.due_before) query = query.lt('due_date', input.due_before)
   if (input.brand_name) {
-    const { data: brand } = await db.from('entities').select('id').eq('org_id', ORG_ID).ilike('name', `%${input.brand_name}%`).eq('type', 'brand').single()
+    // Escape ILIKE special characters to prevent pattern injection
+    const safeName = input.brand_name.replace(/[%_\\]/g, '\\$&')
+    const { data: brand } = await db.from('entities').select('id').eq('org_id', ORG_ID).ilike('name', `%${safeName}%`).eq('type', 'brand').single()
     if (brand) {
       const { data: ids } = await db.from('task_entities').select('task_id').eq('entity_id', brand.id).eq('role', 'brand')
       if (ids?.length) query = query.in('id', ids.map((t) => t.task_id))
@@ -295,7 +302,8 @@ async function createTask(db: SupabaseClient, input: { description: string; bran
   if (error) return { error: error.message }
   await db.from('task_events').insert({ task_id: task.id, event_type: 'created', metadata: { source: 'chat' } })
   if (input.brand_name) {
-    const { data: brand } = await db.from('entities').select('id').eq('org_id', ORG_ID).ilike('name', `%${input.brand_name}%`).eq('type', 'brand').single()
+    const safeName = input.brand_name.replace(/[%_\\]/g, '\\$&')
+    const { data: brand } = await db.from('entities').select('id').eq('org_id', ORG_ID).ilike('name', `%${safeName}%`).eq('type', 'brand').single()
     if (brand) await db.from('task_entities').insert({ task_id: task.id, entity_id: brand.id, role: 'brand' })
   }
   return { success: true, task_id: task.id }
@@ -306,7 +314,8 @@ async function logDecision(db: SupabaseClient, input: { summary: string; brand_n
     .insert({ org_id: ORG_ID, summary: input.summary, made_by: input.made_by ?? null }).select().single()
   if (error) return { error: error.message }
   if (input.brand_name) {
-    const { data: brand } = await db.from('entities').select('id').eq('org_id', ORG_ID).ilike('name', `%${input.brand_name}%`).eq('type', 'brand').single()
+    const safeName = input.brand_name.replace(/[%_\\]/g, '\\$&')
+    const { data: brand } = await db.from('entities').select('id').eq('org_id', ORG_ID).ilike('name', `%${safeName}%`).eq('type', 'brand').single()
     if (brand) await db.from('decision_entities').insert({ decision_id: decision.id, entity_id: brand.id, role: 'brand' })
   }
   return { success: true, decision_id: decision.id }

@@ -58,14 +58,23 @@ export async function runEscalationPass(db: SupabaseClient): Promise<{
   }
 
   // ── 3. Escalate: nudged 3+ times, no response ────────
-  const { data: frequentlyNudged } = await db
+  // Get all task IDs that have been nudged, then count client-side
+  const { data: nudgeEvents } = await db
     .from('task_events')
-    .select('task_id, count:id.count()')
+    .select('task_id')
     .eq('event_type', 'nudged')
-    .gt('count', 2)
 
-  for (const row of frequentlyNudged ?? []) {
-    const taskId = (row as { task_id: string }).task_id
+  // Count nudges per task
+  const nudgeCounts: Record<string, number> = {}
+  for (const row of nudgeEvents ?? []) {
+    nudgeCounts[row.task_id] = (nudgeCounts[row.task_id] ?? 0) + 1
+  }
+
+  const frequentlyNudgedIds = Object.entries(nudgeCounts)
+    .filter(([, count]) => count >= 3)
+    .map(([taskId]) => taskId)
+
+  for (const taskId of frequentlyNudgedIds) {
     // Only escalate open tasks that aren't already escalated
     const { data: task } = await db
       .from('tasks')

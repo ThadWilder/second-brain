@@ -130,9 +130,11 @@ DECISIONS MADE: X
 
   const subject = `Week in review — ${digestData.week}`
 
+  const escapedText = digestText
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   await sendBriefingEmail({
     subject,
-    htmlBody: `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${digestText}</pre>`,
+    htmlBody: `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${escapedText}</pre>`,
     textBody: digestText,
   })
 

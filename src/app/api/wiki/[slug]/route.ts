@@ -6,15 +6,16 @@ import { getServiceClient, ORG_ID } from '@/lib/supabase'
 /** GET /api/wiki/:slug — get a single wiki page with links */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ): Promise<NextResponse> {
+  const { slug } = await params
   const db = getServiceClient()
 
   const { data: page, error } = await db
     .from('wiki_pages')
     .select('*, entities(type, name)')
     .eq('org_id', ORG_ID)
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single()
 
   if (error || !page) {

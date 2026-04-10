@@ -174,13 +174,62 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // ── 7. Rewire pending_clarifications ─────────────────────────────────
+  // ── 7. Rewire entity_relationships ───────────────────────────────────
+  // Rewire from_entity_id
+  const { data: existingOutRels } = await db
+    .from('entity_relationships')
+    .select('to_entity_id, relationship')
+    .eq('from_entity_id', canonical_id)
+
+  const existingOutRelKeys = new Set(
+    (existingOutRels ?? []).map((r) => `${r.to_entity_id}::${r.relationship}`)
+  )
+
+  const { data: dupeOutRels } = await db
+    .from('entity_relationships')
+    .select('id, to_entity_id, relationship')
+    .eq('from_entity_id', duplicate_id)
+
+  for (const rel of dupeOutRels ?? []) {
+    const key = `${rel.to_entity_id}::${rel.relationship}`
+    if (existingOutRelKeys.has(key)) {
+      await db.from('entity_relationships').delete().eq('id', rel.id)
+    } else {
+      await db.from('entity_relationships').update({ from_entity_id: canonical_id }).eq('id', rel.id)
+    }
+  }
+
+  // Rewire to_entity_id
+  const { data: existingInRels } = await db
+    .from('entity_relationships')
+    .select('from_entity_id, relationship')
+    .eq('to_entity_id', canonical_id)
+
+  const existingInRelKeys = new Set(
+    (existingInRels ?? []).map((r) => `${r.from_entity_id}::${r.relationship}`)
+  )
+
+  const { data: dupeInRels } = await db
+    .from('entity_relationships')
+    .select('id, from_entity_id, relationship')
+    .eq('to_entity_id', duplicate_id)
+
+  for (const rel of dupeInRels ?? []) {
+    const key = `${rel.from_entity_id}::${rel.relationship}`
+    if (existingInRelKeys.has(key)) {
+      await db.from('entity_relationships').delete().eq('id', rel.id)
+    } else {
+      await db.from('entity_relationships').update({ to_entity_id: canonical_id }).eq('id', rel.id)
+    }
+  }
+
+  // ── 8. Rewire pending_clarifications ─────────────────────────────────
   await db
     .from('pending_clarifications')
     .update({ entity_id: canonical_id })
     .eq('entity_id', duplicate_id)
 
-  // ── 8. Register aliases ──────────────────────────────────────────────
+  // ── 9. Register aliases ──────────────────────────────────────────────
   // Add duplicate's name as alias on canonical
   const dupeNormalized = normalize(duplicate.name)
   if (dupeNormalized !== (canonical as { normalized_name: string }).normalized_name) {
@@ -217,7 +266,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // ── 9. Merge metadata ───────────────────────────────────────────────
+  // ── 10. Merge metadata ──────────────────────────────────────────────
   const canonMeta = (canonical.metadata as Record<string, unknown>) ?? {}
   const dupeMeta = (duplicate.metadata as Record<string, unknown>) ?? {}
   // Duplicate fills gaps, canonical wins on conflicts
@@ -232,7 +281,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     first_seen: dupeFirst < canonFirst ? duplicate.first_seen : canonical.first_seen,
   }).eq('id', canonical_id)
 
-  // ── 10. Delete duplicate entity ──────────────────────────────────────
+  // ── 11. Delete duplicate entity ──────────────────────────────────────
   await db.from('entities').delete().eq('id', duplicate_id)
 
   return NextResponse.json({

@@ -122,7 +122,9 @@ Total open: X tasks
 
   const subject = `${briefingData.date} — ${briefingData.escalation_count} escalations, ${briefingData.open_task_count} open tasks`
 
-  const htmlBody = `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${briefingText}</pre>
+  const escapedText = briefingText
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const htmlBody = `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${escapedText}</pre>
 <p style="font-size: 12px; color: #666;">Reply to this email to update anything.</p>`
 
   await sendBriefingEmail({

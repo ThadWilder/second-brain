@@ -6,7 +6,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel'
 import type { Task, Decision, Entry, Entity } from '@/types'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export const dynamic = 'force-dynamic'
@@ -107,7 +107,8 @@ async function getBrandData(brandId: string) {
 }
 
 export default async function BrandPage({ params }: Props) {
-  const data = await getBrandData(params.id)
+  const { id } = await params
+  const data = await getBrandData(id)
 
   if (!data) notFound()
 

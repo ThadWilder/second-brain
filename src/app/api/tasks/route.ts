@@ -22,6 +22,15 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 
   const db = getServiceClient()
 
+  // Fetch previous values before update (for event log)
+  let prevStatus: string | null = null
+  let prevDueDate: string | null = null
+  if (status !== undefined || due_date !== undefined) {
+    const { data: prev } = await db.from('tasks').select('status, due_date').eq('id', id).single()
+    prevStatus = prev?.status ?? null
+    prevDueDate = prev?.due_date ?? null
+  }
+
   const updates: Record<string, unknown> = {}
   if (status !== undefined) updates.status = status
   if (due_date !== undefined) updates.due_date = due_date
@@ -39,10 +48,23 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     await db.from('task_events').insert({
       task_id: id,
       event_type: 'status_change',
-      metadata: { to: status, source: 'checkbox' },
+      metadata: { from: prevStatus, to: status, source: 'checkbox' },
     })
     if (status === 'done') {
       await deEscalateTask(db, id, 'task_done')
+    }
+  }
+
+  // Log due_date change and de-escalate if pushed forward
+  if (due_date !== undefined && due_date !== prevDueDate) {
+    await db.from('task_events').insert({
+      task_id: id,
+      event_type: 'due_date_changed',
+      metadata: { from: prevDueDate, to: due_date },
+    })
+    // De-escalate if due date was pushed forward (later than before)
+    if (due_date && (!prevDueDate || due_date > prevDueDate)) {
+      await deEscalateTask(db, id, 'due_date_pushed')
     }
   }
 
