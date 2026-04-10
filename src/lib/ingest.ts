@@ -35,7 +35,8 @@ import type {
 // ─────────────────────────────────────────
 // Tool definitions for Claude
 // ─────────────────────────────────────────
-const INGEST_TOOLS: Anthropic.Tool[] = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const INGEST_TOOLS: any[] = [
   {
     name: 'classify_entities',
     description:
@@ -226,7 +227,8 @@ Be conservative — only extract what is clearly stated.
 When resolving relative dates like "Friday" or "next week", use today's date (${today}) as the reference.`
 
     // Single Claude API call with all tools
-    const response = await anthropic.messages.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await (anthropic.messages.create as any)({
       model: CLAUDE_MODEL,
       max_tokens: 2048,
       system: systemPrompt,

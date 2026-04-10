@@ -1,12 +1,23 @@
 import * as postmark from 'postmark'
 import crypto from 'crypto'
 
-export const postmarkClient = new postmark.ServerClient(
-  process.env.POSTMARK_SERVER_TOKEN!
-)
+let _postmarkClient: postmark.ServerClient | null = null
 
-export const FROM_EMAIL = process.env.POSTMARK_FROM_EMAIL!
-export const TO_EMAIL = process.env.POSTMARK_TO_EMAIL!
+function getPostmarkClient(): postmark.ServerClient {
+  if (!_postmarkClient) {
+    _postmarkClient = new postmark.ServerClient(process.env.POSTMARK_SERVER_TOKEN!)
+  }
+  return _postmarkClient
+}
+
+export const postmarkClient = new Proxy({} as postmark.ServerClient, {
+  get(_target, prop) {
+    return (getPostmarkClient() as unknown as Record<string, unknown>)[prop as string]
+  },
+})
+
+export const FROM_EMAIL = process.env.POSTMARK_FROM_EMAIL ?? ''
+export const TO_EMAIL = process.env.POSTMARK_TO_EMAIL ?? ''
 
 // ─────────────────────────────────────────
 // Webhook signature verification

@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { createSession } from '@/lib/managed-agents'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(_req: NextRequest): Promise<NextResponse> {
   try {
     const sessionId = await createSession()

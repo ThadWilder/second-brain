@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/entities/link — create a relationship between two entities
  * DELETE /api/entities/link — remove a relationship

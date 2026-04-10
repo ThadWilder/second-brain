@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/cron/briefing
  *
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     pending_responses: pendingResponses?.map((p) => p.summary) ?? [],
     todays_tasks: todayTasks.map((t) => ({
       description: t.description,
-      brand: (t.task_entities as Array<{ role: string; entities: { name: string } }>)
+      brand: (t.task_entities as unknown as Array<{ role: string; entities: { name: string } }>)
         ?.find((te) => te.role === 'brand')?.entities?.name ?? 'Unknown',
       due_date: t.due_date,
     })),

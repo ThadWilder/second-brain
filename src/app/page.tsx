@@ -22,7 +22,7 @@ import type {
   Entity,
 } from '@/types'
 
-export const revalidate = 30  // ISR — refresh every 30 seconds
+export const dynamic = 'force-dynamic'  // always fetch fresh data
 
 async function getDashboardData() {
   const db = getServiceClient()
@@ -168,7 +168,7 @@ async function getDashboardData() {
   // Build heatmap cells
   const heatmapMap: Record<string, number> = {}
   for (const row of entryEntityData ?? []) {
-    const r = row as { entries: { created_at: string } | null; entities: { name: string; type: string } | null }
+    const r = row as unknown as { entries: { created_at: string } | null; entities: { name: string; type: string } | null }
     if (!r.entries?.created_at || !r.entities?.name) continue
     const date = r.entries.created_at.slice(0, 10)
     const key = `${r.entities.name}::${date}`

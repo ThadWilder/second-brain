@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/clarify
  * Resolve a pending clarification — updates the entity metadata and marks resolved.

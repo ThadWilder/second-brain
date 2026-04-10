@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/cron/nudge
  *
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const taskList = staleTasks.map((t) => ({
     id: t.id,
     description: t.description,
-    brand: (t.task_entities as Array<{ role: string; entities: { name: string } }>)
+    brand: (t.task_entities as unknown as Array<{ role: string; entities: { name: string } }>)
       ?.find((te) => te.role === 'brand')?.entities?.name ?? 'Unknown',
     due_date: t.due_date,
     escalation: t.escalation,

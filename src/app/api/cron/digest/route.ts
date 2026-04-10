@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/cron/digest
  *
@@ -80,17 +82,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     closed_tasks: closedTasks?.length ?? 0,
     opened_tasks: openedCount ?? 0,
     overdue_count: overdueTasks?.length ?? 0,
-    overdue_brands: [...new Set(
+    overdue_brands: Array.from(new Set(
       (overdueTasks ?? []).flatMap((t) =>
-        (t.task_entities as Array<{ role: string; entities: { name: string } }>)
+        (t.task_entities as unknown as Array<{ role: string; entities: { name: string } }>)
           ?.filter((te) => te.role === 'brand')
           .map((te) => te.entities?.name)
           .filter(Boolean)
       )
-    )],
+    )),
     decisions: weekDecisions?.map((d) => d.summary) ?? [],
     closed_by_brand: (closedTasks ?? []).reduce((acc, t) => {
-      const brand = (t.task_entities as Array<{ role: string; entities: { name: string } }>)
+      const brand = (t.task_entities as unknown as Array<{ role: string; entities: { name: string } }>)
         ?.find((te) => te.role === 'brand')?.entities?.name ?? 'Unknown'
       acc[brand] = (acc[brand] ?? 0) + 1
       return acc

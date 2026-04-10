@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * PATCH /api/entities/update
  * Update entity metadata — name, role, company, notes, category, etc.

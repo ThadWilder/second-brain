@@ -9,7 +9,7 @@ interface Props {
   params: { id: string }
 }
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 async function getBrandData(brandId: string) {
   const db = getServiceClient()
@@ -99,7 +99,7 @@ async function getBrandData(brandId: string) {
     const { data: entityData } = await db
       .from('entities')
       .select('*')
-      .in('id', [...linkedEntityIds])
+      .in('id', Array.from(linkedEntityIds))
     linkedEntities = (entityData ?? []) as Entity[]
   }
 

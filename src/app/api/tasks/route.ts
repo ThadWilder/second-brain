@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * PATCH /api/tasks
  * Quick task status update — used by Zone 3 checkboxes.
