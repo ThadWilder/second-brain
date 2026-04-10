@@ -84,15 +84,18 @@ interface Props {
   type: string
   allEntities?: Entity[]
   entityRelationships?: EntityRelationship[]
+  onRefresh?: () => void
 }
 
-export function EntityCards({ title, entities, type, allEntities: allEntitiesProp, entityRelationships }: Props) {
+export function EntityCards({ title, entities, type, allEntities: allEntitiesProp, entityRelationships, onRefresh }: Props) {
   const config = TYPE_CONFIG[type] ?? TYPE_CONFIG.topic
   const router = useRouter()
   const [mergeTarget, setMergeTarget] = useState<Entity | null>(null)
   const [editTarget, setEditTarget] = useState<Entity | null>(null)
 
   const allEntitiesOfType = entities.map((e) => e.entity)
+
+  const [assigningId, setAssigningId] = useState<string | null>(null)
 
   // Default expanded: brands and people always expanded, others expanded only if they have entities
   const defaultExpanded = type === 'brand' || type === 'contact' || entities.length > 0
@@ -134,9 +137,42 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
     return { sorted, unassigned }
   }, [type, entities, entityRelationships, allEntitiesProp])
 
+  // Group brands and departments as assignment targets
+  const assignOptions = useMemo(() => {
+    if (!allEntitiesProp) return { brands: [] as Entity[], teams: [] as Entity[] }
+    const brands = allEntitiesProp
+      .filter((e) => e.type === 'brand')
+      .sort((a, b) => a.name.localeCompare(b.name))
+    const teams = allEntitiesProp
+      .filter((e) => e.type === 'department')
+      .sort((a, b) => a.name.localeCompare(b.name))
+    return { brands, teams }
+  }, [allEntitiesProp])
+
+  async function handleAssign(personId: string, targetId: string) {
+    setAssigningId(personId)
+    try {
+      const res = await fetch('/api/entities/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_entity_id: personId,
+          to_entity_id: targetId,
+          relationship: 'member_of',
+        }),
+      })
+      if (res.ok) {
+        onRefresh?.()
+        router.refresh()
+      }
+    } finally {
+      setAssigningId(null)
+    }
+  }
+
   if (!entities.length) return null
 
-  function renderCard(item: EntityCardData) {
+  function renderCard(item: EntityCardData, showAssign = false) {
     const hasEscalation = item.escalated_tasks > 0
     const borderColor = hasEscalation ? 'border-red-300' : config.border
 
@@ -229,14 +265,48 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
             </div>
           )}
         </Link>
+
+        {/* Inline assign dropdown for unassigned contacts */}
+        {showAssign && (assignOptions.brands.length > 0 || assignOptions.teams.length > 0) && (
+          <div className="mt-2 pt-2 border-t border-[var(--border)]">
+            {assigningId === item.entity.id ? (
+              <span className="text-[11px] text-[var(--muted)]">Assigning...</span>
+            ) : (
+              <select
+                className="w-full text-[11px] px-1.5 py-1 rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:border-[var(--accent)] focus:outline-none"
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) handleAssign(item.entity.id, e.target.value)
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <option value="" disabled>Assign to...</option>
+                {assignOptions.brands.length > 0 && (
+                  <optgroup label="Brands">
+                    {assignOptions.brands.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {assignOptions.teams.length > 0 && (
+                  <optgroup label="Internal Team">
+                    {assignOptions.teams.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            )}
+          </div>
+        )}
       </div>
     )
   }
 
-  function renderGrid(items: EntityCardData[]) {
+  function renderGrid(items: EntityCardData[], showAssign = false) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {items.map(renderCard)}
+        {items.map((item) => renderCard(item, showAssign))}
       </div>
     )
   }
@@ -270,7 +340,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                     Unassigned
                   </span>
                 </div>
-                {renderGrid(contactGroups.unassigned)}
+                {renderGrid(contactGroups.unassigned, true)}
               </div>
             )}
           </div>
