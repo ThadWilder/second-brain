@@ -267,35 +267,35 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col">
       {/* Header */}
-      <header className="border-b border-[var(--border)] px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <Image src="/logo-icon.png" alt="Dumpbox" width={40} height={40} />
-          <span className="text-[var(--text)] font-semibold tracking-tight text-sm">DUMPBOX</span>
-          <span className="text-xs text-[var(--muted)]">
+      <header className="border-b border-[var(--border)] px-5 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <Image src="/logo-icon.png" alt="Dumpbox" width={52} height={52} />
+          <span className="text-[var(--text)] font-bold tracking-tight text-lg">DUMPBOX</span>
+          <span className="text-sm text-[var(--muted)]">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {stats.escalations > 0 && (
-            <span className="text-xs bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded">
+            <span className="text-sm bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded">
               {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
             </span>
           )}
           <a
             href="/wiki"
-            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1"
+            className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1.5"
           >
-            <BookOpen className="w-3.5 h-3.5" />
+            <BookOpen className="w-4 h-4" />
             Wiki
           </a>
-          <span className="text-[10px] text-[var(--muted)]" title={lastUpdated.toLocaleTimeString()}>
+          <span className="text-xs text-[var(--muted)]" title={lastUpdated.toLocaleTimeString()}>
             live
           </span>
           <button
             onClick={handleSignOut}
-            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1"
+            className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1.5"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-4 h-4" />
             Sign out
           </button>
         </div>
