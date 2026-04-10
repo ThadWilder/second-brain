@@ -10,6 +10,7 @@ import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { StatusSummary } from '@/components/dashboard/StatusSummary'
 import { BrandCards } from '@/components/dashboard/BrandCards'
 import { EntityCards } from '@/components/dashboard/EntityCards'
+import { ClarificationBanner } from '@/components/dashboard/ClarificationBanner'
 import { Priorities } from '@/components/dashboard/Priorities'
 import { Heatmap } from '@/components/dashboard/Heatmap'
 import { ChatPanel } from '@/components/chat/ChatPanel'
@@ -109,6 +110,15 @@ async function getDashboardData() {
     })
   )
 
+  // Pending clarifications
+  const { data: clarifications } = await db
+    .from('pending_clarifications')
+    .select('id, entity_id, question, context, field, suggestions')
+    .eq('org_id', ORG_ID)
+    .eq('resolved', false)
+    .order('created_at', { ascending: true })
+    .limit(10)
+
   // Today's priorities — open tasks, ordered by escalation then due date
   const { data: allOpenTasks } = await db
     .from('tasks')
@@ -195,6 +205,7 @@ async function getDashboardData() {
     heatmapCells,
     heatmapDays,
     brandNames: brandEntities.map((b) => b.name),
+    clarifications: clarifications ?? [],
   }
 }
 
@@ -211,6 +222,7 @@ export default async function DashboardPage() {
     heatmapCells,
     heatmapDays,
     brandNames,
+    clarifications,
   } = await getDashboardData()
 
   return (
@@ -258,6 +270,11 @@ export default async function DashboardPage() {
                 />
               </div>
             </div>
+
+            {/* Clarification Banner */}
+            {clarifications.length > 0 && (
+              <ClarificationBanner clarifications={clarifications} />
+            )}
 
             {/* Zone 2: Entity Cards — Brands, People, Vendors */}
             <div className="space-y-5">

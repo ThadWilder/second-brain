@@ -40,7 +40,11 @@ const INGEST_TOOLS: Anthropic.Tool[] = [
     name: 'classify_entities',
     description:
       'Identify all entities mentioned in the text: brands, contacts, vendors, topics. ' +
-      'Match to existing entities by ID when possible. Signal "new entity" when not found.',
+      'Match to existing entities by ID when possible. Signal "new entity" when not found. ' +
+      'For contacts, always set metadata.category to one of: team, client_contact, brand_rep, freelancer, external, unknown. ' +
+      'If you cannot determine the category from context, use "unknown". ' +
+      'Also include metadata.role (e.g. "SEO specialist", "franchise owner", "account manager") and ' +
+      'metadata.company if mentioned.',
     input_schema: {
       type: 'object',
       properties: {
@@ -59,7 +63,20 @@ const INGEST_TOOLS: Anthropic.Tool[] = [
                 type: 'string',
                 description: 'UUID of matched existing entity. Omit if new.',
               },
-              metadata: { type: 'object' },
+              metadata: {
+                type: 'object',
+                description: 'For contacts: include category (team|client_contact|brand_rep|freelancer|external|unknown), role, company. For vendors: include notes, specialty.',
+                properties: {
+                  category: {
+                    type: 'string',
+                    enum: ['team', 'client_contact', 'brand_rep', 'freelancer', 'external', 'unknown'],
+                    description: 'Contact category. Use "unknown" if unsure.',
+                  },
+                  role: { type: 'string', description: 'Job title or function' },
+                  company: { type: 'string', description: 'Company or brand they belong to' },
+                  notes: { type: 'string', description: 'For vendors: what they do' },
+                },
+              },
             },
             required: ['name', 'type'],
           },
@@ -128,6 +145,33 @@ const INGEST_TOOLS: Anthropic.Tool[] = [
         entity_names: { type: 'array', items: { type: 'string' } },
       },
       required: ['summary'],
+    },
+  },
+  {
+    name: 'flag_unknown_person',
+    description:
+      'Flag a person whose role/category you cannot determine from context. ' +
+      'Use this when you encounter a new name and cannot confidently classify them as ' +
+      'team, client_contact, brand_rep, freelancer, or external. ' +
+      'This will prompt the user to clarify who this person is.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'The person\'s name' },
+        context_snippet: { type: 'string', description: 'The sentence or phrase where this person was mentioned' },
+        question: { type: 'string', description: 'A natural question to ask. e.g. "Who is Sarah? She was mentioned in a MaidPro email about social media."' },
+        field: {
+          type: 'string',
+          enum: ['category', 'role', 'company', 'type'],
+          description: 'What info is missing. Usually "category".',
+        },
+        suggestions: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Your best guesses for the answer, e.g. ["client_contact", "brand_rep"]',
+        },
+      },
+      required: ['name', 'question', 'field'],
     },
   },
 ]
@@ -388,6 +432,32 @@ Be conservative — only extract what is clearly stated.`
         }
 
         result.pending_responses_created++
+      }
+    }
+
+    // Process flag_unknown_person
+    for (const call of toolCalls) {
+      if (call.name === 'flag_unknown_person') {
+        const input = call.input as {
+          name: string
+          context_snippet?: string
+          question: string
+          field: string
+          suggestions?: string[]
+        }
+
+        // Find the entity that was just created for this person
+        const entityId = resolveEntityName(input.name)
+
+        await db.from('pending_clarifications').insert({
+          org_id: ORG_ID,
+          entity_id: entityId,
+          entry_id: entryId,
+          question: input.question,
+          context: input.context_snippet ?? null,
+          field: input.field,
+          suggestions: input.suggestions ?? null,
+        })
       }
     }
 

@@ -270,10 +270,9 @@ BEGIN
 
   -- Team members
   INSERT INTO entities (org_id, type, name, normalized_name, metadata) VALUES
-    (org, 'contact', 'Michelle', 'michelle', '{"role": "team"}'),
-    (org, 'contact', 'Dustin',   'dustin',   '{"role": "team"}'),
-    (org, 'contact', 'Jack',     'jack',     '{"role": "team"}'),
-    (org, 'contact', 'Amanda',   'amanda',   '{"role": "team"}')
+    (org, 'contact', 'Michelle', 'michelle', '{"role": "team", "category": "team"}'),
+    (org, 'contact', 'Dustin',   'dustin',   '{"role": "team", "category": "team"}'),
+    (org, 'contact', 'Amanda',   'amanda',   '{"role": "team", "category": "team"}')
   ON CONFLICT (org_id, type, normalized_name) DO NOTHING;
 
   -- Known vendors
