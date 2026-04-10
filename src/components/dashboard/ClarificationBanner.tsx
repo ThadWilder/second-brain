@@ -16,10 +16,14 @@ interface Props {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'team', label: 'Team member' },
-  { value: 'client_contact', label: 'Client contact' },
+  { value: 'contact', label: 'Team Member' },
+  { value: 'brand', label: 'Brand' },
+  { value: 'department', label: 'Internal Team' },
+  { value: 'franchisee', label: 'Franchisee' },
+  { value: 'vendor', label: 'Vendor' },
+  { value: 'vendor_team', label: 'Vendor Team' },
   { value: 'freelancer', label: 'Freelancer' },
-  { value: 'external', label: 'External' },
+  { value: 'ignore', label: 'Ignore' },
 ]
 
 export function ClarificationBanner({ clarifications }: Props) {
@@ -100,11 +104,14 @@ export function ClarificationBanner({ clarifications }: Props) {
 
 function formatCategory(value: string): string {
   const map: Record<string, string> = {
-    team: 'Team member',
-    client_contact: 'Client contact',
+    contact: 'Team Member',
+    brand: 'Brand',
+    department: 'Internal Team',
+    franchisee: 'Franchisee',
+    vendor: 'Vendor',
+    vendor_team: 'Vendor Team',
     freelancer: 'Freelancer',
-    external: 'External',
-    unknown: 'Unknown',
+    ignore: 'Ignore',
   }
   return map[value] ?? value
 }
