@@ -174,7 +174,7 @@ export function EntityCards({ title, entities, type }: Props) {
 const CATEGORY_STYLES: Record<string, string> = {
   team: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   client_contact: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  brand_rep: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+
   freelancer: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   external: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
   unknown: 'bg-red-500/10 text-red-400 border-red-500/20',
@@ -188,7 +188,6 @@ function formatCategory(value: string): string {
   const map: Record<string, string> = {
     team: 'Team',
     client_contact: 'Client',
-    brand_rep: 'Brand rep',
     freelancer: 'Freelancer',
     external: 'External',
     unknown: '???',

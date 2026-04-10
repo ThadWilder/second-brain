@@ -41,7 +41,7 @@ const INGEST_TOOLS: Anthropic.Tool[] = [
     description:
       'Identify all entities mentioned in the text: brands, contacts, vendors, topics. ' +
       'Match to existing entities by ID when possible. Signal "new entity" when not found. ' +
-      'For contacts, always set metadata.category to one of: team, client_contact, brand_rep, freelancer, external, unknown. ' +
+      'For contacts, always set metadata.category to one of: team, client_contact, freelancer, external, unknown. ' +
       'If you cannot determine the category from context, use "unknown". ' +
       'Also include metadata.role (e.g. "SEO specialist", "franchise owner", "account manager") and ' +
       'metadata.company if mentioned.',
@@ -65,11 +65,11 @@ const INGEST_TOOLS: Anthropic.Tool[] = [
               },
               metadata: {
                 type: 'object',
-                description: 'For contacts: include category (team|client_contact|brand_rep|freelancer|external|unknown), role, company. For vendors: include notes, specialty.',
+                description: 'For contacts: include category (team|client_contact|freelancer|external|unknown), role, company. For vendors: include notes, specialty.',
                 properties: {
                   category: {
                     type: 'string',
-                    enum: ['team', 'client_contact', 'brand_rep', 'freelancer', 'external', 'unknown'],
+                    enum: ['team', 'client_contact', 'freelancer', 'external', 'unknown'],
                     description: 'Contact category. Use "unknown" if unsure.',
                   },
                   role: { type: 'string', description: 'Job title or function' },
@@ -152,7 +152,7 @@ const INGEST_TOOLS: Anthropic.Tool[] = [
     description:
       'Flag a person whose role/category you cannot determine from context. ' +
       'Use this when you encounter a new name and cannot confidently classify them as ' +
-      'team, client_contact, brand_rep, freelancer, or external. ' +
+      'team, client_contact, freelancer, or external. ' +
       'This will prompt the user to clarify who this person is.',
     input_schema: {
       type: 'object',
@@ -168,7 +168,7 @@ const INGEST_TOOLS: Anthropic.Tool[] = [
         suggestions: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Your best guesses for the answer, e.g. ["client_contact", "brand_rep"]',
+          description: 'Your best guesses for the answer, e.g. ["client_contact", "freelancer"]',
         },
       },
       required: ['name', 'question', 'field'],

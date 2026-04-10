@@ -18,7 +18,6 @@ interface Props {
 const CATEGORY_OPTIONS = [
   { value: 'team', label: 'Team member' },
   { value: 'client_contact', label: 'Client contact' },
-  { value: 'brand_rep', label: 'Brand rep' },
   { value: 'freelancer', label: 'Freelancer' },
   { value: 'external', label: 'External' },
 ]
@@ -103,7 +102,6 @@ function formatCategory(value: string): string {
   const map: Record<string, string> = {
     team: 'Team member',
     client_contact: 'Client contact',
-    brand_rep: 'Brand rep',
     freelancer: 'Freelancer',
     external: 'External',
     unknown: 'Unknown',
