@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MergeModal } from './MergeModal'
+import { EditEntityModal } from './EditEntityModal'
 import type { Entity } from '@/types'
 
 const TYPE_CONFIG: Record<string, {
@@ -49,12 +50,14 @@ interface Props {
   title: string
   entities: EntityCardData[]
   type: string
+  allEntities?: Entity[]  // all entities across all types (for relationship picker in edit modal)
 }
 
-export function EntityCards({ title, entities, type }: Props) {
+export function EntityCards({ title, entities, type, allEntities: allEntitiesProp }: Props) {
   const config = TYPE_CONFIG[type] ?? TYPE_CONFIG.topic
   const router = useRouter()
   const [mergeTarget, setMergeTarget] = useState<Entity | null>(null)
+  const [editTarget, setEditTarget] = useState<Entity | null>(null)
 
   if (!entities.length) return null
 
@@ -79,22 +82,33 @@ export function EntityCards({ title, entities, type }: Props) {
                 className={`group relative rounded-lg border bg-[#1a1d27] p-3 
                             transition-colors ${borderColor} ${config.bg}`}
               >
-                {/* Merge button — top right, visible on hover */}
-                {entities.length > 1 && (
+                {/* Action buttons — top right, visible on hover */}
+                <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                   <button
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      setMergeTarget(item.entity)
+                      setEditTarget(item.entity)
                     }}
-                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 
-                               transition-opacity px-1.5 py-0.5 text-[10px] rounded
-                               bg-[#2a2d3a] text-slate-400 hover:text-slate-200 hover:bg-[#3a3d4a]"
-                    title="Merge into another entity"
+                    className="px-1.5 py-0.5 text-[10px] rounded bg-[#2a2d3a] text-slate-400 hover:text-slate-200 hover:bg-[#3a3d4a]"
+                    title="Edit details"
                   >
-                    merge
+                    edit
                   </button>
-                )}
+                  {entities.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setMergeTarget(item.entity)
+                      }}
+                      className="px-1.5 py-0.5 text-[10px] rounded bg-[#2a2d3a] text-slate-400 hover:text-slate-200 hover:bg-[#3a3d4a]"
+                      title="Merge into another entity"
+                    >
+                      merge
+                    </button>
+                  )}
+                </div>
 
                 <Link href={`/brand/${item.entity.id}`} className="block">
                   <div className="flex items-start gap-2 mb-1.5 min-w-0">
@@ -154,6 +168,19 @@ export function EntityCards({ title, entities, type }: Props) {
           })}
         </div>
       </div>
+
+      {/* Edit modal */}
+      {editTarget && (
+        <EditEntityModal
+          entity={editTarget}
+          allEntities={allEntitiesProp ?? allEntitiesOfType}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => {
+            setEditTarget(null)
+            router.refresh()
+          }}
+        />
+      )}
 
       {/* Merge modal */}
       {mergeTarget && (

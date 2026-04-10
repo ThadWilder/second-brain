@@ -206,6 +206,7 @@ async function getDashboardData() {
     heatmapDays,
     brandNames: brandEntities.map((b) => b.name),
     clarifications: clarifications ?? [],
+    allEntities: (allEntities ?? []) as Entity[],
   }
 }
 
@@ -223,6 +224,7 @@ export default async function DashboardPage() {
     heatmapDays,
     brandNames,
     clarifications,
+    allEntities: allEntityList,
   } = await getDashboardData()
 
   return (
@@ -279,8 +281,8 @@ export default async function DashboardPage() {
             {/* Zone 2: Entity Cards — Brands, People, Vendors */}
             <div className="space-y-5">
               <BrandCards brands={brands} />
-              <EntityCards title="People" entities={people} type="contact" />
-              <EntityCards title="Vendors" entities={vendors} type="vendor" />
+              <EntityCards title="People" entities={people} type="contact" allEntities={allEntityList} />
+              <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntityList} />
             </div>
 
             {/* Zone 3: Priorities */}
