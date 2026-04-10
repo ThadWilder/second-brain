@@ -235,6 +235,22 @@ The organization manages these brands and contacts:
 ${entityContext}
 
 When classifying entities, prefer matching to existing ones by returning their ID.
+
+IMPORTANT: Only link entities who are PRIMARY ACTORS in this content. A primary actor is someone who:
+- Has an action item or task assigned to them
+- Made a decision that is being recorded
+- Needs to respond to something
+- Is the sender or direct recipient
+- Is explicitly the subject being discussed
+
+DO NOT link entities who are merely:
+- Mentioned in passing within a quoted conversation
+- Named in an email signature or CC line
+- Referenced as historical context ("last year Ray said...")
+- Part of a forwarded thread but not relevant to the current action
+
+For example, if someone dumps a recap of a conversation between Brandy and Shane about a MaidPro issue, the primary actors are Brandy, Shane, and MaidPro. Other people mentioned within the conversation ("Joshua had a ticket issue last month") should NOT be linked unless they have a current action item.
+
 Extract all tasks, decisions, and pending responses precisely.
 Be conservative — only extract what is clearly stated.
 When resolving relative dates like "Friday" or "next week", use today's date (${today}) as the reference.`
