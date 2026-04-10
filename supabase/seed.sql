@@ -22,6 +22,8 @@ INSERT INTO entities (org_id, name, normalized_name, type, first_seen, last_seen
   ('00000000-0000-0000-0000-000000000001', 'Michelle', 'michelle', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Dustin', 'dustin', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Amanda', 'amanda', 'contact', now(), now()),
+  -- Internal departments
+  ('00000000-0000-0000-0000-000000000001', 'TMS', 'tms', 'contact', now(), now()),
   -- Vendors
   ('00000000-0000-0000-0000-000000000001', 'Moe', 'moe', 'vendor', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Red Brick', 'red brick', 'vendor', now(), now());
@@ -41,4 +43,7 @@ UNION ALL
   FROM entities WHERE name = 'Brandy Murch' AND org_id = '00000000-0000-0000-0000-000000000001'
 UNION ALL
   SELECT id, 'bmurch', 'bmurch'
-  FROM entities WHERE name = 'Brandy Murch' AND org_id = '00000000-0000-0000-0000-000000000001';
+  FROM entities WHERE name = 'Brandy Murch' AND org_id = '00000000-0000-0000-0000-000000000001'
+UNION ALL
+  SELECT id, 'Threshold Marketing Services', 'threshold marketing services'
+  FROM entities WHERE name = 'TMS' AND org_id = '00000000-0000-0000-0000-000000000001';
