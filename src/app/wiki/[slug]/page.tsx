@@ -47,31 +47,31 @@ export default function WikiPageView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0d1321] flex items-center justify-center">
-        <p className="text-sm text-slate-500">Loading...</p>
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+        <p className="text-sm text-[var(--muted)]">Loading...</p>
       </div>
     )
   }
 
   if (notFound || !page) {
     return (
-      <div className="min-h-screen bg-[#0d1321] flex flex-col items-center justify-center gap-3">
-        <p className="text-slate-400">Wiki page not found.</p>
-        <Link href="/wiki" className="text-sm text-blue-400 hover:text-blue-300">← Back to Wiki</Link>
+      <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center gap-3">
+        <p className="text-[var(--muted)]">Wiki page not found.</p>
+        <Link href="/wiki" className="text-sm text-[var(--accent)] hover:text-[var(--accent-hover)]">← Back to Wiki</Link>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1321] text-slate-200">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {/* Header */}
-      <header className="border-b border-[#2a3150] px-4 py-3 flex items-center gap-3">
-        <Link href="/wiki" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">
+      <header className="border-b border-[var(--border)] px-4 py-3 flex items-center gap-3">
+        <Link href="/wiki" className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors">
           ← Wiki
         </Link>
-        <span className="text-slate-600">/</span>
-        <span className="text-slate-200 font-semibold text-sm">{page.title}</span>
-        <div className="ml-auto flex items-center gap-3 text-xs text-slate-500">
+        <span className="text-[var(--border)]">/</span>
+        <span className="text-[var(--text)] font-semibold text-sm">{page.title}</span>
+        <div className="ml-auto flex items-center gap-3 text-xs text-[var(--muted)]">
           <span>{page.source_count} sources</span>
           <span>updated {formatAge(page.updated_at)}</span>
         </div>
@@ -80,20 +80,20 @@ export default function WikiPageView() {
       <div className="max-w-3xl mx-auto p-6">
         {/* Summary */}
         {page.summary && (
-          <div className="mb-6 p-4 rounded-lg bg-blue-500/5 border border-blue-500/15">
-            <p className="text-sm text-slate-300 leading-relaxed">{page.summary}</p>
+          <div className="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200">
+            <p className="text-sm text-[var(--text)] leading-relaxed">{page.summary}</p>
           </div>
         )}
 
         {/* Content */}
         {page.content ? (
-          <div className="prose-dark">
+          <div>
             <WikiContent content={page.content} />
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-slate-500 mb-2">This page is empty.</p>
-            <p className="text-xs text-slate-600">
+            <p className="text-[var(--muted)] mb-2">This page is empty.</p>
+            <p className="text-xs text-[var(--muted)]">
               It will be populated automatically when you ingest data related to {page.title}.
             </p>
           </div>
@@ -101,10 +101,10 @@ export default function WikiPageView() {
 
         {/* Links */}
         {(outLinks.length > 0 || inLinks.length > 0) && (
-          <div className="mt-8 pt-6 border-t border-[#2a3150]">
+          <div className="mt-8 pt-6 border-t border-[var(--border)]">
             {outLinks.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-2">
                   Links to
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -112,7 +112,7 @@ export default function WikiPageView() {
                     <Link
                       key={i}
                       href={`/wiki/${link.wiki_pages?.slug}`}
-                      className="px-2.5 py-1 text-xs rounded-md bg-[#1a2035] border border-[#2a3150] text-blue-400 hover:text-blue-300 hover:border-blue-500/30 transition-colors"
+                      className="px-2.5 py-1 text-xs rounded-md bg-[var(--surface)] border border-[var(--border)] text-[var(--accent)] hover:text-[var(--accent-hover)] hover:border-[var(--accent)] transition-colors"
                       title={link.context ?? undefined}
                     >
                       {link.wiki_pages?.title}
@@ -123,7 +123,7 @@ export default function WikiPageView() {
             )}
             {inLinks.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-2">
                   Linked from
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -131,7 +131,7 @@ export default function WikiPageView() {
                     <Link
                       key={i}
                       href={`/wiki/${link.wiki_pages?.slug}`}
-                      className="px-2.5 py-1 text-xs rounded-md bg-[#1a2035] border border-[#2a3150] text-slate-400 hover:text-slate-200 transition-colors"
+                      className="px-2.5 py-1 text-xs rounded-md bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
                     >
                       {link.wiki_pages?.title}
                     </Link>
@@ -149,29 +149,29 @@ export default function WikiPageView() {
 /** Render wiki markdown content with [[slug]] link support */
 function WikiContent({ content }: { content: string }) {
   return (
-    <div className="text-sm text-slate-300 leading-relaxed space-y-3">
+    <div className="text-sm text-[var(--text)] leading-relaxed space-y-3">
       {content.split('\n\n').map((block, i) => {
         const trimmed = block.trim()
         if (!trimmed) return null
 
         if (trimmed.startsWith('## ')) {
-          return <h2 key={i} className="text-base font-semibold text-slate-200 mt-6 mb-2">{trimmed.slice(3)}</h2>
+          return <h2 key={i} className="text-base font-semibold text-[var(--text)] mt-6 mb-2">{trimmed.slice(3)}</h2>
         }
         if (trimmed.startsWith('### ')) {
-          return <h3 key={i} className="text-sm font-semibold text-slate-300 mt-4 mb-1">{trimmed.slice(4)}</h3>
+          return <h3 key={i} className="text-sm font-semibold text-[var(--text)] mt-4 mb-1">{trimmed.slice(4)}</h3>
         }
         if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
           return (
             <ul key={i} className="space-y-1 ml-4">
               {trimmed.split('\n').map((line, j) => {
                 const text = line.replace(/^[-•]\s*/, '')
-                return <li key={j} className="text-sm text-slate-300 list-disc">{renderInlineLinks(text)}</li>
+                return <li key={j} className="text-sm text-[var(--text)] list-disc">{renderInlineLinks(text)}</li>
               })}
             </ul>
           )
         }
         if (trimmed.startsWith('---')) {
-          return <hr key={i} className="border-[#2a3150] my-4" />
+          return <hr key={i} className="border-[var(--border)] my-4" />
         }
 
         return <p key={i}>{renderInlineLinks(trimmed)}</p>
@@ -190,7 +190,7 @@ function renderInlineLinks(text: string): React.ReactNode {
         <Link
           key={i}
           href={`/wiki/${wikiMatch[1]}`}
-          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          className="text-[var(--accent)] hover:text-[var(--accent-hover)] underline underline-offset-2"
         >
           {wikiMatch[1].replace(/-/g, ' ')}
         </Link>
@@ -198,7 +198,7 @@ function renderInlineLinks(text: string): React.ReactNode {
     }
     const boldMatch = part.match(/^\*\*(.*?)\*\*$/)
     if (boldMatch) {
-      return <strong key={i} className="text-slate-200 font-medium">{boldMatch[1]}</strong>
+      return <strong key={i} className="text-[var(--text)] font-medium">{boldMatch[1]}</strong>
     }
     return part
   })

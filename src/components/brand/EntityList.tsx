@@ -25,13 +25,13 @@ export function EntityList({ entities, title = 'Related Entities' }: Props) {
 
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-2">
         {title}
       </h3>
       <div className="space-y-3">
         {Object.entries(grouped).map(([type, items]) => (
           <div key={type}>
-            <div className="text-xs text-slate-500 mb-1">
+            <div className="text-xs text-[var(--muted)] mb-1">
               {TYPE_ICONS[type] ?? '•'} {type}
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -39,7 +39,7 @@ export function EntityList({ entities, title = 'Related Entities' }: Props) {
                 <span
                   key={entity.id}
                   className="inline-flex items-center px-2 py-1 rounded-md text-xs
-                             bg-[#1a2035] border border-[#2a3150] text-slate-300"
+                             bg-[var(--surface)] border border-[var(--border)] text-[var(--text)]"
                 >
                   {entity.name}
                 </span>

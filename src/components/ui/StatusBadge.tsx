@@ -5,9 +5,9 @@ import { clsx } from 'clsx'
 type Status = 'open' | 'done' | 'blocked'
 
 const STATUS_STYLES: Record<Status, string> = {
-  open: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  done: 'bg-green-500/10 text-green-400 border-green-500/20',
-  blocked: 'bg-red-500/10 text-red-400 border-red-500/20',
+  open: 'bg-blue-50 text-blue-700 border-blue-200',
+  done: 'bg-green-50 text-green-700 border-green-200',
+  blocked: 'bg-red-50 text-red-700 border-red-200',
 }
 
 export function StatusBadge({ status }: { status: Status }) {
@@ -15,7 +15,7 @@ export function StatusBadge({ status }: { status: Status }) {
     <span
       className={clsx(
         'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border',
-        STATUS_STYLES[status] ?? 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+        STATUS_STYLES[status] ?? 'bg-gray-50 text-gray-600 border-gray-200'
       )}
     >
       {status}

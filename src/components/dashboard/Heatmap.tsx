@@ -10,11 +10,11 @@ interface Props {
 }
 
 function getColor(count: number, max: number): string {
-  if (count === 0) return '#1a2035'
+  if (count === 0) return '#f5ede3'
   const intensity = Math.min(count / Math.max(max, 1), 1)
-  if (intensity < 0.33) return '#1e3a5f'
-  if (intensity < 0.66) return '#1d4ed8'
-  return '#3b82f6'
+  if (intensity < 0.33) return '#fde68a'
+  if (intensity < 0.66) return '#f59e0b'
+  return '#d4943a'
 }
 
 export function Heatmap({ data, brands, days }: Props) {
@@ -33,7 +33,7 @@ export function Heatmap({ data, brands, days }: Props) {
 
   if (!brands.length || !days.length) {
     return (
-      <div className="text-xs text-slate-500 py-4 text-center">
+      <div className="text-xs text-[var(--muted)] py-4 text-center">
         No activity data yet
       </div>
     )
@@ -47,7 +47,7 @@ export function Heatmap({ data, brands, days }: Props) {
           {days.map((day) => (
             <div
               key={day}
-              className="w-5 text-[10px] text-slate-500 text-center leading-none"
+              className="w-5 text-[10px] text-[var(--muted)] text-center leading-none"
               title={day}
             >
               {formatDayLabel(day)}
@@ -59,7 +59,7 @@ export function Heatmap({ data, brands, days }: Props) {
         {brands.map((brand) => (
           <div key={brand} className="flex items-center gap-0.5 mb-0.5">
             <div
-              className="w-28 text-xs text-slate-400 truncate pr-2 text-right shrink-0"
+              className="w-28 text-xs text-[var(--muted)] truncate pr-2 text-right shrink-0"
               title={brand}
             >
               {brand}
@@ -80,7 +80,7 @@ export function Heatmap({ data, brands, days }: Props) {
 
         {/* Legend */}
         <div className="flex items-center gap-1 mt-2 ml-28">
-          <span className="text-[10px] text-slate-500">less</span>
+          <span className="text-[10px] text-[var(--muted)]">less</span>
           {[0, 0.25, 0.5, 0.75, 1].map((level) => (
             <div
               key={level}
@@ -88,7 +88,7 @@ export function Heatmap({ data, brands, days }: Props) {
               style={{ backgroundColor: getColor(level * maxCount, maxCount) }}
             />
           ))}
-          <span className="text-[10px] text-slate-500">more</span>
+          <span className="text-[10px] text-[var(--muted)]">more</span>
         </div>
       </div>
     </div>

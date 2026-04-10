@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/browser'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 const taglines = [
   'dump everything. forget nothing.',
@@ -47,36 +48,39 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1321] flex items-center justify-center px-6">
+    <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center px-6">
       <div className="w-full max-w-md mx-auto">
         {/* Logo */}
         <div className="text-center mb-10">
-          <h1 className="text-5xl sm:text-6xl font-black tracking-tighter text-white mb-4">
+          <div className="flex justify-center mb-4">
+            <Image src="/logo.jpg" alt="Dumpbox" width={120} height={120} className="rounded-2xl" />
+          </div>
+          <h1 className="text-5xl sm:text-6xl font-black tracking-tighter text-[var(--text)] mb-4">
             DUMPBOX
           </h1>
           <p
-            className={`text-lg text-slate-400 italic transition-opacity duration-400 ${fade ? 'opacity-100' : 'opacity-0'}`}
+            className={`text-lg text-[var(--accent)] italic transition-opacity duration-400 ${fade ? 'opacity-100' : 'opacity-0'}`}
           >
             {taglines[taglineIndex]}
           </p>
         </div>
 
         {/* One-liners */}
-        <div className="space-y-3 mb-10 text-sm text-slate-500">
+        <div className="space-y-3 mb-10 text-sm text-[var(--muted)]">
           <p>
-            <span className="text-slate-400">Forward an email.</span>{' '}
+            <span className="text-[var(--text)]">Forward an email.</span>{' '}
             We&apos;ll figure it out.
           </p>
           <p>
-            <span className="text-slate-400">Paste a screenshot.</span>{' '}
+            <span className="text-[var(--text)]">Paste a screenshot.</span>{' '}
             We&apos;ll read it.
           </p>
           <p>
-            <span className="text-slate-400">Type a thought.</span>{' '}
+            <span className="text-[var(--text)]">Type a thought.</span>{' '}
             We&apos;ll remember it.
           </p>
           <p>
-            <span className="text-slate-400">Ask a question.</span>{' '}
+            <span className="text-[var(--text)]">Ask a question.</span>{' '}
             We&apos;ll know the answer.
           </p>
         </div>
@@ -85,7 +89,7 @@ export default function LoginPage() {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold text-sm px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold text-sm px-4 py-3 rounded-lg border border-[var(--border)] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -109,10 +113,10 @@ export default function LoginPage() {
         </button>
 
         {error && (
-          <p className="mt-4 text-sm text-red-400 text-center">{error}</p>
+          <p className="mt-4 text-sm text-[var(--danger)] text-center">{error}</p>
         )}
 
-        <p className="mt-8 text-xs text-slate-600 text-center">
+        <p className="mt-8 text-xs text-[var(--muted)] text-center">
           your personal chaos organizer — not enterprise software
         </p>
       </div>

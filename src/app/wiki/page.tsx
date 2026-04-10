@@ -35,30 +35,30 @@ export default function WikiIndex() {
   const empty = pages.filter((p) => p.source_count === 0)
 
   return (
-    <div className="min-h-screen bg-[#0d1321] text-slate-200">
-      <header className="border-b border-[#2a3150] px-4 py-3 flex items-center gap-3">
-        <Link href="/" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      <header className="border-b border-[var(--border)] px-4 py-3 flex items-center gap-3">
+        <Link href="/" className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors">
           ← Dashboard
         </Link>
-        <span className="text-slate-600">/</span>
-        <span className="text-slate-200 font-semibold text-sm">Wiki</span>
-        <span className="text-xs text-slate-500 ml-auto">{pages.length} pages</span>
+        <span className="text-[var(--border)]">/</span>
+        <span className="text-[var(--text)] font-semibold text-sm">Wiki</span>
+        <span className="text-xs text-[var(--muted)] ml-auto">{pages.length} pages</span>
       </header>
 
       <div className="max-w-3xl mx-auto p-6">
         {loading ? (
-          <p className="text-sm text-slate-500">Loading...</p>
+          <p className="text-sm text-[var(--muted)]">Loading...</p>
         ) : pages.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-slate-400 mb-2">No wiki pages yet.</p>
-            <p className="text-sm text-slate-500">Wiki pages are created automatically when you ingest data.</p>
+            <p className="text-[var(--muted)] mb-2">No wiki pages yet.</p>
+            <p className="text-sm text-[var(--muted)]">Wiki pages are created automatically when you ingest data.</p>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Pages with content */}
             {withContent.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
                   Active Pages ({withContent.length})
                 </h2>
                 <div className="space-y-2">
@@ -72,7 +72,7 @@ export default function WikiIndex() {
             {/* Empty pages */}
             {empty.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
                   Empty Pages ({empty.length})
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -80,7 +80,7 @@ export default function WikiIndex() {
                     <Link
                       key={page.id}
                       href={`/wiki/${page.slug}`}
-                      className="px-3 py-2 rounded-lg bg-[#1a2035] border border-[#2a3150] text-sm text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
+                      className="px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--accent)] transition-colors"
                     >
                       {TYPE_ICONS[page.entities?.type ?? ''] ?? '📄'} {page.title}
                     </Link>
@@ -102,18 +102,18 @@ function WikiCard({ page }: { page: WikiPageSummary }) {
   return (
     <Link
       href={`/wiki/${page.slug}`}
-      className="block p-4 rounded-lg bg-[#1a2035] border border-[#2a3150] hover:border-slate-500 transition-colors"
+      className="block p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
     >
       <div className="flex items-start gap-3">
         <span className="text-lg">{icon}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium text-slate-200">{page.title}</span>
-            <span className="text-[10px] text-slate-500">{page.source_count} sources</span>
-            <span className="text-[10px] text-slate-600">{age}</span>
+            <span className="text-sm font-medium text-[var(--text)]">{page.title}</span>
+            <span className="text-[10px] text-[var(--muted)]">{page.source_count} sources</span>
+            <span className="text-[10px] text-[var(--muted)]">{age}</span>
           </div>
           {page.summary && (
-            <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{page.summary}</p>
+            <p className="text-xs text-[var(--muted)] line-clamp-2 leading-relaxed">{page.summary}</p>
           )}
         </div>
       </div>

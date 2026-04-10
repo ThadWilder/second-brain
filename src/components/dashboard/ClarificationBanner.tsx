@@ -46,19 +46,19 @@ export function ClarificationBanner({ clarifications }: Props) {
 
   return (
     <div className="space-y-2">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
         <span>❓</span>
         Help me categorize
-        <span className="text-slate-500 font-normal">({items.length})</span>
+        <span className="text-[var(--muted)] font-normal">({items.length})</span>
       </h2>
       {items.map((c) => (
         <div
           key={c.id}
-          className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3"
+          className="rounded-lg border border-amber-200 bg-amber-50 p-3"
         >
-          <p className="text-sm text-slate-200 mb-1">{c.question}</p>
+          <p className="text-sm text-[var(--text)] mb-1">{c.question}</p>
           {c.context && (
-            <p className="text-xs text-slate-500 mb-2 italic">
+            <p className="text-xs text-[var(--muted)] mb-2 italic">
               "{c.context}"
             </p>
           )}
@@ -69,8 +69,8 @@ export function ClarificationBanner({ clarifications }: Props) {
                 key={s}
                 onClick={() => resolve(c.id, s, c.entity_id)}
                 disabled={loading === c.id}
-                className="px-2.5 py-1 text-xs rounded-md border border-amber-500/30 
-                           bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 
+                className="px-2.5 py-1 text-xs rounded-md border border-amber-300
+                           bg-amber-100 text-amber-800 hover:bg-amber-200
                            transition-colors disabled:opacity-50"
               >
                 {formatCategory(s)}
@@ -84,8 +84,8 @@ export function ClarificationBanner({ clarifications }: Props) {
                   key={opt.value}
                   onClick={() => resolve(c.id, opt.value, c.entity_id)}
                   disabled={loading === c.id}
-                  className="px-2.5 py-1 text-xs rounded-md border border-[#2a3150] 
-                             bg-[#1a2035] text-slate-400 hover:text-slate-200 hover:border-slate-500
+                  className="px-2.5 py-1 text-xs rounded-md border border-[var(--border)]
+                             bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--accent)]
                              transition-colors disabled:opacity-50"
                 >
                   {opt.label}

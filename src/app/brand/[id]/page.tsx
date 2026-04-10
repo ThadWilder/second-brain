@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { BrandDetail } from '@/components/brand/BrandDetail'
 import { WikiSection } from '@/components/brand/WikiSection'
@@ -124,17 +125,18 @@ export default async function BrandPage({ params }: Props) {
   const { brand, tasks, entries, decisions, linkedEntities, wikiPage } = data
 
   return (
-    <div className="min-h-screen bg-[#0d1321] flex flex-col">
+    <div className="min-h-screen bg-[var(--bg)] flex flex-col">
       {/* Header */}
-      <header className="border-b border-[#2a3150] px-4 py-3 flex items-center gap-3 shrink-0">
+      <header className="border-b border-[var(--border)] px-4 py-3 flex items-center gap-3 shrink-0">
         <Link
           href="/"
-          className="text-slate-500 hover:text-slate-300 text-sm transition-colors"
+          className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors flex items-center gap-2"
         >
+          <Image src="/logo.jpg" alt="Dumpbox" width={24} height={24} className="rounded" />
           &larr; Back
         </Link>
-        <span className="text-slate-600">/</span>
-        <span className="text-slate-200 font-medium text-sm">{brand.name}</span>
+        <span className="text-[var(--border)]">/</span>
+        <span className="text-[var(--text)] font-medium text-sm">{brand.name}</span>
       </header>
 
       {/* Main content */}

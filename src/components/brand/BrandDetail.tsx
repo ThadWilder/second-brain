@@ -40,15 +40,15 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
       {/* Brand header */}
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-100">{brand.name}</h1>
-          <p className="text-sm text-slate-400 capitalize">{brand.type}</p>
+          <h1 className="text-xl font-bold text-[var(--text)]">{brand.name}</h1>
+          <p className="text-sm text-[var(--muted)] capitalize">{brand.type}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-[var(--muted)]">
             {openTasks.length} open
           </span>
           {openTasks.some((t) => t.escalation) && (
-            <span className="text-xs bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded">
+            <span className="text-xs bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded">
               escalated
             </span>
           )}
@@ -56,15 +56,15 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-[#2a3150]">
+      <div className="flex border-b border-[var(--border)]">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors
               ${activeTab === tab.key
-                ? 'border-blue-500 text-blue-400'
-                : 'border-transparent text-slate-400 hover:text-slate-300'
+                ? 'border-[var(--accent)] text-[var(--accent)]'
+                : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
               }`}
           >
             {tab.label}
@@ -79,15 +79,15 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {/* Open tasks */}
           {openTasks.length > 0 && (
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Open</p>
+              <p className="text-xs text-[var(--muted)] uppercase tracking-wide mb-2">Open</p>
               <div className="space-y-1">
                 {openTasks.map((task) => (
                   <div
                     key={task.id}
                     className={`flex items-start gap-3 p-3 rounded-lg border
                       ${task.escalation
-                        ? 'bg-red-500/5 border-red-500/10'
-                        : 'bg-[#1a2035] border-[#2a3150]'
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-[var(--surface)] border-[var(--border)]'
                       }`}
                   >
                     <TaskCheckbox
@@ -96,13 +96,13 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                       onComplete={handleComplete}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-200">{task.description}</p>
+                      <p className="text-sm text-[var(--text)]">{task.description}</p>
                       <div className="flex items-center gap-2 mt-1">
                         {task.due_date && (
-                          <span className="text-xs text-slate-500">due {task.due_date}</span>
+                          <span className="text-xs text-[var(--muted)]">due {task.due_date}</span>
                         )}
                         {task.waiting_on && (
-                          <span className="text-xs text-amber-400/70">waiting on {task.waiting_on}</span>
+                          <span className="text-xs text-amber-700">waiting on {task.waiting_on}</span>
                         )}
                         <StatusBadge status={task.status} />
                       </div>
@@ -116,15 +116,15 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {/* Closed tasks */}
           {doneTasks.length > 0 && (
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Done</p>
+              <p className="text-xs text-[var(--muted)] uppercase tracking-wide mb-2">Done</p>
               <div className="space-y-1 opacity-50">
                 {doneTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-[#1a2035] border border-[#2a3150]"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
                   >
-                    <span className="text-green-400 text-sm">✓</span>
-                    <p className="text-sm text-slate-400 line-through">{task.description}</p>
+                    <span className="text-green-700 text-sm">✓</span>
+                    <p className="text-sm text-[var(--muted)] line-through">{task.description}</p>
                   </div>
                 ))}
               </div>
@@ -132,7 +132,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           )}
 
           {localTasks.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-6">No tasks yet.</p>
+            <p className="text-sm text-[var(--muted)] text-center py-6">No tasks yet.</p>
           )}
         </div>
       )}
@@ -142,21 +142,21 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="p-3 rounded-lg bg-[#1a2035] border border-[#2a3150]"
+              className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
             >
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs text-slate-500 uppercase">{entry.source}</span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-[var(--muted)] uppercase">{entry.source}</span>
+                <span className="text-xs text-[var(--muted)]">
                   {formatDate(entry.created_at)}
                 </span>
               </div>
-              <p className="text-sm text-slate-300 line-clamp-3 leading-relaxed">
+              <p className="text-sm text-[var(--text)] line-clamp-3 leading-relaxed">
                 {entry.raw_text}
               </p>
             </div>
           ))}
           {entries.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-6">No dumplings yet. Dump something.</p>
+            <p className="text-sm text-[var(--muted)] text-center py-6">No dumplings yet. Dump something.</p>
           )}
         </div>
       )}
@@ -166,26 +166,26 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {decisions.map((decision) => (
             <div
               key={decision.id}
-              className="p-3 rounded-lg bg-[#1a2035] border border-[#2a3150]"
+              className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
             >
-              <p className="text-sm text-slate-200">{decision.summary}</p>
+              <p className="text-sm text-[var(--text)]">{decision.summary}</p>
               <div className="flex items-center gap-2 mt-1">
                 {decision.made_by && (
-                  <span className="text-xs text-slate-500">by {decision.made_by}</span>
+                  <span className="text-xs text-[var(--muted)]">by {decision.made_by}</span>
                 )}
-                <span className="text-xs text-slate-500">{formatDate(decision.created_at)}</span>
+                <span className="text-xs text-[var(--muted)]">{formatDate(decision.created_at)}</span>
               </div>
             </div>
           ))}
           {decisions.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-6">No decisions logged yet.</p>
+            <p className="text-sm text-[var(--muted)] text-center py-6">No decisions logged yet.</p>
           )}
         </div>
       )}
 
       {/* Entity graph */}
       {entities.length > 0 && (
-        <div className="pt-4 border-t border-[#2a3150]">
+        <div className="pt-4 border-t border-[var(--border)]">
           <EntityList entities={entities} title="Linked Entities" />
         </div>
       )}

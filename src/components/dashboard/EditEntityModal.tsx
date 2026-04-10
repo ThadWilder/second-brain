@@ -171,10 +171,10 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-[#1a2035] border border-[#2a3150] rounded-xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
-        <h3 className="text-sm font-semibold text-slate-200 mb-4">
+      <div className="relative bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
+        <h3 className="text-sm font-semibold text-[var(--text)] mb-4">
           Edit {entity.name}
         </h3>
 
@@ -183,7 +183,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-[#0d1321] border border-[#2a3150] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
           />
         </Field>
 
@@ -197,8 +197,8 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
                   onClick={() => setCategory(opt.value)}
                   className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
                     category === opt.value
-                      ? 'border-blue-500 bg-blue-500/20 text-blue-300'
-                      : 'border-[#2a3150] bg-[#0d1321] text-slate-400 hover:text-slate-200'
+                      ? 'border-[var(--accent)] bg-amber-50 text-[var(--accent)]'
+                      : 'border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)]'
                   }`}
                 >
                   {opt.label}
@@ -215,7 +215,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
               value={role}
               onChange={(e) => setRole(e.target.value)}
               placeholder={isContact ? 'e.g. Account manager' : 'e.g. SEO specialist'}
-              className="w-full bg-[#0d1321] border border-[#2a3150] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
             />
           </Field>
         )}
@@ -227,7 +227,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               placeholder="e.g. Miracle Method"
-              className="w-full bg-[#0d1321] border border-[#2a3150] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
             />
           </Field>
         )}
@@ -239,45 +239,45 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             placeholder="Anything worth remembering..."
-            className="w-full bg-[#0d1321] border border-[#2a3150] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
           />
         </Field>
 
         {/* ── Relationships ──────────────────────────────────────────── */}
-        <div className="mt-4 pt-4 border-t border-[#2a3150]">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+        <div className="mt-4 pt-4 border-t border-[var(--border)]">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
             Linked To
           </h4>
 
           {/* Existing relationships */}
           {loadingRels ? (
-            <p className="text-xs text-slate-500">Loading...</p>
+            <p className="text-xs text-[var(--muted)]">Loading...</p>
           ) : relationships.length === 0 ? (
-            <p className="text-xs text-slate-500 mb-3">No links yet.</p>
+            <p className="text-xs text-[var(--muted)] mb-3">No links yet.</p>
           ) : (
             <div className="space-y-1.5 mb-3">
               {relationships.map((rel) => (
                 <div
                   key={rel.id}
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#0d1321] border border-[#2a3150] text-xs"
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-xs"
                 >
-                  <span className="text-slate-400">
+                  <span className="text-[var(--muted)]">
                     {rel.direction === 'outbound'
                       ? `${entity.name}`
                       : `${rel.entity.name}`}
                   </span>
-                  <span className="text-blue-400 font-medium">
+                  <span className="text-[var(--accent)] font-medium">
                     {RELATIONSHIP_TYPES.find((t) => t.value === rel.relationship)?.label ?? rel.relationship}
                   </span>
-                  <span className="text-slate-200">
+                  <span className="text-[var(--text)]">
                     {rel.direction === 'outbound' ? rel.entity.name : entity.name}
                   </span>
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-[var(--muted)]">
                     ({rel.entity.type})
                   </span>
                   <button
                     onClick={() => removeRelationship(rel.id)}
-                    className="ml-auto text-slate-500 hover:text-red-400 transition-colors"
+                    className="ml-auto text-[var(--muted)] hover:text-[var(--danger)] transition-colors"
                     title="Remove link"
                   >
                     ×
@@ -290,11 +290,11 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
           {/* Add new relationship */}
           <div className="flex items-end gap-2">
             <div className="flex-1">
-              <label className="text-[10px] text-slate-500 mb-1 block">Link to</label>
+              <label className="text-[10px] text-[var(--muted)] mb-1 block">Link to</label>
               <select
                 value={newRelTarget}
                 onChange={(e) => setNewRelTarget(e.target.value)}
-                className="w-full bg-[#0d1321] border border-[#2a3150] rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 appearance-none"
+                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)] appearance-none"
               >
                 <option value="">Select entity...</option>
                 {['brand', 'vendor', 'contact', 'topic'].map((type) => {
@@ -311,11 +311,11 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
               </select>
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 mb-1 block">Relationship</label>
+              <label className="text-[10px] text-[var(--muted)] mb-1 block">Relationship</label>
               <select
                 value={newRelType}
                 onChange={(e) => setNewRelType(e.target.value)}
-                className="bg-[#0d1321] border border-[#2a3150] rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 appearance-none"
+                className="bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)] appearance-none"
               >
                 {RELATIONSHIP_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -325,7 +325,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
             <button
               onClick={addRelationship}
               disabled={!newRelTarget || addingRel}
-              className="px-2.5 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 transition-colors shrink-0"
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors shrink-0"
             >
               {addingRel ? '...' : 'Link'}
             </button>
@@ -333,19 +333,19 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
         </div>
 
         {/* ── Actions ────────────────────────────────────────────────── */}
-        {error && <p className="text-xs text-red-400 mt-3">{error}</p>}
+        {error && <p className="text-xs text-[var(--danger)] mt-3">{error}</p>}
 
         <div className="flex justify-end gap-2 mt-5">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-xs rounded-lg border border-[#2a3150] text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--accent)] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
@@ -358,7 +358,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-3">
-      <label className="block text-xs text-slate-400 mb-1">{label}</label>
+      <label className="block text-xs text-[var(--muted)] mb-1">{label}</label>
       {children}
     </div>
   )

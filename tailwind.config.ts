@@ -10,14 +10,14 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          green: '#22c55e',
-          amber: '#f59e0b',
-          red: '#ef4444',
-          bg: '#0d1321',
-          surface: '#1a2035',
-          border: '#2a3150',
-          muted: '#6b7280',
-          text: '#e2e8f0',
+          green: '#16a34a',
+          amber: '#d4943a',
+          red: '#c44a3f',
+          bg: '#faf6f1',
+          surface: '#fff8f0',
+          border: '#e8ddd0',
+          muted: '#9a8b7a',
+          text: '#3d2c1e',
         },
       },
       fontFamily: {

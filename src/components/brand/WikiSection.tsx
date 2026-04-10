@@ -21,8 +21,8 @@ interface Props {
 export function WikiSection({ wikiPage, brandName, slug }: Props) {
   if (!wikiPage || (!wikiPage.content && !wikiPage.summary)) {
     return (
-      <div className="rounded-lg border border-[#2a3150] bg-[#1a2035] px-5 py-8 text-center">
-        <p className="text-sm text-slate-500">
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-5 py-8 text-center">
+        <p className="text-sm text-[var(--muted)]">
           No wiki content yet — dump some info about {brandName} to get started
         </p>
       </div>
@@ -32,28 +32,28 @@ export function WikiSection({ wikiPage, brandName, slug }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Wiki</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Wiki</h2>
         <Link
           href={`/wiki/${slug}`}
-          className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+          className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
         >
           Full page &rarr;
         </Link>
       </div>
 
       {wikiPage.summary && (
-        <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/15">
-          <p className="text-sm text-slate-300 leading-relaxed">{wikiPage.summary}</p>
+        <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+          <p className="text-sm text-[var(--text)] leading-relaxed">{wikiPage.summary}</p>
         </div>
       )}
 
       {wikiPage.content && (
-        <div className="rounded-lg border border-[#2a3150] bg-[#1a2035] p-5">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
           <WikiContent content={wikiPage.content} />
         </div>
       )}
 
-      <p className="text-[10px] text-slate-600">
+      <p className="text-[10px] text-[var(--muted)]">
         {wikiPage.source_count} source{wikiPage.source_count !== 1 ? 's' : ''} &middot; updated {formatAge(wikiPage.updated_at)}
       </p>
     </div>
@@ -62,29 +62,29 @@ export function WikiSection({ wikiPage, brandName, slug }: Props) {
 
 function WikiContent({ content }: { content: string }) {
   return (
-    <div className="text-sm text-slate-300 leading-relaxed space-y-3">
+    <div className="text-sm text-[var(--text)] leading-relaxed space-y-3">
       {content.split('\n\n').map((block, i) => {
         const trimmed = block.trim()
         if (!trimmed) return null
 
         if (trimmed.startsWith('## ')) {
-          return <h2 key={i} className="text-base font-semibold text-slate-200 mt-4 mb-2">{trimmed.slice(3)}</h2>
+          return <h2 key={i} className="text-base font-semibold text-[var(--text)] mt-4 mb-2">{trimmed.slice(3)}</h2>
         }
         if (trimmed.startsWith('### ')) {
-          return <h3 key={i} className="text-sm font-semibold text-slate-300 mt-3 mb-1">{trimmed.slice(4)}</h3>
+          return <h3 key={i} className="text-sm font-semibold text-[var(--text)] mt-3 mb-1">{trimmed.slice(4)}</h3>
         }
         if (trimmed.startsWith('- ') || trimmed.startsWith('\u2022 ')) {
           return (
             <ul key={i} className="space-y-1 ml-4">
               {trimmed.split('\n').map((line, j) => {
                 const text = line.replace(/^[-\u2022]\s*/, '')
-                return <li key={j} className="text-sm text-slate-300 list-disc">{renderInlineLinks(text)}</li>
+                return <li key={j} className="text-sm text-[var(--text)] list-disc">{renderInlineLinks(text)}</li>
               })}
             </ul>
           )
         }
         if (trimmed.startsWith('---')) {
-          return <hr key={i} className="border-[#2a3150] my-4" />
+          return <hr key={i} className="border-[var(--border)] my-4" />
         }
 
         return <p key={i}>{renderInlineLinks(trimmed)}</p>
@@ -102,7 +102,7 @@ function renderInlineLinks(text: string): React.ReactNode {
         <Link
           key={i}
           href={`/wiki/${wikiMatch[1]}`}
-          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          className="text-[var(--accent)] hover:text-[var(--accent-hover)] underline underline-offset-2"
         >
           {wikiMatch[1].replace(/-/g, ' ')}
         </Link>
@@ -110,7 +110,7 @@ function renderInlineLinks(text: string): React.ReactNode {
     }
     const boldMatch = part.match(/^\*\*(.*?)\*\*$/)
     if (boldMatch) {
-      return <strong key={i} className="text-slate-200 font-medium">{boldMatch[1]}</strong>
+      return <strong key={i} className="text-[var(--text)] font-medium">{boldMatch[1]}</strong>
     }
     return part
   })

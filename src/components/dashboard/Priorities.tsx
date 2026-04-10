@@ -44,12 +44,12 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
           {needsResponse.map((pr) => (
             <div
               key={pr.id}
-              className="flex items-start gap-3 py-2 px-3 rounded-lg bg-amber-500/5 border border-amber-500/10"
+              className="flex items-start gap-3 py-2 px-3 rounded-lg bg-amber-50 border border-amber-200"
             >
-              <span className="text-amber-400 shrink-0 mt-0.5">›</span>
+              <span className="text-amber-700 shrink-0 mt-0.5">›</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-slate-300">{pr.summary}</p>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-sm text-[var(--text)]">{pr.summary}</p>
+                <p className="text-xs text-[var(--muted)] mt-0.5">
                   {formatAge(pr.created_at)}
                 </p>
               </div>
@@ -92,7 +92,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
         needsResponse.length === 0 &&
         visibleTasks.length === 0 &&
         staleFromYesterday.length === 0 && (
-          <div className="text-center py-8 text-slate-500 text-sm">
+          <div className="text-center py-8 text-[var(--muted)] text-sm">
             All clear. No open dumplings.
           </div>
         )}
@@ -115,10 +115,10 @@ function Section({
     <div>
       <div className="flex items-center gap-2 mb-2">
         <span className="text-sm">{icon}</span>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
           {title}
         </h3>
-        <span className="text-xs text-slate-500 ml-1">({count})</span>
+        <span className="text-xs text-[var(--muted)] ml-1">({count})</span>
       </div>
       <div className="space-y-1">{children}</div>
     </div>
@@ -137,9 +137,9 @@ function TaskRow({
   const brand = task.entities?.find((e) => e.role === 'brand')
 
   const variantStyles = {
-    escalated: 'bg-red-500/5 border-red-500/10',
-    normal: 'bg-[#1a2035] border-[#2a3150]',
-    stale: 'bg-[#1a2035] border-[#2a3150] opacity-75',
+    escalated: 'bg-red-50 border-red-200',
+    normal: 'bg-[var(--surface)] border-[var(--border)]',
+    stale: 'bg-[var(--surface)] border-[var(--border)] opacity-75',
   }
 
   return (
@@ -152,18 +152,18 @@ function TaskRow({
         onComplete={onComplete}
       />
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-200 leading-snug">{task.description}</p>
+        <p className="text-sm text-[var(--text)] leading-snug">{task.description}</p>
         <div className="flex items-center gap-2 mt-1">
           {brand && (
-            <span className="text-xs text-slate-400">{brand.name}</span>
+            <span className="text-xs text-[var(--muted)]">{brand.name}</span>
           )}
           {task.due_date && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-[var(--muted)]">
               due {task.due_date}
             </span>
           )}
           {task.waiting_on && (
-            <span className="text-xs text-amber-400/70">
+            <span className="text-xs text-amber-700">
               waiting on {task.waiting_on}
             </span>
           )}

@@ -14,9 +14,9 @@ export function ChatMessage({ message }: Props) {
   return (
     <div className={clsx('flex gap-2.5', isUser ? 'justify-end' : 'justify-start')}>
       {!isUser && (
-        <div className="w-6 h-6 rounded-full bg-blue-600/20 border border-blue-600/30
+        <div className="w-6 h-6 rounded-full bg-amber-100 border border-amber-200
                         flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-[10px] text-blue-400">AI</span>
+          <span className="text-[10px] text-amber-700">AI</span>
         </div>
       )}
 
@@ -24,8 +24,8 @@ export function ChatMessage({ message }: Props) {
         className={clsx(
           'max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed',
           isUser
-            ? 'bg-blue-600/20 border border-blue-600/30 text-slate-200'
-            : 'bg-[#1a2035] border border-[#2a3150] text-slate-200',
+            ? 'bg-amber-50 border border-amber-200 text-[var(--text)]'
+            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text)]',
           message.isStreaming && 'streaming-cursor'
         )}
       >
@@ -36,7 +36,7 @@ export function ChatMessage({ message }: Props) {
                 <img
                   src={att.url}
                   alt={att.filename}
-                  className="max-w-[200px] max-h-[150px] rounded-lg border border-[#2a3150] object-cover"
+                  className="max-w-[200px] max-h-[150px] rounded-lg border border-[var(--border)] object-cover"
                 />
               </a>
             ))}
@@ -46,7 +46,7 @@ export function ChatMessage({ message }: Props) {
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         )}
         {message.created_at && (
-          <p className="text-[10px] text-slate-500 mt-1">
+          <p className="text-[10px] text-[var(--muted)] mt-1">
             {new Date(message.created_at).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
@@ -56,9 +56,9 @@ export function ChatMessage({ message }: Props) {
       </div>
 
       {isUser && (
-        <div className="w-6 h-6 rounded-full bg-slate-700 border border-slate-600
+        <div className="w-6 h-6 rounded-full bg-[var(--border)] border border-[var(--border)]
                         flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-[10px] text-slate-300">B</span>
+          <span className="text-[10px] text-[var(--text)]">B</span>
         </div>
       )}
     </div>

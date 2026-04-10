@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Image from 'next/image'
 import { StatusSummary } from './StatusSummary'
 import { BrandCards } from './BrandCards'
 import { EntityCards } from './EntityCards'
@@ -263,33 +264,34 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   const streamingMessage = messages.find((m) => m.isStreaming)
 
   return (
-    <div className="min-h-screen bg-[#0d1321] flex flex-col">
+    <div className="min-h-screen bg-[var(--bg)] flex flex-col">
       {/* Header */}
-      <header className="border-b border-[#2a3150] px-4 py-3 flex items-center justify-between shrink-0">
+      <header className="border-b border-[var(--border)] px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-slate-200 font-semibold tracking-tight text-sm">DUMPBOX</span>
-          <span className="text-xs text-slate-500">
+          <Image src="/logo.jpg" alt="Dumpbox" width={32} height={32} className="rounded-lg" />
+          <span className="text-[var(--text)] font-semibold tracking-tight text-sm">DUMPBOX</span>
+          <span className="text-xs text-[var(--muted)]">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
         </div>
         <div className="flex items-center gap-3">
           {stats.escalations > 0 && (
-            <span className="text-xs bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded">
+            <span className="text-xs bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded">
               {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
             </span>
           )}
           <a
             href="/wiki"
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
           >
             Wiki
           </a>
-          <span className="text-[10px] text-slate-600" title={lastUpdated.toLocaleTimeString()}>
+          <span className="text-[10px] text-[var(--muted)]" title={lastUpdated.toLocaleTimeString()}>
             live
           </span>
           <button
             onClick={handleSignOut}
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
           >
             Sign out
           </button>
@@ -309,7 +311,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               large
             />
             {(isStreaming || isIngesting) && (
-              <p className="text-[10px] text-slate-500 mt-1.5 text-center">
+              <p className="text-[10px] text-[var(--muted)] mt-1.5 text-center">
                 {isIngesting ? 'processing...' : 'thinking...'}
               </p>
             )}
@@ -322,12 +324,12 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                 const globalIndex = messages.indexOf(msg)
                 return (
                   <div key={globalIndex} className="group relative">
-                    <div className="bg-[#1a2035] border border-[#2a3150] rounded-lg px-4 py-3">
-                      <p className="text-sm text-slate-300 whitespace-pre-wrap break-words line-clamp-4">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3">
+                      <p className="text-sm text-[var(--text)] whitespace-pre-wrap break-words line-clamp-4">
                         {msg.content}
                       </p>
                       {msg.created_at && (
-                        <p className="text-[10px] text-slate-500 mt-1.5">
+                        <p className="text-[10px] text-[var(--muted)] mt-1.5">
                           {new Date(msg.created_at).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -337,8 +339,8 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                     </div>
                     <button
                       onClick={() => dismissMessage(globalIndex)}
-                      className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#2a3150] text-slate-500
-                                 hover:text-slate-200 flex items-center justify-center text-xs
+                      className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[var(--border)] text-[var(--muted)]
+                                 hover:text-[var(--text)] flex items-center justify-center text-xs
                                  opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label="Dismiss"
                     >
@@ -348,8 +350,8 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                 )
               })}
               {streamingMessage && (
-                <div className="bg-[#1a2035] border border-[#2a3150] rounded-lg px-4 py-3">
-                  <p className="text-sm text-slate-300 whitespace-pre-wrap break-words streaming-cursor">
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3">
+                  <p className="text-sm text-[var(--text)] whitespace-pre-wrap break-words streaming-cursor">
                     {streamingMessage.content}
                   </p>
                 </div>
@@ -361,11 +363,11 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           {/* ── Status + Heatmap ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Status</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Status</h2>
               <StatusSummary stats={stats} />
             </div>
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Activity (14 days)</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Activity (14 days)</h2>
               <Heatmap data={heatmapCells} brands={brandNames} days={heatmapDays} />
             </div>
           </div>
@@ -377,7 +379,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
           {/* ── Priorities ── */}
           <div id="priorities-section">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
               Today's Priorities
             </h2>
             <Priorities

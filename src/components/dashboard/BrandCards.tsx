@@ -5,19 +5,19 @@ import type { BrandSummary } from '@/types'
 
 const HEALTH_STYLES = {
   green: {
-    border: 'border-green-500/30',
-    dot: 'bg-green-400',
-    badge: 'bg-green-500/10 text-green-400',
+    border: 'border-green-300',
+    dot: 'bg-green-600',
+    badge: 'bg-green-50 text-green-700',
   },
   amber: {
-    border: 'border-amber-500/30',
-    dot: 'bg-amber-400',
-    badge: 'bg-amber-500/10 text-amber-400',
+    border: 'border-amber-300',
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-50 text-amber-700',
   },
   red: {
-    border: 'border-red-500/30',
-    dot: 'bg-red-400',
-    badge: 'bg-red-500/10 text-red-400',
+    border: 'border-red-300',
+    dot: 'bg-red-500',
+    badge: 'bg-red-50 text-red-700',
   },
 }
 
@@ -30,10 +30,10 @@ export function BrandCards({ brands }: Props) {
 
   return (
     <div>
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3 flex items-center gap-1.5">
         <span>🏢</span>
         Brands
-        <span className="text-slate-500 font-normal">({brands.length})</span>
+        <span className="text-[var(--muted)] font-normal">({brands.length})</span>
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       {brands.map((b) => {
@@ -42,13 +42,13 @@ export function BrandCards({ brands }: Props) {
           <Link
             key={b.entity.id}
             href={`/brand/${b.entity.id}`}
-            className={`group block rounded-lg border bg-[#1a2035] p-3 hover:bg-[#222845] 
+            className={`group block rounded-lg border bg-[var(--surface)] p-3 hover:bg-[var(--surface-hover)]
                         transition-colors cursor-pointer ${styles.border}`}
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${styles.dot}`} />
-                <span className="text-sm font-medium text-slate-200 truncate">
+                <span className="text-sm font-medium text-[var(--text)] truncate">
                   {b.entity.name}
                 </span>
               </div>
@@ -56,17 +56,17 @@ export function BrandCards({ brands }: Props) {
 
             <div className="flex items-center gap-2 text-xs">
               {b.escalated_tasks > 0 && (
-                <span className="bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded">
+                <span className="bg-red-50 text-red-700 px-1.5 py-0.5 rounded">
                   {b.escalated_tasks} 🔥
                 </span>
               )}
-              <span className="text-slate-400">
+              <span className="text-[var(--muted)]">
                 {b.open_tasks} open
               </span>
             </div>
 
             {b.last_activity && (
-              <div className="mt-1.5 text-[11px] text-slate-500 truncate">
+              <div className="mt-1.5 text-[11px] text-[var(--muted)] truncate">
                 {formatRelativeTime(b.last_activity)}
               </div>
             )}

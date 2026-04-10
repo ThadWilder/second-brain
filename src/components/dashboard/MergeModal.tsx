@@ -62,30 +62,30 @@ export function MergeModal({ entity, allEntities, onClose, onMerged }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative bg-[#1a2035] border border-[#2a3150] rounded-xl p-5 w-full max-w-md shadow-2xl">
-        <h3 className="text-sm font-semibold text-slate-200 mb-1">
+      <div className="relative bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 w-full max-w-md shadow-2xl">
+        <h3 className="text-sm font-semibold text-[var(--text)] mb-1">
           Merge entity
         </h3>
-        <p className="text-xs text-slate-400 mb-4">
-          Merge <span className="text-slate-200 font-medium">"{entity.name}"</span> into
+        <p className="text-xs text-[var(--muted)] mb-4">
+          Merge <span className="text-[var(--text)] font-medium">"{entity.name}"</span> into
           another {entity.type}. All tasks, dumplings, decisions, and wiki content will be
           moved to the target. "{entity.name}" will become an alias.
         </p>
 
         {/* Target picker */}
-        <label className="block text-xs text-slate-400 mb-1.5">
+        <label className="block text-xs text-[var(--muted)] mb-1.5">
           Merge into:
         </label>
         <select
           value={canonicalId}
           onChange={(e) => setCanonicalId(e.target.value)}
-          className="w-full bg-[#0d1321] border border-[#2a3150] rounded-lg px-3 py-2 text-sm
-                     text-slate-200 focus:outline-none focus:border-blue-500 mb-4
+          className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm
+                     text-[var(--text)] focus:outline-none focus:border-[var(--accent)] mb-4
                      appearance-none cursor-pointer"
         >
           <option value="">Select the canonical entity...</option>
@@ -101,36 +101,36 @@ export function MergeModal({ entity, allEntities, onClose, onMerged }: Props) {
 
         {/* Preview */}
         {canonicalId && (
-          <div className="text-xs text-slate-400 mb-4 p-2 rounded bg-[#0d1321] border border-[#2a3150]">
-            <span className="text-red-400 line-through">{entity.name}</span>
+          <div className="text-xs text-[var(--muted)] mb-4 p-2 rounded bg-[var(--bg)] border border-[var(--border)]">
+            <span className="text-red-700 line-through">{entity.name}</span>
             {' → '}
-            <span className="text-green-400">
+            <span className="text-green-700">
               {candidates.find((c) => c.id === canonicalId)?.name}
             </span>
-            <p className="mt-1 text-slate-500">
+            <p className="mt-1 text-[var(--muted)]">
               "{entity.name}" will be added as an alias. All linked data moves to the target.
             </p>
           </div>
         )}
 
         {error && (
-          <p className="text-xs text-red-400 mb-3">{error}</p>
+          <p className="text-xs text-[var(--danger)] mb-3">{error}</p>
         )}
 
         {/* Actions */}
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-xs rounded-lg border border-[#2a3150] text-slate-400
-                       hover:text-slate-200 hover:border-slate-500 transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border)] text-[var(--muted)]
+                       hover:text-[var(--text)] hover:border-[var(--accent)] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleMerge}
             disabled={!canonicalId || loading}
-            className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white
-                       hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed
+            className="px-3 py-1.5 text-xs rounded-lg bg-[var(--accent)] text-white
+                       hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed
                        transition-colors"
           >
             {loading ? 'Merging...' : 'Merge'}

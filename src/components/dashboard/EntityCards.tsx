@@ -15,27 +15,27 @@ const TYPE_CONFIG: Record<string, {
 }> = {
   brand: {
     icon: '🏢',
-    accent: 'text-blue-400',
-    border: 'border-blue-500/20',
-    bg: 'hover:bg-blue-500/5',
+    accent: 'text-blue-700',
+    border: 'border-blue-200',
+    bg: 'hover:bg-blue-50',
   },
   contact: {
     icon: '👤',
-    accent: 'text-emerald-400',
-    border: 'border-emerald-500/20',
-    bg: 'hover:bg-emerald-500/5',
+    accent: 'text-emerald-700',
+    border: 'border-emerald-200',
+    bg: 'hover:bg-emerald-50',
   },
   vendor: {
     icon: '🤝',
-    accent: 'text-purple-400',
-    border: 'border-purple-500/20',
-    bg: 'hover:bg-purple-500/5',
+    accent: 'text-purple-700',
+    border: 'border-purple-200',
+    bg: 'hover:bg-purple-50',
   },
   topic: {
     icon: '🏷️',
-    accent: 'text-amber-400',
-    border: 'border-amber-500/20',
-    bg: 'hover:bg-amber-500/5',
+    accent: 'text-amber-700',
+    border: 'border-amber-200',
+    bg: 'hover:bg-amber-50',
   },
 }
 
@@ -66,20 +66,20 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
   return (
     <>
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3 flex items-center gap-1.5">
           <span>{config.icon}</span>
           {title}
-          <span className="text-slate-500 font-normal">({entities.length})</span>
+          <span className="text-[var(--muted)] font-normal">({entities.length})</span>
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {entities.map((item) => {
             const hasEscalation = item.escalated_tasks > 0
-            const borderColor = hasEscalation ? 'border-red-500/30' : config.border
+            const borderColor = hasEscalation ? 'border-red-300' : config.border
 
             return (
               <div
                 key={item.entity.id}
-                className={`group relative rounded-lg border bg-[#1a2035] p-3 
+                className={`group relative rounded-lg border bg-[var(--surface)] p-3
                             transition-colors ${borderColor} ${config.bg}`}
               >
                 {/* Action buttons — top right, visible on hover */}
@@ -90,7 +90,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                       e.stopPropagation()
                       setEditTarget(item.entity)
                     }}
-                    className="px-1.5 py-0.5 text-[10px] rounded bg-[#2a3150] text-slate-400 hover:text-slate-200 hover:bg-[#3a4160]"
+                    className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
                     title="Edit details"
                   >
                     edit
@@ -102,7 +102,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                         e.stopPropagation()
                         setMergeTarget(item.entity)
                       }}
-                      className="px-1.5 py-0.5 text-[10px] rounded bg-[#2a3150] text-slate-400 hover:text-slate-200 hover:bg-[#3a4160]"
+                      className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
                       title="Merge into another entity"
                     >
                       merge
@@ -114,7 +114,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                   <div className="flex items-start gap-2 mb-1.5 min-w-0">
                     <span className="text-sm leading-none mt-0.5">{config.icon}</span>
                     <div className="min-w-0">
-                      <span className="text-sm font-medium text-slate-200 truncate block">
+                      <span className="text-sm font-medium text-[var(--text)] truncate block">
                         {item.entity.name}
                       </span>
                       {type === 'contact' && item.entity.metadata && (
@@ -127,14 +127,14 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                             </span>
                           )}
                           {(item.entity.metadata as Record<string, string>).role && (
-                            <span className="text-[11px] text-slate-500">
+                            <span className="text-[11px] text-[var(--muted)]">
                               {(item.entity.metadata as Record<string, string>).role}
                             </span>
                           )}
                         </div>
                       )}
                       {type === 'vendor' && item.entity.metadata && (
-                        <span className="text-[11px] text-slate-500 line-clamp-1">
+                        <span className="text-[11px] text-[var(--muted)] line-clamp-1">
                           {(item.entity.metadata as Record<string, string>).notes ?? ''}
                         </span>
                       )}
@@ -143,22 +143,22 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
 
                   <div className="flex items-center gap-2 text-xs">
                     {hasEscalation && (
-                      <span className="bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded">
+                      <span className="bg-red-50 text-red-700 px-1.5 py-0.5 rounded">
                         {item.escalated_tasks} 🔥
                       </span>
                     )}
                     {item.open_tasks > 0 && (
-                      <span className="text-slate-400">
+                      <span className="text-[var(--muted)]">
                         {item.open_tasks} open
                       </span>
                     )}
                     {item.open_tasks === 0 && !hasEscalation && (
-                      <span className="text-slate-500">no tasks</span>
+                      <span className="text-[var(--muted)]">no tasks</span>
                     )}
                   </div>
 
                   {item.last_activity && (
-                    <div className="mt-1 text-[11px] text-slate-500 truncate">
+                    <div className="mt-1 text-[11px] text-[var(--muted)] truncate">
                       {formatRelativeTime(item.last_activity)}
                     </div>
                   )}
@@ -199,12 +199,12 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
 }
 
 const CATEGORY_STYLES: Record<string, string> = {
-  team: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  client_contact: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  team: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  client_contact: 'bg-blue-50 text-blue-700 border-blue-200',
 
-  freelancer: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  external: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-  unknown: 'bg-red-500/10 text-red-400 border-red-500/20',
+  freelancer: 'bg-amber-50 text-amber-700 border-amber-200',
+  external: 'bg-gray-50 text-gray-600 border-gray-200',
+  unknown: 'bg-red-50 text-red-700 border-red-200',
 }
 
 function getCategoryStyle(category: string): string {

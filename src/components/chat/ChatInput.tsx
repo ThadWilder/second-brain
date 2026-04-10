@@ -92,7 +92,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
   }
 
   return (
-    <div className={`bg-[#1a2035] border border-[#2a3150] rounded-xl ${large ? 'p-3' : 'p-2'}`}>
+    <div className={`bg-[var(--surface)] border border-[var(--border)] rounded-xl ${large ? 'p-3' : 'p-2'}`}>
       {/* Image previews */}
       {pendingFiles.length > 0 && (
         <div className="flex gap-2 px-1 pb-2 overflow-x-auto">
@@ -101,18 +101,18 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
               <img
                 src={pf.preview}
                 alt={pf.file.name}
-                className="w-16 h-16 object-cover rounded-lg border border-[#2a3150]"
+                className="w-16 h-16 object-cover rounded-lg border border-[var(--border)]"
               />
               <button
                 onClick={() => removeFile(i)}
-                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[var(--danger)] rounded-full
                            flex items-center justify-center text-[8px] text-white
                            opacity-0 group-hover:opacity-100 transition-opacity"
                 aria-label={`Remove ${pf.file.name}`}
               >
                 x
               </button>
-              <p className="text-[8px] text-slate-500 text-center mt-0.5 max-w-[64px] truncate">
+              <p className="text-[8px] text-[var(--muted)] text-center mt-0.5 max-w-[64px] truncate">
                 {pf.file.name}
               </p>
             </div>
@@ -126,7 +126,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || uploading}
           className={`shrink-0 flex items-center justify-center rounded-lg
-                     text-slate-400 hover:text-slate-200 hover:bg-[#2a3150]
+                     text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]
                      disabled:opacity-40 disabled:cursor-not-allowed transition-colors
                      ${large ? 'w-10 h-10' : 'w-8 h-8'}`}
           aria-label="Attach image"
@@ -155,7 +155,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
           disabled={disabled || uploading}
           placeholder={placeholder ?? 'Ask a question or dump info...'}
           rows={large ? 2 : 1}
-          className={`flex-1 bg-transparent resize-none text-slate-200 placeholder:text-slate-500
+          className={`flex-1 bg-transparent resize-none text-[var(--text)] placeholder:text-[var(--muted)]
                      focus:outline-none leading-relaxed px-1
                      disabled:opacity-50
                      ${large ? 'text-base py-2 min-h-[56px] max-h-[240px]' : 'text-sm py-1 min-h-[32px] max-h-[160px]'}`}
@@ -164,7 +164,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
           onClick={handleSend}
           disabled={disabled || uploading || (!value.trim() && pendingFiles.length === 0)}
           className={`shrink-0 flex items-center justify-center rounded-lg
-                     bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed
+                     bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed
                      transition-colors
                      ${large ? 'w-10 h-10' : 'w-8 h-8'}`}
           aria-label="Send"

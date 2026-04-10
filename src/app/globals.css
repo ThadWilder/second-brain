@@ -3,11 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0d1321;
-  --surface: #1a2035;
-  --border: #2a3150;
-  --text: #e2e8f0;
-  --muted: #6b7280;
+  --bg: #faf6f1;
+  --surface: #fff8f0;
+  --border: #e8ddd0;
+  --text: #3d2c1e;
+  --muted: #9a8b7a;
+  --accent: #d4943a;
+  --accent-hover: #b87a2a;
+  --surface-hover: #f5ede3;
+  --danger: #c44a3f;
 }
 
 body {
@@ -27,7 +31,7 @@ body {
 .streaming-cursor::after {
   content: '▋';
   animation: blink 1s step-end infinite;
-  color: #60a5fa;
+  color: #d4943a;
 }
 
 @keyframes blink {
