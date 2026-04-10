@@ -183,27 +183,20 @@ export async function processEntry(
   db: SupabaseClient,
   entryId: string
 ): Promise<IngestResult> {
-  // Mark as processing
+  // Mark as processing + increment attempt count
+  const { data: current } = await db
+    .from('entries')
+    .select('attempt_count')
+    .eq('id', entryId)
+    .single()
+
   await db
     .from('entries')
-    .update({ processing_status: 'processing', attempt_count: db.rpc('increment', { row_id: entryId }) })
+    .update({
+      processing_status: 'processing',
+      attempt_count: ((current?.attempt_count ?? 0) + 1),
+    })
     .eq('id', entryId)
-
-  // Manually handle attempt_count since rpc shorthand may not exist
-  await db.rpc('increment_attempt', { entry_id: entryId }).catch(() => {
-    // RPC may not exist yet — increment manually
-    return db
-      .from('entries')
-      .select('attempt_count')
-      .eq('id', entryId)
-      .single()
-      .then(({ data }) => {
-        return db
-          .from('entries')
-          .update({ attempt_count: ((data?.attempt_count ?? 0) + 1) })
-          .eq('id', entryId)
-      })
-  })
 
   try {
     // Fetch the raw entry
