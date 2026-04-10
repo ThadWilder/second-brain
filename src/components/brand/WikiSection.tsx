@@ -21,7 +21,7 @@ interface Props {
 export function WikiSection({ wikiPage, brandName, slug }: Props) {
   if (!wikiPage || (!wikiPage.content && !wikiPage.summary)) {
     return (
-      <div className="rounded-lg border border-[#2a2d3a] bg-[#1a1d27] px-5 py-8 text-center">
+      <div className="rounded-lg border border-[#2a3150] bg-[#1a2035] px-5 py-8 text-center">
         <p className="text-sm text-slate-500">
           No wiki content yet — dump some info about {brandName} to get started
         </p>
@@ -48,7 +48,7 @@ export function WikiSection({ wikiPage, brandName, slug }: Props) {
       )}
 
       {wikiPage.content && (
-        <div className="rounded-lg border border-[#2a2d3a] bg-[#1a1d27] p-5">
+        <div className="rounded-lg border border-[#2a3150] bg-[#1a2035] p-5">
           <WikiContent content={wikiPage.content} />
         </div>
       )}
@@ -84,7 +84,7 @@ function WikiContent({ content }: { content: string }) {
           )
         }
         if (trimmed.startsWith('---')) {
-          return <hr key={i} className="border-[#2a2d3a] my-4" />
+          return <hr key={i} className="border-[#2a3150] my-4" />
         }
 
         return <p key={i}>{renderInlineLinks(trimmed)}</p>

@@ -35,8 +35,8 @@ export default function WikiIndex() {
   const empty = pages.filter((p) => p.source_count === 0)
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-slate-200">
-      <header className="border-b border-[#2a2d3a] px-4 py-3 flex items-center gap-3">
+    <div className="min-h-screen bg-[#0d1321] text-slate-200">
+      <header className="border-b border-[#2a3150] px-4 py-3 flex items-center gap-3">
         <Link href="/" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">
           ← Dashboard
         </Link>
@@ -80,7 +80,7 @@ export default function WikiIndex() {
                     <Link
                       key={page.id}
                       href={`/wiki/${page.slug}`}
-                      className="px-3 py-2 rounded-lg bg-[#1a1d27] border border-[#2a2d3a] text-sm text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
+                      className="px-3 py-2 rounded-lg bg-[#1a2035] border border-[#2a3150] text-sm text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
                     >
                       {TYPE_ICONS[page.entities?.type ?? ''] ?? '📄'} {page.title}
                     </Link>
@@ -102,7 +102,7 @@ function WikiCard({ page }: { page: WikiPageSummary }) {
   return (
     <Link
       href={`/wiki/${page.slug}`}
-      className="block p-4 rounded-lg bg-[#1a1d27] border border-[#2a2d3a] hover:border-slate-500 transition-colors"
+      className="block p-4 rounded-lg bg-[#1a2035] border border-[#2a3150] hover:border-slate-500 transition-colors"
     >
       <div className="flex items-start gap-3">
         <span className="text-lg">{icon}</span>

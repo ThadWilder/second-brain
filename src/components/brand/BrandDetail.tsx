@@ -31,7 +31,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
 
   const TABS: { key: Tab; label: string; count: number }[] = [
     { key: 'tasks', label: 'Tasks', count: localTasks.length },
-    { key: 'entries', label: 'Entries', count: entries.length },
+    { key: 'entries', label: 'Dumplings', count: entries.length },
     { key: 'decisions', label: 'Decisions', count: decisions.length },
   ]
 
@@ -56,7 +56,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-[#2a2d3a]">
+      <div className="flex border-b border-[#2a3150]">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -87,7 +87,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                     className={`flex items-start gap-3 p-3 rounded-lg border
                       ${task.escalation
                         ? 'bg-red-500/5 border-red-500/10'
-                        : 'bg-[#1a1d27] border-[#2a2d3a]'
+                        : 'bg-[#1a2035] border-[#2a3150]'
                       }`}
                   >
                     <TaskCheckbox
@@ -121,7 +121,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                 {doneTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-[#1a1d27] border border-[#2a2d3a]"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-[#1a2035] border border-[#2a3150]"
                   >
                     <span className="text-green-400 text-sm">✓</span>
                     <p className="text-sm text-slate-400 line-through">{task.description}</p>
@@ -142,7 +142,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="p-3 rounded-lg bg-[#1a1d27] border border-[#2a2d3a]"
+              className="p-3 rounded-lg bg-[#1a2035] border border-[#2a3150]"
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs text-slate-500 uppercase">{entry.source}</span>
@@ -156,7 +156,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
             </div>
           ))}
           {entries.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-6">No entries yet.</p>
+            <p className="text-sm text-slate-500 text-center py-6">No dumplings yet. Dump something.</p>
           )}
         </div>
       )}
@@ -166,7 +166,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {decisions.map((decision) => (
             <div
               key={decision.id}
-              className="p-3 rounded-lg bg-[#1a1d27] border border-[#2a2d3a]"
+              className="p-3 rounded-lg bg-[#1a2035] border border-[#2a3150]"
             >
               <p className="text-sm text-slate-200">{decision.summary}</p>
               <div className="flex items-center gap-2 mt-1">
@@ -185,7 +185,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
 
       {/* Entity graph */}
       {entities.length > 0 && (
-        <div className="pt-4 border-t border-[#2a2d3a]">
+        <div className="pt-4 border-t border-[#2a3150]">
           <EntityList entities={entities} title="Linked Entities" />
         </div>
       )}

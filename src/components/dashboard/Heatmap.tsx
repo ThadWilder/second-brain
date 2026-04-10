@@ -10,7 +10,7 @@ interface Props {
 }
 
 function getColor(count: number, max: number): string {
-  if (count === 0) return '#1a1d27'
+  if (count === 0) return '#1a2035'
   const intensity = Math.min(count / Math.max(max, 1), 1)
   if (intensity < 0.33) return '#1e3a5f'
   if (intensity < 0.66) return '#1d4ed8'
@@ -69,7 +69,7 @@ export function Heatmap({ data, brands, days }: Props) {
               return (
                 <div
                   key={day}
-                  title={`${brand} · ${day} · ${count} items`}
+                  title={`${brand} · ${day} · ${count} dumplings`}
                   className="w-5 h-5 rounded-sm cursor-default"
                   style={{ backgroundColor: getColor(count, maxCount) }}
                 />

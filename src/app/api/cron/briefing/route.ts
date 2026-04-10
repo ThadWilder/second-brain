@@ -103,7 +103,7 @@ ESCALATIONS (list each as "• [brand]: [task]")
 NEEDS RESPONSE (list each as "• [summary] (Xh old)")
 
 NEW SINCE YESTERDAY
-• X emails/items processed, X pending responses
+• X dumplings processed, X pending responses
 
 TODAY'S TASKS (list each as "• [task] — [brand]")
 

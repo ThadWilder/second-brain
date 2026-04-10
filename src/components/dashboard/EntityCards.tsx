@@ -79,7 +79,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
             return (
               <div
                 key={item.entity.id}
-                className={`group relative rounded-lg border bg-[#1a1d27] p-3 
+                className={`group relative rounded-lg border bg-[#1a2035] p-3 
                             transition-colors ${borderColor} ${config.bg}`}
               >
                 {/* Action buttons — top right, visible on hover */}
@@ -90,7 +90,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                       e.stopPropagation()
                       setEditTarget(item.entity)
                     }}
-                    className="px-1.5 py-0.5 text-[10px] rounded bg-[#2a2d3a] text-slate-400 hover:text-slate-200 hover:bg-[#3a3d4a]"
+                    className="px-1.5 py-0.5 text-[10px] rounded bg-[#2a3150] text-slate-400 hover:text-slate-200 hover:bg-[#3a4160]"
                     title="Edit details"
                   >
                     edit
@@ -102,7 +102,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                         e.stopPropagation()
                         setMergeTarget(item.entity)
                       }}
-                      className="px-1.5 py-0.5 text-[10px] rounded bg-[#2a2d3a] text-slate-400 hover:text-slate-200 hover:bg-[#3a3d4a]"
+                      className="px-1.5 py-0.5 text-[10px] rounded bg-[#2a3150] text-slate-400 hover:text-slate-200 hover:bg-[#3a4160]"
                       title="Merge into another entity"
                     >
                       merge

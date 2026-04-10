@@ -84,8 +84,8 @@ export function ClarificationBanner({ clarifications }: Props) {
                   key={opt.value}
                   onClick={() => resolve(c.id, opt.value, c.entity_id)}
                   disabled={loading === c.id}
-                  className="px-2.5 py-1 text-xs rounded-md border border-[#2a2d3a] 
-                             bg-[#1a1d27] text-slate-400 hover:text-slate-200 hover:border-slate-500
+                  className="px-2.5 py-1 text-xs rounded-md border border-[#2a3150] 
+                             bg-[#1a2035] text-slate-400 hover:text-slate-200 hover:border-slate-500
                              transition-colors disabled:opacity-50"
                 >
                   {opt.label}

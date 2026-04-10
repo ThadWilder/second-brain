@@ -31,8 +31,8 @@ function buildIngestSummary(result: IngestResult): string {
   if (result.pending_responses_created > 0) parts.push(`${result.pending_responses_created} pending response${result.pending_responses_created !== 1 ? 's' : ''}`)
   if (result.entities_created > 0) parts.push(`${result.entities_created} new entit${result.entities_created !== 1 ? 'ies' : 'y'}`)
   if (result.entities_resolved > 0) parts.push(`linked to ${result.entities_resolved} entit${result.entities_resolved !== 1 ? 'ies' : 'y'}`)
-  if (parts.length === 0) return 'Processed successfully — no new items extracted.'
-  return `Created ${parts.join(', ')}.`
+  if (parts.length === 0) return 'Dumpling processed — no new items extracted.'
+  return `Dumpling processed — ${parts.join(', ')}.`
 }
 
 export function DashboardClient({ initialData }: { initialData: DashboardData }) {
@@ -263,9 +263,9 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   const streamingMessage = messages.find((m) => m.isStreaming)
 
   return (
-    <div className="min-h-screen bg-[#0f1117] flex flex-col">
+    <div className="min-h-screen bg-[#0d1321] flex flex-col">
       {/* Header */}
-      <header className="border-b border-[#2a2d3a] px-4 py-3 flex items-center justify-between shrink-0">
+      <header className="border-b border-[#2a3150] px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-slate-200 font-semibold tracking-tight text-sm">DUMPBOX</span>
           <span className="text-xs text-slate-500">
@@ -322,7 +322,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                 const globalIndex = messages.indexOf(msg)
                 return (
                   <div key={globalIndex} className="group relative">
-                    <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-lg px-4 py-3">
+                    <div className="bg-[#1a2035] border border-[#2a3150] rounded-lg px-4 py-3">
                       <p className="text-sm text-slate-300 whitespace-pre-wrap break-words line-clamp-4">
                         {msg.content}
                       </p>
@@ -337,7 +337,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                     </div>
                     <button
                       onClick={() => dismissMessage(globalIndex)}
-                      className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#2a2d3a] text-slate-500
+                      className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#2a3150] text-slate-500
                                  hover:text-slate-200 flex items-center justify-center text-xs
                                  opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label="Dismiss"
@@ -348,7 +348,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                 )
               })}
               {streamingMessage && (
-                <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-lg px-4 py-3">
+                <div className="bg-[#1a2035] border border-[#2a3150] rounded-lg px-4 py-3">
                   <p className="text-sm text-slate-300 whitespace-pre-wrap break-words streaming-cursor">
                     {streamingMessage.content}
                   </p>

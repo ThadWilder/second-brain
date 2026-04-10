@@ -42,7 +42,7 @@ export function BrandCards({ brands }: Props) {
           <Link
             key={b.entity.id}
             href={`/brand/${b.entity.id}`}
-            className={`group block rounded-lg border bg-[#1a1d27] p-3 hover:bg-[#1f2233] 
+            className={`group block rounded-lg border bg-[#1a2035] p-3 hover:bg-[#222845] 
                         transition-colors cursor-pointer ${styles.border}`}
           >
             <div className="flex items-start justify-between mb-2">

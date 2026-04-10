@@ -92,7 +92,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
   }
 
   return (
-    <div className={`bg-[#1a1d27] border border-[#2a2d3a] rounded-xl ${large ? 'p-3' : 'p-2'}`}>
+    <div className={`bg-[#1a2035] border border-[#2a3150] rounded-xl ${large ? 'p-3' : 'p-2'}`}>
       {/* Image previews */}
       {pendingFiles.length > 0 && (
         <div className="flex gap-2 px-1 pb-2 overflow-x-auto">
@@ -101,7 +101,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
               <img
                 src={pf.preview}
                 alt={pf.file.name}
-                className="w-16 h-16 object-cover rounded-lg border border-[#2a2d3a]"
+                className="w-16 h-16 object-cover rounded-lg border border-[#2a3150]"
               />
               <button
                 onClick={() => removeFile(i)}
@@ -126,7 +126,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || uploading}
           className={`shrink-0 flex items-center justify-center rounded-lg
-                     text-slate-400 hover:text-slate-200 hover:bg-[#2a2d3a]
+                     text-slate-400 hover:text-slate-200 hover:bg-[#2a3150]
                      disabled:opacity-40 disabled:cursor-not-allowed transition-colors
                      ${large ? 'w-10 h-10' : 'w-8 h-8'}`}
           aria-label="Attach image"

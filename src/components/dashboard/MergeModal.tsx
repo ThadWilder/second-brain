@@ -67,13 +67,13 @@ export function MergeModal({ entity, allEntities, onClose, onMerged }: Props) {
       />
 
       {/* Modal */}
-      <div className="relative bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-5 w-full max-w-md shadow-2xl">
+      <div className="relative bg-[#1a2035] border border-[#2a3150] rounded-xl p-5 w-full max-w-md shadow-2xl">
         <h3 className="text-sm font-semibold text-slate-200 mb-1">
           Merge entity
         </h3>
         <p className="text-xs text-slate-400 mb-4">
           Merge <span className="text-slate-200 font-medium">"{entity.name}"</span> into
-          another {entity.type}. All tasks, entries, decisions, and wiki content will be
+          another {entity.type}. All tasks, dumplings, decisions, and wiki content will be
           moved to the target. "{entity.name}" will become an alias.
         </p>
 
@@ -84,7 +84,7 @@ export function MergeModal({ entity, allEntities, onClose, onMerged }: Props) {
         <select
           value={canonicalId}
           onChange={(e) => setCanonicalId(e.target.value)}
-          className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm
+          className="w-full bg-[#0d1321] border border-[#2a3150] rounded-lg px-3 py-2 text-sm
                      text-slate-200 focus:outline-none focus:border-blue-500 mb-4
                      appearance-none cursor-pointer"
         >
@@ -101,7 +101,7 @@ export function MergeModal({ entity, allEntities, onClose, onMerged }: Props) {
 
         {/* Preview */}
         {canonicalId && (
-          <div className="text-xs text-slate-400 mb-4 p-2 rounded bg-[#0f1117] border border-[#2a2d3a]">
+          <div className="text-xs text-slate-400 mb-4 p-2 rounded bg-[#0d1321] border border-[#2a3150]">
             <span className="text-red-400 line-through">{entity.name}</span>
             {' → '}
             <span className="text-green-400">
@@ -121,7 +121,7 @@ export function MergeModal({ entity, allEntities, onClose, onMerged }: Props) {
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-xs rounded-lg border border-[#2a2d3a] text-slate-400
+            className="px-3 py-1.5 text-xs rounded-lg border border-[#2a3150] text-slate-400
                        hover:text-slate-200 hover:border-slate-500 transition-colors"
           >
             Cancel

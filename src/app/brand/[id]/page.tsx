@@ -124,9 +124,9 @@ export default async function BrandPage({ params }: Props) {
   const { brand, tasks, entries, decisions, linkedEntities, wikiPage } = data
 
   return (
-    <div className="min-h-screen bg-[#0f1117] flex flex-col">
+    <div className="min-h-screen bg-[#0d1321] flex flex-col">
       {/* Header */}
-      <header className="border-b border-[#2a2d3a] px-4 py-3 flex items-center gap-3 shrink-0">
+      <header className="border-b border-[#2a3150] px-4 py-3 flex items-center gap-3 shrink-0">
         <Link
           href="/"
           className="text-slate-500 hover:text-slate-300 text-sm transition-colors"

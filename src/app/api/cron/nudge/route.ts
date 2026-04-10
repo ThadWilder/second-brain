@@ -67,7 +67,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const nudgeText =
     response.content[0].type === 'text' ? response.content[0].text : ''
 
-  const subject = `Follow up needed — ${staleTasks.length} open items`
+  const subject = `Follow up needed — ${staleTasks.length} open dumplings`
   const escapedText = nudgeText
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const htmlBody = `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${escapedText}</pre>`

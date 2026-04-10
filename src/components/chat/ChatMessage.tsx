@@ -25,7 +25,7 @@ export function ChatMessage({ message }: Props) {
           'max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed',
           isUser
             ? 'bg-blue-600/20 border border-blue-600/30 text-slate-200'
-            : 'bg-[#1a1d27] border border-[#2a2d3a] text-slate-200',
+            : 'bg-[#1a2035] border border-[#2a3150] text-slate-200',
           message.isStreaming && 'streaming-cursor'
         )}
       >
@@ -36,7 +36,7 @@ export function ChatMessage({ message }: Props) {
                 <img
                   src={att.url}
                   alt={att.filename}
-                  className="max-w-[200px] max-h-[150px] rounded-lg border border-[#2a2d3a] object-cover"
+                  className="max-w-[200px] max-h-[150px] rounded-lg border border-[#2a3150] object-cover"
                 />
               </a>
             ))}

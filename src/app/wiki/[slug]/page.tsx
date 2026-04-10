@@ -47,7 +47,7 @@ export default function WikiPageView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f1117] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0d1321] flex items-center justify-center">
         <p className="text-sm text-slate-500">Loading...</p>
       </div>
     )
@@ -55,7 +55,7 @@ export default function WikiPageView() {
 
   if (notFound || !page) {
     return (
-      <div className="min-h-screen bg-[#0f1117] flex flex-col items-center justify-center gap-3">
+      <div className="min-h-screen bg-[#0d1321] flex flex-col items-center justify-center gap-3">
         <p className="text-slate-400">Wiki page not found.</p>
         <Link href="/wiki" className="text-sm text-blue-400 hover:text-blue-300">← Back to Wiki</Link>
       </div>
@@ -63,9 +63,9 @@ export default function WikiPageView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-slate-200">
+    <div className="min-h-screen bg-[#0d1321] text-slate-200">
       {/* Header */}
-      <header className="border-b border-[#2a2d3a] px-4 py-3 flex items-center gap-3">
+      <header className="border-b border-[#2a3150] px-4 py-3 flex items-center gap-3">
         <Link href="/wiki" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">
           ← Wiki
         </Link>
@@ -101,7 +101,7 @@ export default function WikiPageView() {
 
         {/* Links */}
         {(outLinks.length > 0 || inLinks.length > 0) && (
-          <div className="mt-8 pt-6 border-t border-[#2a2d3a]">
+          <div className="mt-8 pt-6 border-t border-[#2a3150]">
             {outLinks.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
@@ -112,7 +112,7 @@ export default function WikiPageView() {
                     <Link
                       key={i}
                       href={`/wiki/${link.wiki_pages?.slug}`}
-                      className="px-2.5 py-1 text-xs rounded-md bg-[#1a1d27] border border-[#2a2d3a] text-blue-400 hover:text-blue-300 hover:border-blue-500/30 transition-colors"
+                      className="px-2.5 py-1 text-xs rounded-md bg-[#1a2035] border border-[#2a3150] text-blue-400 hover:text-blue-300 hover:border-blue-500/30 transition-colors"
                       title={link.context ?? undefined}
                     >
                       {link.wiki_pages?.title}
@@ -131,7 +131,7 @@ export default function WikiPageView() {
                     <Link
                       key={i}
                       href={`/wiki/${link.wiki_pages?.slug}`}
-                      className="px-2.5 py-1 text-xs rounded-md bg-[#1a1d27] border border-[#2a2d3a] text-slate-400 hover:text-slate-200 transition-colors"
+                      className="px-2.5 py-1 text-xs rounded-md bg-[#1a2035] border border-[#2a3150] text-slate-400 hover:text-slate-200 transition-colors"
                     >
                       {link.wiki_pages?.title}
                     </Link>
@@ -171,7 +171,7 @@ function WikiContent({ content }: { content: string }) {
           )
         }
         if (trimmed.startsWith('---')) {
-          return <hr key={i} className="border-[#2a2d3a] my-4" />
+          return <hr key={i} className="border-[#2a3150] my-4" />
         }
 
         return <p key={i}>{renderInlineLinks(trimmed)}</p>

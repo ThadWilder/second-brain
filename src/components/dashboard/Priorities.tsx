@@ -93,7 +93,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
         visibleTasks.length === 0 &&
         staleFromYesterday.length === 0 && (
           <div className="text-center py-8 text-slate-500 text-sm">
-            All clear. No open items.
+            All clear. No open dumplings.
           </div>
         )}
     </div>
@@ -138,8 +138,8 @@ function TaskRow({
 
   const variantStyles = {
     escalated: 'bg-red-500/5 border-red-500/10',
-    normal: 'bg-[#1a1d27] border-[#2a2d3a]',
-    stale: 'bg-[#1a1d27] border-[#2a2d3a] opacity-75',
+    normal: 'bg-[#1a2035] border-[#2a3150]',
+    stale: 'bg-[#1a2035] border-[#2a3150] opacity-75',
   }
 
   return (

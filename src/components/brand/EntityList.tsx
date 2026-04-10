@@ -39,7 +39,7 @@ export function EntityList({ entities, title = 'Related Entities' }: Props) {
                 <span
                   key={entity.id}
                   className="inline-flex items-center px-2 py-1 rounded-md text-xs
-                             bg-[#1a1d27] border border-[#2a2d3a] text-slate-300"
+                             bg-[#1a2035] border border-[#2a3150] text-slate-300"
                 >
                   {entity.name}
                 </span>
