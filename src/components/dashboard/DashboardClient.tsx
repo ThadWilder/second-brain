@@ -298,19 +298,20 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
       {/* Main content — single scrollable column */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
           {/* ── Hero dump box ── */}
-          <div>
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
+            <p className="text-sm text-[var(--muted)] mb-3">Dump anything — emails, screenshots, thoughts...</p>
             <ChatInput
               onSend={handleSend}
               disabled={isStreaming || isIngesting}
-              placeholder="dump anything — emails, screenshots, thoughts..."
+              placeholder="start typing or paste something..."
               autoFocus
               large
             />
             {(isStreaming || isIngesting) && (
-              <p className="text-[10px] text-[var(--muted)] mt-1.5 text-center">
-                {isIngesting ? 'processing...' : 'thinking...'}
+              <p className="text-xs text-[var(--muted)] mt-2 text-center">
+                {isIngesting ? 'steaming your dumpling...' : 'thinking...'}
               </p>
             )}
           </div>
@@ -359,14 +360,16 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           )}
 
           {/* ── Status + Heatmap ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Status</h2>
-              <StatusSummary stats={stats} />
-            </div>
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Activity (14 days)</h2>
-              <Heatmap data={heatmapCells} brands={brandNames} days={heatmapDays} />
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Status</h2>
+                <StatusSummary stats={stats} />
+              </div>
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Activity (14 days)</h2>
+                <Heatmap data={heatmapCells} brands={brandNames} days={heatmapDays} />
+              </div>
             </div>
           </div>
 
@@ -376,8 +379,8 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           )}
 
           {/* ── Priorities ── */}
-          <div id="priorities-section">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm" id="priorities-section">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-4">
               Today&apos;s Priorities
             </h2>
             <Priorities
@@ -389,7 +392,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           </div>
 
           {/* ── Entity Cards ── */}
-          <div className="space-y-5" id="entity-cards-section">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-6" id="entity-cards-section">
             <BrandCards brands={brands} />
             <EntityCards title="People" entities={people} type="contact" allEntities={allEntities} />
             <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} />
