@@ -67,7 +67,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
       try {
         let assistantContent = ''
-        let lastEventId: string | undefined
+        const processedEventIds = new Set<string>()
         let maxPolls = 60  // 60 * 500ms = 30s max
 
         // Poll loop
@@ -75,10 +75,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           // Small delay between polls
           await new Promise((r) => setTimeout(r, 500))
 
-          const events = await getSessionEvents(sessionId, lastEventId)
+          const events = await getSessionEvents(sessionId)
 
           for (const event of events) {
-            lastEventId = event.id
+            // Skip already-processed events
+            if (processedEventIds.has(event.id)) continue
+            processedEventIds.add(event.id)
 
             switch (event.type) {
               case 'agent': {

@@ -87,9 +87,8 @@ export async function sendToolResult(
 }
 
 /** Get all events for a session (polling-based, not SSE). */
-export async function getSessionEvents(sessionId: string, afterId?: string): Promise<SessionEvent[]> {
-  let url = `${BASE}/v1/sessions/${sessionId}/events`
-  if (afterId) url += `?after_id=${afterId}`
+export async function getSessionEvents(sessionId: string): Promise<SessionEvent[]> {
+  const url = `${BASE}/v1/sessions/${sessionId}/events?order=asc&limit=100`
 
   const res = await fetch(url, { headers: headers() })
   if (!res.ok) throw new Error(`getSessionEvents failed: ${res.status} ${await res.text()}`)
