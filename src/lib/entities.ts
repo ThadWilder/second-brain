@@ -228,7 +228,7 @@ async function findByFuzzy(
  * Trigram similarity — matches pg_trgm's algorithm.
  * Generates trigrams (3-char substrings) and computes Jaccard-like overlap.
  */
-function trigramSimilarity(a: string, b: string): number {
+export function trigramSimilarity(a: string, b: string): number {
   if (a === b) return 1
   if (!a || !b) return 0
 
