@@ -262,8 +262,8 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
           )}
         </Link>
 
-        {/* Inline assign dropdown for unassigned contacts */}
-        {showAssign && (assignOptions.brands.length > 0 || assignOptions.teams.length > 0) && (
+        {/* Inline assign dropdown for contacts */}
+        {type === 'contact' && (assignOptions.brands.length > 0 || assignOptions.teams.length > 0) && (
           <div className="mt-2 pt-2 border-t border-[var(--border)]">
             {assigningId === item.entity.id ? (
               <span className="text-[11px] text-[var(--muted)]">Assigning...</span>
@@ -276,7 +276,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <option value="" disabled>Assign to...</option>
+                <option value="" disabled>{showAssign ? 'Assign to...' : '+ Add team...'}</option>
                 {assignOptions.brands.length > 0 && (
                   <optgroup label="Brands">
                     {assignOptions.brands.map((b) => (
