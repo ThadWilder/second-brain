@@ -41,12 +41,12 @@ const INGEST_TOOLS: any[] = [
   {
     name: 'classify_entities',
     description:
-      'Identify all entities mentioned in the text: brands, contacts, vendors, topics. ' +
+      'Identify all entities mentioned in the text. ' +
       'Match to existing entities by ID when possible. Signal "new entity" when not found. ' +
-      'For contacts, always set metadata.category to one of: team, client_contact, freelancer, external, unknown. ' +
-      'If you cannot determine the category from context, use "unknown". ' +
-      'Also include metadata.role (e.g. "SEO specialist", "franchise owner", "account manager") and ' +
-      'metadata.company if mentioned.',
+      'Use the most specific entity type: brand (franchise brands), department (internal teams like TMS, HQ), ' +
+      'franchisee (franchise owners/operators), contact (team members), vendor (external companies), ' +
+      'vendor_team (people who work at vendors), freelancer (independent contractors). ' +
+      'Include metadata.role (job title) and metadata.company if mentioned.',
     input_schema: {
       type: 'object',
       properties: {
@@ -58,8 +58,8 @@ const INGEST_TOOLS: any[] = [
               name: { type: 'string' },
               type: {
                 type: 'string',
-                enum: ['brand', 'vendor', 'contact', 'topic'],
-                description: 'Use the most specific type. "topic" for subjects/initiatives.',
+                enum: ['brand', 'department', 'franchisee', 'contact', 'vendor', 'vendor_team', 'freelancer'],
+                description: 'brand=franchise brands, department=internal teams (TMS/HQ), franchisee=franchise owners, contact=team members, vendor=external companies, vendor_team=people at vendors, freelancer=independent contractors.',
               },
               matched_entity_id: {
                 type: 'string',
@@ -67,16 +67,11 @@ const INGEST_TOOLS: any[] = [
               },
               metadata: {
                 type: 'object',
-                description: 'For contacts: include category (team|client_contact|freelancer|external|unknown), role, company. For vendors: include notes, specialty.',
+                description: 'Optional metadata: role (job title), company (org they belong to), notes.',
                 properties: {
-                  category: {
-                    type: 'string',
-                    enum: ['team', 'client_contact', 'freelancer', 'external', 'unknown'],
-                    description: 'Contact category. Use "unknown" if unsure.',
-                  },
                   role: { type: 'string', description: 'Job title or function' },
-                  company: { type: 'string', description: 'Company or brand they belong to' },
-                  notes: { type: 'string', description: 'For vendors: what they do' },
+                  company: { type: 'string', description: 'Company, brand, or team they belong to' },
+                  notes: { type: 'string', description: 'Additional context' },
                 },
               },
             },
@@ -152,10 +147,10 @@ const INGEST_TOOLS: any[] = [
   {
     name: 'flag_unknown_person',
     description:
-      'Flag a person whose role/category you cannot determine from context. ' +
+      'Flag a person or entity whose type you cannot determine from context. ' +
       'Use this when you encounter a new name and cannot confidently classify them as ' +
-      'team, client_contact, freelancer, or external. ' +
-      'This will prompt the user to clarify who this person is.',
+      'contact, vendor, vendor_team, franchisee, freelancer, department, or brand. ' +
+      'This will prompt the user to clarify.',
     input_schema: {
       type: 'object',
       properties: {
@@ -164,13 +159,13 @@ const INGEST_TOOLS: any[] = [
         question: { type: 'string', description: 'A natural question to ask. e.g. "Who is Sarah? She was mentioned in a MaidPro email about social media."' },
         field: {
           type: 'string',
-          enum: ['category', 'role', 'company', 'type'],
-          description: 'What info is missing. Usually "category".',
+          enum: ['type', 'role', 'company'],
+          description: 'What info is missing. Usually "type".',
         },
         suggestions: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Your best guesses for the answer, e.g. ["client_contact", "freelancer"]',
+          description: 'Your best guesses for entity type, e.g. ["vendor_team", "contact"]',
         },
       },
       required: ['name', 'question', 'field'],

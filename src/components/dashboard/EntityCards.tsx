@@ -308,26 +308,29 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
   )
 }
 
-const CATEGORY_STYLES: Record<string, string> = {
-  team: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  client_contact: 'bg-blue-50 text-blue-700 border-blue-200',
-
+const TYPE_STYLES: Record<string, string> = {
+  contact: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  brand: 'bg-blue-50 text-blue-700 border-blue-200',
+  department: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  franchisee: 'bg-teal-50 text-teal-700 border-teal-200',
+  vendor: 'bg-purple-50 text-purple-700 border-purple-200',
+  vendor_team: 'bg-purple-50 text-purple-700 border-purple-200',
   freelancer: 'bg-amber-50 text-amber-700 border-amber-200',
-  external: 'bg-gray-50 text-gray-600 border-gray-200',
-  unknown: 'bg-red-50 text-red-700 border-red-200',
 }
 
-function getCategoryStyle(category: string): string {
-  return CATEGORY_STYLES[category] ?? CATEGORY_STYLES.unknown
+function getCategoryStyle(typeOrCategory: string): string {
+  return TYPE_STYLES[typeOrCategory] ?? 'bg-gray-50 text-gray-600 border-gray-200'
 }
 
 function formatCategory(value: string): string {
   const map: Record<string, string> = {
-    team: 'Team',
-    client_contact: 'Client',
+    contact: 'Team',
+    brand: 'Brand',
+    department: 'Internal',
+    franchisee: 'Franchisee',
+    vendor: 'Vendor',
+    vendor_team: 'Vendor Team',
     freelancer: 'Freelancer',
-    external: 'External',
-    unknown: '???',
   }
   return map[value] ?? value
 }
