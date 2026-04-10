@@ -271,7 +271,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           <Image src="/logo-icon-white.png" alt="Dumpbox" width={32} height={32} />
           <span className="text-white font-bold tracking-tight text-lg">Dumpbox</span>
           <span className="text-white/20 select-none">/</span>
-          <span className="text-sm text-white/50">
+          <span className="text-sm text-white/70">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </span>
         </div>
@@ -283,13 +283,13 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           )}
           <a
             href="/wiki"
-            className="text-sm text-white/50 hover:text-white transition-colors"
+            className="text-sm text-white/70 font-medium hover:text-white transition-colors"
           >
             Wiki
           </a>
           <button
             onClick={handleSignOut}
-            className="text-sm text-white/50 hover:text-white transition-colors"
+            className="text-sm text-white/70 font-medium hover:text-white transition-colors"
           >
             Sign out
           </button>
