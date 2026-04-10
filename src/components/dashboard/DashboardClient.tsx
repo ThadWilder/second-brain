@@ -135,11 +135,11 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
         </div>
 
         {/* Chat Panel */}
-        <div className="lg:w-[380px] border-t lg:border-t-0 lg:border-l border-[#2a2d3a] flex flex-col h-[500px] lg:h-auto">
-          <div className="px-4 py-3 border-b border-[#2a2d3a] shrink-0">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Chat</h2>
+        <div className="lg:w-[380px] border-t lg:border-t-0 lg:border-l border-[#2a2d3a] flex flex-col h-[300px] lg:h-auto lg:max-h-screen lg:sticky lg:top-0">
+          <div className="px-4 py-2 border-b border-[#2a2d3a] shrink-0">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Dump</h2>
           </div>
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <ChatPanel />
           </div>
         </div>
