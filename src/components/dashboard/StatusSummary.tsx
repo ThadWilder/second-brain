@@ -19,7 +19,7 @@ export function StatusSummary({ stats }: Props) {
       {STATS.map(({ key, label, icon }) => (
         <div
           key={key}
-          className="bg-[var(--bg)] rounded-lg px-4 py-3"
+          className="bg-[var(--surface-hover)] rounded-lg px-4 py-3"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs text-[var(--muted)]">
