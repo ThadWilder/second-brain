@@ -265,7 +265,10 @@ BEGIN
     (org, 'brand', 'Men In Kilts',           'men in kilts',           '{"color": "#8b5cf6"}'),
     (org, 'brand', 'Mold Medics',            'mold medics',            '{"color": "#06b6d4"}'),
     (org, 'brand', 'Miracle Method',         'miracle method',         '{"color": "#ec4899"}'),
-    (org, 'brand', 'Granite Garage Floors',  'granite garage floors',  '{"color": "#f97316"}')
+    (org, 'brand', 'Granite Garage Floors',  'granite garage floors',  '{"color": "#f97316"}'),
+    (org, 'brand', 'PHP',                    'php',                    '{"color": "#10b981", "full_name": "Plumbing & Heating Paramedics (dual zees)"}'),
+    (org, 'brand', 'HAP',                    'hap',                    '{"color": "#ef4444", "full_name": "Heating & Air Paramedics"}'),
+    (org, 'brand', 'PLP',                    'plp',                    '{"color": "#3b82f6", "full_name": "Plumbing Paramedics"}')
   ON CONFLICT (org_id, type, normalized_name) DO NOTHING;
 
   -- Team members
