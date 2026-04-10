@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
@@ -12,8 +13,13 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ error: 'Missing env vars', url: url?.slice(0, 30), hasKey: !!key })
   }
 
-  // Fresh client — no caching possible
-  const db = createClient(url, key, { auth: { persistSession: false } })
+  // Fresh client — bypass Next.js fetch cache
+  const db = createClient(url, key, {
+    auth: { persistSession: false },
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+    },
+  })
 
   const { data: entities, error: entErr } = await db
     .from('entities')

@@ -7,7 +7,11 @@ export function getSupabase(): SupabaseClient {
   if (!_supabase) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    _supabase = createClient(url, anonKey)
+    _supabase = createClient(url, anonKey, {
+      global: {
+        fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+      },
+    })
   }
   return _supabase
 }
@@ -22,6 +26,7 @@ export function getServiceClient(): SupabaseClient {
     db: { schema: 'public' },
     global: {
       headers: { 'Cache-Control': 'no-cache' },
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
     },
   })
 }
