@@ -93,7 +93,7 @@ export function Heatmap({ data, brands, days }: Props) {
             <div
               key={level}
               className="w-3.5 h-3.5 rounded-sm"
-              style={{ backgroundColor: getColor(level * maxCount, maxCount) }}
+              style={{ backgroundColor: getColor(level * maxCount, maxCount, false) }}
             />
           ))}
           <span className="text-[10px] text-[var(--muted)] ml-0.5">More</span>
