@@ -11,48 +11,41 @@ const STAT_CONFIGS = [
     key: 'escalations' as const,
     label: 'Escalations',
     color: 'text-red-700',
-    bg: 'bg-[var(--surface)] border-[var(--border)]',
-    dot: 'bg-red-500',
+    accent: 'border-b-red-400',
   },
   {
     key: 'needs_response' as const,
     label: 'Needs Response',
     color: 'text-amber-700',
-    bg: 'bg-[var(--surface)] border-[var(--border)]',
-    dot: 'bg-amber-500',
+    accent: 'border-b-amber-400',
   },
   {
     key: 'open_tasks' as const,
     label: 'Open Tasks',
     color: 'text-[var(--accent)]',
-    bg: 'bg-[var(--surface)] border-[var(--border)]',
-    dot: 'bg-[var(--accent)]',
+    accent: 'border-b-[var(--accent)]',
   },
   {
     key: 'closed_7d' as const,
     label: 'Closed (7d)',
     color: 'text-green-700',
-    bg: 'bg-[var(--surface)] border-[var(--border)]',
-    dot: 'bg-green-500',
+    accent: 'border-b-green-400',
   },
 ]
 
 export function StatusSummary({ stats }: Props) {
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-4 gap-4">
       {STAT_CONFIGS.map((config) => (
         <div
           key={config.key}
-          className={`rounded-lg border p-3 ${config.bg}`}
+          className={`rounded-xl bg-[var(--surface)] border border-[var(--border)] border-b-2 ${config.accent} px-4 py-4 text-center`}
         >
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className={`w-2 h-2 rounded-full ${config.dot}`} />
-            <span className="text-xs text-[var(--muted)] font-medium">
-              {config.label}
-            </span>
-          </div>
-          <div className={`text-2xl font-bold tabular-nums ${config.color}`}>
+          <div className={`text-3xl font-bold tabular-nums ${config.color}`}>
             {stats[config.key]}
+          </div>
+          <div className="text-xs text-[var(--muted)] mt-1 font-medium">
+            {config.label}
           </div>
         </div>
       ))}
