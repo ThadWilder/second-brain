@@ -28,7 +28,9 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
     }
   }, [])
 
+  // Fetch immediately on mount, then poll
   useEffect(() => {
+    fetchData()
     const interval = setInterval(fetchData, POLL_INTERVAL)
     return () => clearInterval(interval)
   }, [fetchData])
