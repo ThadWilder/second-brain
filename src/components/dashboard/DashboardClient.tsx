@@ -8,12 +8,19 @@ import { Priorities } from './Priorities'
 import { Heatmap } from './Heatmap'
 import { ClarificationBanner } from './ClarificationBanner'
 import { ChatPanel } from '@/components/chat/ChatPanel'
+import { createClient } from '@/lib/supabase/browser'
 
 const POLL_INTERVAL = 10_000 // 10 seconds
 
 export function DashboardClient({ initialData }: { initialData: DashboardData }) {
   const [data, setData] = useState<DashboardData>(initialData)
   const [lastUpdated, setLastUpdated] = useState(new Date())
+
+  const handleSignOut = useCallback(async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }, [])
 
   const fetchData = useCallback(async () => {
     try {
@@ -75,6 +82,12 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           <span className="text-[10px] text-slate-600" title={lastUpdated.toLocaleTimeString()}>
             live
           </span>
+          <button
+            onClick={handleSignOut}
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 

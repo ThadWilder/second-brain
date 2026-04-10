@@ -18,6 +18,7 @@ import {
   verifyPostmarkWebhook,
   parsePostmarkInbound,
 } from '@/lib/postmark'
+import { hasValidSession } from '@/lib/auth'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -32,11 +33,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const source = detectSource(body)
 
-  // ── Postmark webhook signature verification ──────────────────────────
+  // ── Auth: Postmark signature OR valid session ────────────────────────
   if (source === 'email') {
     const signature = req.headers.get('x-postmark-signature')
     if (!verifyPostmarkWebhook(rawBody, signature)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+  } else {
+    // Non-email submissions require a valid session
+    const authenticated = await hasValidSession()
+    if (!authenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
   }
 
