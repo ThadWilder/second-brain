@@ -38,6 +38,12 @@ const TYPE_CONFIG: Record<string, {
     border: 'border-indigo-200',
     bg: 'hover:bg-indigo-50',
   },
+  franchisee: {
+    icon: '🏠',
+    accent: 'text-teal-700',
+    border: 'border-teal-200',
+    bg: 'hover:bg-teal-50',
+  },
   topic: {
     icon: '🏷️',
     accent: 'text-amber-700',
