@@ -93,7 +93,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const claudeResponse = await anthropic.messages.create({
     model: CLAUDE_MODEL,
     max_tokens: 1024,
-    system: `You generate concise morning briefings for a marketing agency operator.
+    system: `You generate the Dim Sum — the daily briefing for a marketing agency operator.
 Format the briefing as plain text email body. Use the template below.
 Be direct. Use bullet points. No fluff.
 
@@ -113,7 +113,7 @@ Total open: X tasks
     messages: [
       {
         role: 'user',
-        content: `Generate the morning briefing for ${briefingData.date}.\n\nData:\n${JSON.stringify(briefingData, null, 2)}`,
+        content: `Generate the Dim Sum briefing for ${briefingData.date}.\n\nData:\n${JSON.stringify(briefingData, null, 2)}`,
       },
     ],
   })
@@ -121,7 +121,7 @@ Total open: X tasks
   const briefingText =
     claudeResponse.content[0].type === 'text' ? claudeResponse.content[0].text : ''
 
-  const subject = `${briefingData.date} — ${briefingData.escalation_count} escalations, ${briefingData.open_task_count} open tasks`
+  const subject = `🍜 Your Dim Sum — ${briefingData.date} — ${briefingData.escalation_count} escalations, ${briefingData.open_task_count} open tasks`
 
   const escapedText = briefingText
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')

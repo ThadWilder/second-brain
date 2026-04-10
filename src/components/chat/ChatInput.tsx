@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react'
+import { Send, ImageIcon } from 'lucide-react'
 import type { Attachment } from '@/types'
 
 interface Props {
@@ -131,11 +132,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
                      ${large ? 'w-10 h-10' : 'w-8 h-8'}`}
           aria-label="Attach image"
         >
-          <svg className={large ? 'w-5 h-5' : 'w-4 h-4'} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="2" y="2" width="16" height="16" rx="2" />
-            <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
-            <path d="M2 14l4-4 3 3 4-5 5 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <ImageIcon className={large ? 'w-5 h-5' : 'w-4 h-4'} />
         </button>
         <input
           ref={fileInputRef}
@@ -172,9 +169,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
           {disabled || uploading ? (
             <span className={`border-2 border-white/30 border-t-white rounded-full animate-spin ${large ? 'w-4 h-4' : 'w-3.5 h-3.5'}`} />
           ) : (
-            <svg className={large ? 'w-4 h-4 text-white' : 'w-3.5 h-3.5 text-white'} viewBox="0 0 16 16" fill="none">
-              <path d="M2 14L14 8L2 2v5l8 1-8 1v5z" fill="currentColor" />
-            </svg>
+            <Send className={`${large ? 'w-4 h-4' : 'w-3.5 h-3.5'} text-white`} />
           )}
         </button>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Check } from 'lucide-react'
 
 interface TaskCheckboxProps {
   taskId: string
@@ -42,9 +43,7 @@ export function TaskCheckbox({ taskId, checked, onComplete }: TaskCheckboxProps)
       {loading ? (
         <span className="w-3 h-3 border border-[var(--muted)] border-t-transparent rounded-full animate-spin" />
       ) : done ? (
-        <svg className="w-3 h-3 text-green-700" viewBox="0 0 12 12" fill="none">
-          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Check className="w-3 h-3 text-green-700" />
       ) : null}
     </button>
   )

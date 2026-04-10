@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { ArrowLeft, ListTodo, BookOpen, Users } from 'lucide-react'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { BrandDetail } from '@/components/brand/BrandDetail'
 import { WikiSection } from '@/components/brand/WikiSection'
@@ -133,7 +134,8 @@ export default async function BrandPage({ params }: Props) {
           className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors flex items-center gap-2"
         >
           <Image src="/logo-icon.png" alt="Dumpbox" width={24} height={24} />
-          &larr; Back
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back
         </Link>
         <span className="text-[var(--border)]">/</span>
         <span className="text-[var(--text)] font-medium text-sm">{brand.name}</span>

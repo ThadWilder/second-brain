@@ -5,11 +5,11 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
 const taglines = [
-  'dump everything. forget nothing.',
-  'your brain called. it wants a break.',
-  'chaos in, clarity out.',
-  'think less. dump more.',
-  'remember everything. organize nothing.',
+  'dump everything. forget nothing. 🥟',
+  'your brain called. it wants a break. 🥟',
+  'chaos in, clarity out. 🥟',
+  'think less. dump more. 🥟',
+  'remember everything. organize nothing. 🥟',
 ]
 
 export default function LoginPage() {

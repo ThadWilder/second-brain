@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ListTodo, FileText, Scale } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EntityList } from './EntityList'
@@ -29,10 +30,10 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
   const openTasks = localTasks.filter((t) => t.status === 'open' || t.status === 'blocked')
   const doneTasks = localTasks.filter((t) => t.status === 'done')
 
-  const TABS: { key: Tab; label: string; count: number }[] = [
-    { key: 'tasks', label: 'Tasks', count: localTasks.length },
-    { key: 'entries', label: 'Dumplings', count: entries.length },
-    { key: 'decisions', label: 'Decisions', count: decisions.length },
+  const TABS: { key: Tab; label: string; count: number; icon: React.ReactNode }[] = [
+    { key: 'tasks', label: 'Tasks', count: localTasks.length, icon: <ListTodo className="w-3.5 h-3.5" /> },
+    { key: 'entries', label: 'Dumplings', count: entries.length, icon: <FileText className="w-3.5 h-3.5" /> },
+    { key: 'decisions', label: 'Decisions', count: decisions.length, icon: <Scale className="w-3.5 h-3.5" /> },
   ]
 
   return (
@@ -67,7 +68,10 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                 : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
               }`}
           >
-            {tab.label}
+            <span className="inline-flex items-center gap-1">
+              {tab.icon}
+              {tab.label}
+            </span>
             <span className="ml-1.5 text-xs opacity-60">({tab.count})</span>
           </button>
         ))}
@@ -132,7 +136,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           )}
 
           {localTasks.length === 0 && (
-            <p className="text-sm text-[var(--muted)] text-center py-6">No tasks yet.</p>
+            <p className="text-sm text-[var(--muted)] text-center py-6">📋 No tasks yet.</p>
           )}
         </div>
       )}
@@ -156,7 +160,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
             </div>
           ))}
           {entries.length === 0 && (
-            <p className="text-sm text-[var(--muted)] text-center py-6">No dumplings yet. Dump something.</p>
+            <p className="text-sm text-[var(--muted)] text-center py-6">🥟 No dumplings yet. Dump something!</p>
           )}
         </div>
       )}
@@ -178,7 +182,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
             </div>
           ))}
           {decisions.length === 0 && (
-            <p className="text-sm text-[var(--muted)] text-center py-6">No decisions logged yet.</p>
+            <p className="text-sm text-[var(--muted)] text-center py-6">No decisions logged yet. They&apos;ll show up as you go.</p>
           )}
         </div>
       )}

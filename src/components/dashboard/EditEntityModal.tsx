@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { X, Plus, Trash2 } from 'lucide-react'
 import type { Entity } from '@/types'
 
 interface Relationship {
@@ -174,9 +175,18 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
-        <h3 className="text-sm font-semibold text-[var(--text)] mb-4">
-          Edit {entity.name}
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-[var(--text)]">
+            Edit {entity.name}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Name */}
         <Field label="Name">
@@ -280,7 +290,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
                     className="ml-auto text-[var(--muted)] hover:text-[var(--danger)] transition-colors"
                     title="Remove link"
                   >
-                    ×
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
@@ -327,7 +337,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
               disabled={!newRelTarget || addingRel}
               className="px-2.5 py-1.5 text-xs rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors shrink-0"
             >
-              {addingRel ? '...' : 'Link'}
+              {addingRel ? '...' : <><Plus className="w-3.5 h-3.5 inline" /> Link</>}
             </button>
           </div>
         </div>

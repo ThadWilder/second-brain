@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { CheckCircle, AlertTriangle, AlertOctagon } from 'lucide-react'
 import type { BrandSummary } from '@/types'
 
 const HEALTH_STYLES = {
@@ -47,7 +48,9 @@ export function BrandCards({ brands }: Props) {
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${styles.dot}`} />
+                {b.health === 'green' && <CheckCircle className="w-3.5 h-3.5 text-green-600 shrink-0" />}
+              {b.health === 'amber' && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+              {b.health === 'red' && <AlertOctagon className="w-3.5 h-3.5 text-red-500 shrink-0" />}
                 <span className="text-sm font-medium text-[var(--text)] truncate">
                   {b.entity.name}
                 </span>

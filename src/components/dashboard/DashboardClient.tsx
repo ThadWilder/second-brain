@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
+import { LogOut, BookOpen } from 'lucide-react'
 import { StatusSummary } from './StatusSummary'
 import { BrandCards } from './BrandCards'
 import { EntityCards } from './EntityCards'
@@ -32,8 +33,8 @@ function buildIngestSummary(result: IngestResult): string {
   if (result.pending_responses_created > 0) parts.push(`${result.pending_responses_created} pending response${result.pending_responses_created !== 1 ? 's' : ''}`)
   if (result.entities_created > 0) parts.push(`${result.entities_created} new entit${result.entities_created !== 1 ? 'ies' : 'y'}`)
   if (result.entities_resolved > 0) parts.push(`linked to ${result.entities_resolved} entit${result.entities_resolved !== 1 ? 'ies' : 'y'}`)
-  if (parts.length === 0) return 'Dumpling processed — no new items extracted.'
-  return `Dumpling processed — ${parts.join(', ')}.`
+  if (parts.length === 0) return '🥟 Dumpling processed — no new items extracted.'
+  return `🥟 Dumpling processed — ${parts.join(', ')}.`
 }
 
 export function DashboardClient({ initialData }: { initialData: DashboardData }) {
@@ -269,7 +270,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
       <header className="border-b border-[var(--border)] px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <Image src="/logo-icon.png" alt="Dumpbox" width={32} height={32} />
-          <span className="text-[var(--text)] font-semibold tracking-tight text-sm">DUMPBOX</span>
+          <span className="text-[var(--text)] font-semibold tracking-tight text-sm">🥟 DUMPBOX</span>
           <span className="text-xs text-[var(--muted)]">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
@@ -282,8 +283,9 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           )}
           <a
             href="/wiki"
-            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1"
           >
+            <BookOpen className="w-3.5 h-3.5" />
             Wiki
           </a>
           <span className="text-[10px] text-[var(--muted)]" title={lastUpdated.toLocaleTimeString()}>
@@ -291,8 +293,9 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           </span>
           <button
             onClick={handleSignOut}
-            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1"
           >
+            <LogOut className="w-3.5 h-3.5" />
             Sign out
           </button>
         </div>
@@ -363,7 +366,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           {/* ── Status + Heatmap ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Status</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">📊 Status</h2>
               <StatusSummary stats={stats} />
             </div>
             <div>
@@ -380,7 +383,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           {/* ── Priorities ── */}
           <div id="priorities-section">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
-              Today's Priorities
+              📋 Today&apos;s Priorities
             </h2>
             <Priorities
               escalated={escalatedTasks}

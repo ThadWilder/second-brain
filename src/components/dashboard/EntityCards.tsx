@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Pencil, GitMerge } from 'lucide-react'
 import { MergeModal } from './MergeModal'
 import { EditEntityModal } from './EditEntityModal'
 import type { Entity } from '@/types'
@@ -90,9 +91,10 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                       e.stopPropagation()
                       setEditTarget(item.entity)
                     }}
-                    className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+                    className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] flex items-center gap-0.5"
                     title="Edit details"
                   >
+                    <Pencil className="w-3 h-3" />
                     edit
                   </button>
                   {entities.length > 1 && (
@@ -102,9 +104,10 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                         e.stopPropagation()
                         setMergeTarget(item.entity)
                       }}
-                      className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+                      className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] flex items-center gap-0.5"
                       title="Merge into another entity"
                     >
+                      <GitMerge className="w-3 h-3" />
                       merge
                     </button>
                   )}

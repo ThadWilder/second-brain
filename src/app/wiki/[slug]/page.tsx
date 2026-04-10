@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ArrowLeft, BookOpen } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
 interface WikiPage {
@@ -57,7 +58,10 @@ export default function WikiPageView() {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center gap-3">
         <p className="text-[var(--muted)]">Wiki page not found.</p>
-        <Link href="/wiki" className="text-sm text-[var(--accent)] hover:text-[var(--accent-hover)]">← Back to Wiki</Link>
+        <Link href="/wiki" className="text-sm text-[var(--accent)] hover:text-[var(--accent-hover)] flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Wiki
+        </Link>
       </div>
     )
   }
@@ -66,11 +70,15 @@ export default function WikiPageView() {
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {/* Header */}
       <header className="border-b border-[var(--border)] px-4 py-3 flex items-center gap-3">
-        <Link href="/wiki" className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors">
-          ← Wiki
+        <Link href="/wiki" className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Wiki
         </Link>
         <span className="text-[var(--border)]">/</span>
-        <span className="text-[var(--text)] font-semibold text-sm">{page.title}</span>
+        <span className="text-[var(--text)] font-semibold text-sm flex items-center gap-1">
+          <BookOpen className="w-3.5 h-3.5" />
+          {page.title}
+        </span>
         <div className="ml-auto flex items-center gap-3 text-xs text-[var(--muted)]">
           <span>{page.source_count} sources</span>
           <span>updated {formatAge(page.updated_at)}</span>

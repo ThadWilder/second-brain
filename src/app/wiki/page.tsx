@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ArrowLeft, BookOpen } from 'lucide-react'
 
 interface WikiPageSummary {
   id: string
@@ -37,11 +38,15 @@ export default function WikiIndex() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <header className="border-b border-[var(--border)] px-4 py-3 flex items-center gap-3">
-        <Link href="/" className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors">
-          ← Dashboard
+        <Link href="/" className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Dashboard
         </Link>
         <span className="text-[var(--border)]">/</span>
-        <span className="text-[var(--text)] font-semibold text-sm">Wiki</span>
+        <span className="text-[var(--text)] font-semibold text-sm flex items-center gap-1">
+          <BookOpen className="w-3.5 h-3.5" />
+          Wiki
+        </span>
         <span className="text-xs text-[var(--muted)] ml-auto">{pages.length} pages</span>
       </header>
 
@@ -50,7 +55,7 @@ export default function WikiIndex() {
           <p className="text-sm text-[var(--muted)]">Loading...</p>
         ) : pages.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-[var(--muted)] mb-2">No wiki pages yet.</p>
+            <p className="text-[var(--muted)] mb-2">📖 No wiki pages yet.</p>
             <p className="text-sm text-[var(--muted)]">Wiki pages are created automatically when you ingest data.</p>
           </div>
         ) : (

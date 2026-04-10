@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { X, GitMerge } from 'lucide-react'
 import type { Entity } from '@/types'
 
 interface Props {
@@ -68,9 +69,18 @@ export function MergeModal({ entity, allEntities, onClose, onMerged }: Props) {
 
       {/* Modal */}
       <div className="relative bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 w-full max-w-md shadow-2xl">
-        <h3 className="text-sm font-semibold text-[var(--text)] mb-1">
-          Merge entity
-        </h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-semibold text-[var(--text)]">
+            Merge entity
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
         <p className="text-xs text-[var(--muted)] mb-4">
           Merge <span className="text-[var(--text)] font-medium">"{entity.name}"</span> into
           another {entity.type}. All tasks, dumplings, decisions, and wiki content will be
@@ -133,7 +143,7 @@ export function MergeModal({ entity, allEntities, onClose, onMerged }: Props) {
                        hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed
                        transition-colors"
           >
-            {loading ? 'Merging...' : 'Merge'}
+            {loading ? 'Merging...' : <><GitMerge className="w-3.5 h-3.5 inline" /> Merge</>}
           </button>
         </div>
       </div>
