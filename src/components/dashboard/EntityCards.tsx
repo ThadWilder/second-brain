@@ -1,6 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { MergeModal } from './MergeModal'
 import type { Entity } from '@/types'
 
 const TYPE_CONFIG: Record<string, {
@@ -35,7 +38,7 @@ const TYPE_CONFIG: Record<string, {
   },
 }
 
-interface EntityCardData {
+export interface EntityCardData {
   entity: Entity
   open_tasks: number
   escalated_tasks: number
@@ -50,84 +53,121 @@ interface Props {
 
 export function EntityCards({ title, entities, type }: Props) {
   const config = TYPE_CONFIG[type] ?? TYPE_CONFIG.topic
+  const router = useRouter()
+  const [mergeTarget, setMergeTarget] = useState<Entity | null>(null)
 
   if (!entities.length) return null
 
-  return (
-    <div>
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-        <span>{config.icon}</span>
-        {title}
-        <span className="text-slate-500 font-normal">({entities.length})</span>
-      </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {entities.map((item) => {
-          const hasEscalation = item.escalated_tasks > 0
-          const borderColor = hasEscalation ? 'border-red-500/30' : config.border
+  const allEntitiesOfType = entities.map((e) => e.entity)
 
-          return (
-            <Link
-              key={item.entity.id}
-              href={`/brand/${item.entity.id}`}
-              className={`group block rounded-lg border bg-[#1a1d27] p-3 
-                          transition-colors cursor-pointer ${borderColor} ${config.bg}`}
-            >
-              <div className="flex items-start gap-2 mb-1.5 min-w-0">
-                <span className="text-sm leading-none mt-0.5">{config.icon}</span>
-                <div className="min-w-0">
-                  <span className="text-sm font-medium text-slate-200 truncate block">
-                    {item.entity.name}
-                  </span>
-                  {type === 'contact' && item.entity.metadata && (
-                    <div className="flex items-center gap-1.5">
-                      {(item.entity.metadata as Record<string, string>).category && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
-                          getCategoryStyle((item.entity.metadata as Record<string, string>).category)
-                        }`}>
-                          {formatCategory((item.entity.metadata as Record<string, string>).category)}
-                        </span>
+  return (
+    <>
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+          <span>{config.icon}</span>
+          {title}
+          <span className="text-slate-500 font-normal">({entities.length})</span>
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {entities.map((item) => {
+            const hasEscalation = item.escalated_tasks > 0
+            const borderColor = hasEscalation ? 'border-red-500/30' : config.border
+
+            return (
+              <div
+                key={item.entity.id}
+                className={`group relative rounded-lg border bg-[#1a1d27] p-3 
+                            transition-colors ${borderColor} ${config.bg}`}
+              >
+                {/* Merge button — top right, visible on hover */}
+                {entities.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setMergeTarget(item.entity)
+                    }}
+                    className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 
+                               transition-opacity px-1.5 py-0.5 text-[10px] rounded
+                               bg-[#2a2d3a] text-slate-400 hover:text-slate-200 hover:bg-[#3a3d4a]"
+                    title="Merge into another entity"
+                  >
+                    merge
+                  </button>
+                )}
+
+                <Link href={`/brand/${item.entity.id}`} className="block">
+                  <div className="flex items-start gap-2 mb-1.5 min-w-0">
+                    <span className="text-sm leading-none mt-0.5">{config.icon}</span>
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-slate-200 truncate block">
+                        {item.entity.name}
+                      </span>
+                      {type === 'contact' && item.entity.metadata && (
+                        <div className="flex items-center gap-1.5">
+                          {(item.entity.metadata as Record<string, string>).category && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                              getCategoryStyle((item.entity.metadata as Record<string, string>).category)
+                            }`}>
+                              {formatCategory((item.entity.metadata as Record<string, string>).category)}
+                            </span>
+                          )}
+                          {(item.entity.metadata as Record<string, string>).role && (
+                            <span className="text-[11px] text-slate-500">
+                              {(item.entity.metadata as Record<string, string>).role}
+                            </span>
+                          )}
+                        </div>
                       )}
-                      {(item.entity.metadata as Record<string, string>).role && (
-                        <span className="text-[11px] text-slate-500">
-                          {(item.entity.metadata as Record<string, string>).role}
+                      {type === 'vendor' && item.entity.metadata && (
+                        <span className="text-[11px] text-slate-500 line-clamp-1">
+                          {(item.entity.metadata as Record<string, string>).notes ?? ''}
                         </span>
                       )}
                     </div>
-                  )}
-                  {type === 'vendor' && item.entity.metadata && (
-                    <span className="text-[11px] text-slate-500 line-clamp-1">
-                      {(item.entity.metadata as Record<string, string>).notes ?? ''}
-                    </span>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              <div className="flex items-center gap-2 text-xs">
-                {hasEscalation && (
-                  <span className="bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded">
-                    {item.escalated_tasks} 🔥
-                  </span>
-                )}
-                {item.open_tasks > 0 && (
-                  <span className="text-slate-400">
-                    {item.open_tasks} open
-                  </span>
-                )}
-                {item.open_tasks === 0 && !hasEscalation && (
-                  <span className="text-slate-500">no tasks</span>
-                )}
-              </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    {hasEscalation && (
+                      <span className="bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded">
+                        {item.escalated_tasks} 🔥
+                      </span>
+                    )}
+                    {item.open_tasks > 0 && (
+                      <span className="text-slate-400">
+                        {item.open_tasks} open
+                      </span>
+                    )}
+                    {item.open_tasks === 0 && !hasEscalation && (
+                      <span className="text-slate-500">no tasks</span>
+                    )}
+                  </div>
 
-              {item.last_activity && (
-                <div className="mt-1 text-[11px] text-slate-500 truncate">
-                  {formatRelativeTime(item.last_activity)}
-                </div>
-              )}
-            </Link>
-          )
-        })}
+                  {item.last_activity && (
+                    <div className="mt-1 text-[11px] text-slate-500 truncate">
+                      {formatRelativeTime(item.last_activity)}
+                    </div>
+                  )}
+                </Link>
+              </div>
+            )
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* Merge modal */}
+      {mergeTarget && (
+        <MergeModal
+          entity={mergeTarget}
+          allEntities={allEntitiesOfType}
+          onClose={() => setMergeTarget(null)}
+          onMerged={() => {
+            setMergeTarget(null)
+            router.refresh()
+          }}
+        />
+      )}
+    </>
   )
 }
 
