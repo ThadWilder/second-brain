@@ -248,7 +248,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   }
 
   const {
-    stats, brands, people, vendors,
+    stats, brands, people, vendors, departments,
     escalatedTasks, regularTasks, staleFromYesterday,
     pendingResponses, clarifications,
     heatmapCells, heatmapDays, brandNames,
@@ -393,6 +393,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           {/* ── Entity Cards ── */}
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-6" id="entity-cards-section">
             <BrandCards brands={brands} />
+            <EntityCards title="Departments" entities={departments} type="department" allEntities={allEntities} />
             <EntityCards title="People" entities={people} type="contact" allEntities={allEntities} />
             <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} />
           </div>
@@ -408,6 +409,7 @@ interface DashboardData {
   brands: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null; health: 'green' | 'amber' | 'red' }>
   people: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   vendors: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
+  departments: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   escalatedTasks: any[]
   regularTasks: any[]
   staleFromYesterday: any[]

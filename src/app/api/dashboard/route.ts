@@ -36,6 +36,7 @@ export async function GET(): Promise<NextResponse> {
   const brandEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'brand')
   const contactEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'contact')
   const vendorEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'vendor')
+  const departmentEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'department')
 
   // Entity task summaries
   async function getEntityTaskSummary(entityId: string) {
@@ -65,6 +66,11 @@ export async function GET(): Promise<NextResponse> {
   const vendors = await Promise.all(vendorEntities.map(async (v: Entity) => {
     const s = await getEntityTaskSummary(v.id)
     return { entity: v, ...s }
+  }))
+
+  const departments = await Promise.all(departmentEntities.map(async (d: Entity) => {
+    const s = await getEntityTaskSummary(d.id)
+    return { entity: d, ...s }
   }))
 
   // Open tasks
@@ -121,7 +127,7 @@ export async function GET(): Promise<NextResponse> {
   )
 
   return NextResponse.json({
-    stats, brands, people, vendors,
+    stats, brands, people, vendors, departments,
     escalatedTasks, regularTasks, staleFromYesterday,
     pendingResponses: pendingResponses ?? [],
     clarifications: clarifications ?? [],

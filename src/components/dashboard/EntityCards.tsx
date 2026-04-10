@@ -32,6 +32,12 @@ const TYPE_CONFIG: Record<string, {
     border: 'border-purple-200',
     bg: 'hover:bg-purple-50',
   },
+  department: {
+    icon: '🏛️',
+    accent: 'text-indigo-700',
+    border: 'border-indigo-200',
+    bg: 'hover:bg-indigo-50',
+  },
   topic: {
     icon: '🏷️',
     accent: 'text-amber-700',

@@ -23,8 +23,8 @@ INSERT INTO entities (org_id, name, normalized_name, type, first_seen, last_seen
   ('00000000-0000-0000-0000-000000000001', 'Michelle', 'michelle', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Dustin', 'dustin', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Amanda', 'amanda', 'contact', now(), now()),
-  -- Internal departments
-  ('00000000-0000-0000-0000-000000000001', 'TMS', 'tms', 'contact', now(), now()),
+  -- Departments
+  ('00000000-0000-0000-0000-000000000001', 'TMS', 'tms', 'department', now(), now()),
   -- Vendors
   ('00000000-0000-0000-0000-000000000001', 'Moe', 'moe', 'vendor', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Red Brick', 'red brick', 'vendor', now(), now());
