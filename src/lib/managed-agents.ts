@@ -13,7 +13,7 @@
  */
 
 const BASE = 'https://api.anthropic.com'
-const BETA = 'managed-agents-2026-04-01'
+const BETA = 'agent-api-2026-03-01'
 const VERSION = '2023-06-01'
 
 function headers() {
