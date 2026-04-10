@@ -164,7 +164,7 @@ export async function openSessionStream(sessionId: string): Promise<Response> {
 
 export const AGENT_TOOL_DEFINITIONS = [
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'read_wiki',
     description:
       'Read the synthesized wiki page for a brand, vendor, contact, or topic. ' +
@@ -179,7 +179,7 @@ export const AGENT_TOOL_DEFINITIONS = [
     },
   },
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'search_wiki',
     description: 'Search wiki page summaries for a topic or keyword.',
     input_schema: {
@@ -191,7 +191,7 @@ export const AGENT_TOOL_DEFINITIONS = [
     },
   },
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'query_tasks',
     description: 'Query tasks with optional filters. Returns task list.',
     input_schema: {
@@ -206,7 +206,7 @@ export const AGENT_TOOL_DEFINITIONS = [
     },
   },
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'query_entries',
     description: 'Query raw entries (emails, dumps) with filters.',
     input_schema: {
@@ -220,7 +220,7 @@ export const AGENT_TOOL_DEFINITIONS = [
     },
   },
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'query_decisions',
     description: 'Query logged decisions.',
     input_schema: {
@@ -233,7 +233,7 @@ export const AGENT_TOOL_DEFINITIONS = [
     },
   },
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'update_task',
     description: 'Update a task status, due date, or other fields.',
     input_schema: {
@@ -249,7 +249,7 @@ export const AGENT_TOOL_DEFINITIONS = [
     },
   },
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'create_task',
     description: 'Create a new task.',
     input_schema: {
@@ -264,7 +264,7 @@ export const AGENT_TOOL_DEFINITIONS = [
     },
   },
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'log_decision',
     description: 'Record a decision that was made.',
     input_schema: {
@@ -278,7 +278,7 @@ export const AGENT_TOOL_DEFINITIONS = [
     },
   },
   {
-    type: 'custom_20260401',
+    type: 'custom',
     name: 'flag_pending_response',
     description: 'Flag that something needs a response.',
     input_schema: {
