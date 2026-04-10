@@ -333,8 +333,9 @@ When resolving relative dates like "Friday" or "next week", use today's date (${
     // Process classify_entities first
     for (const call of toolCalls) {
       if (call.name === 'classify_entities') {
-        const input = call.input as { entities: ClassifyEntityInput[] }
-        for (const entityInput of input.entities) {
+        const input = call.input as { entities: ClassifyEntityInput[] | ClassifyEntityInput }
+        const entities = Array.isArray(input.entities) ? input.entities : input.entities ? [input.entities] : []
+        for (const entityInput of entities) {
           const createdBefore = new Date()
           const entity = await resolveOrCreateEntity(db, entityInput)
           const key = normalize(entityInput.name)
@@ -376,8 +377,9 @@ When resolving relative dates like "Friday" or "next week", use today's date (${
     // Process create_tasks
     for (const call of toolCalls) {
       if (call.name === 'create_tasks') {
-        const input = call.input as { tasks: CreateTaskInput[] }
-        for (const taskInput of input.tasks) {
+        const input = call.input as { tasks: CreateTaskInput[] | CreateTaskInput }
+        const tasks = Array.isArray(input.tasks) ? input.tasks : input.tasks ? [input.tasks] : []
+        for (const taskInput of tasks) {
           // Resolve waiting_on entity if present
           let waitingOnEntityId: string | null = null
           if (taskInput.waiting_on) {
@@ -439,8 +441,9 @@ When resolving relative dates like "Friday" or "next week", use today's date (${
     // Process log_decisions
     for (const call of toolCalls) {
       if (call.name === 'log_decisions') {
-        const input = call.input as { decisions: LogDecisionInput[] }
-        for (const decisionInput of input.decisions) {
+        const input = call.input as { decisions: LogDecisionInput[] | LogDecisionInput }
+        const decisions = Array.isArray(input.decisions) ? input.decisions : input.decisions ? [input.decisions] : []
+        for (const decisionInput of decisions) {
           const { data: newDecision, error: decError } = await db
             .from('decisions')
             .insert({
