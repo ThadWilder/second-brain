@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { LogOut, BookOpen } from 'lucide-react'
 import { StatusSummary } from './StatusSummary'
 import { BrandCards } from './BrandCards'
 import { EntityCards } from './EntityCards'
@@ -267,38 +266,34 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col">
       {/* Header */}
-      <header className="border-b border-[var(--border)] px-5 py-4 flex items-end justify-between shrink-0">
-        <div className="flex items-end gap-3 pb-0.5">
-          <Image src="/logo-icon.png" alt="Dumpbox" width={52} height={52} className="mb-[-2px]" />
-          <span className="text-[var(--text)] font-bold tracking-tight text-lg leading-none">DUMPBOX</span>
-          <span className="text-sm text-[var(--muted)] leading-none">
-            {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+      <header className="border-b border-[var(--border)] px-6 py-5 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <Image src="/logo-icon.png" alt="Dumpbox" width={36} height={36} />
+          <span className="text-[var(--text)] font-bold tracking-tight text-lg">Dumpbox</span>
+          <span className="text-[var(--border)] select-none">/</span>
+          <span className="text-sm text-[var(--muted)]">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </span>
         </div>
-        <div className="flex items-end gap-4 pb-0.5">
+        <nav className="flex items-center gap-6">
           {stats.escalations > 0 && (
-            <span className="text-sm bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded">
+            <span className="text-sm text-red-700 font-medium">
               {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
             </span>
           )}
           <a
             href="/wiki"
-            className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1.5"
+            className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors"
           >
-            <BookOpen className="w-4 h-4" />
             Wiki
           </a>
-          <span className="text-xs text-[var(--muted)]" title={lastUpdated.toLocaleTimeString()}>
-            live
-          </span>
           <button
             onClick={handleSignOut}
-            className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1.5"
+            className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors"
           >
-            <LogOut className="w-4 h-4" />
             Sign out
           </button>
-        </div>
+        </nav>
       </header>
 
       {/* Main content — single scrollable column */}
