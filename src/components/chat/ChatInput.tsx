@@ -1,22 +1,30 @@
 'use client'
 
-import { useState, useRef, KeyboardEvent } from 'react'
+import { useState, useRef, useEffect, KeyboardEvent } from 'react'
 import type { Attachment } from '@/types'
 
 interface Props {
   onSend: (message: string, attachments?: Attachment[]) => void
   disabled?: boolean
   placeholder?: string
+  autoFocus?: boolean
+  large?: boolean
 }
 
 const ACCEPT = 'image/png,image/jpeg,image/jpg,image/gif,image/webp'
 
-export function ChatInput({ onSend, disabled, placeholder }: Props) {
+export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: Props) {
   const [value, setValue] = useState('')
   const [pendingFiles, setPendingFiles] = useState<Array<{ file: File; preview: string }>>([])
   const [uploading, setUploading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (autoFocus && textareaRef.current) {
+      textareaRef.current.focus()
+    }
+  }, [autoFocus])
 
   async function uploadFile(file: File): Promise<Attachment | null> {
     const form = new FormData()
@@ -60,7 +68,8 @@ export function ChatInput({ onSend, disabled, placeholder }: Props) {
     const el = textareaRef.current
     if (!el) return
     el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+    const maxH = large ? 240 : 160
+    el.style.height = `${Math.min(el.scrollHeight, maxH)}px`
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -83,7 +92,7 @@ export function ChatInput({ onSend, disabled, placeholder }: Props) {
   }
 
   return (
-    <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-2">
+    <div className={`bg-[#1a1d27] border border-[#2a2d3a] rounded-xl ${large ? 'p-3' : 'p-2'}`}>
       {/* Image previews */}
       {pendingFiles.length > 0 && (
         <div className="flex gap-2 px-1 pb-2 overflow-x-auto">
@@ -116,12 +125,13 @@ export function ChatInput({ onSend, disabled, placeholder }: Props) {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || uploading}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
+          className={`shrink-0 flex items-center justify-center rounded-lg
                      text-slate-400 hover:text-slate-200 hover:bg-[#2a2d3a]
-                     disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                     disabled:opacity-40 disabled:cursor-not-allowed transition-colors
+                     ${large ? 'w-10 h-10' : 'w-8 h-8'}`}
           aria-label="Attach image"
         >
-          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg className={large ? 'w-5 h-5' : 'w-4 h-4'} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="2" y="2" width="16" height="16" rx="2" />
             <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
             <path d="M2 14l4-4 3 3 4-5 5 6" strokeLinecap="round" strokeLinejoin="round" />
@@ -144,23 +154,25 @@ export function ChatInput({ onSend, disabled, placeholder }: Props) {
           onInput={handleInput}
           disabled={disabled || uploading}
           placeholder={placeholder ?? 'Ask a question or dump info...'}
-          rows={1}
-          className="flex-1 bg-transparent resize-none text-sm text-slate-200 placeholder:text-slate-500
-                     focus:outline-none leading-relaxed py-1 px-1 min-h-[32px] max-h-[160px]
-                     disabled:opacity-50"
+          rows={large ? 2 : 1}
+          className={`flex-1 bg-transparent resize-none text-slate-200 placeholder:text-slate-500
+                     focus:outline-none leading-relaxed px-1
+                     disabled:opacity-50
+                     ${large ? 'text-base py-2 min-h-[56px] max-h-[240px]' : 'text-sm py-1 min-h-[32px] max-h-[160px]'}`}
         />
         <button
           onClick={handleSend}
           disabled={disabled || uploading || (!value.trim() && pendingFiles.length === 0)}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
+          className={`shrink-0 flex items-center justify-center rounded-lg
                      bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed
-                     transition-colors"
+                     transition-colors
+                     ${large ? 'w-10 h-10' : 'w-8 h-8'}`}
           aria-label="Send"
         >
           {disabled || uploading ? (
-            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span className={`border-2 border-white/30 border-t-white rounded-full animate-spin ${large ? 'w-4 h-4' : 'w-3.5 h-3.5'}`} />
           ) : (
-            <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none">
+            <svg className={large ? 'w-4 h-4 text-white' : 'w-3.5 h-3.5 text-white'} viewBox="0 0 16 16" fill="none">
               <path d="M2 14L14 8L2 2v5l8 1-8 1v5z" fill="currentColor" />
             </svg>
           )}

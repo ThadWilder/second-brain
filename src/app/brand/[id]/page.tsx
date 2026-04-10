@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { BrandDetail } from '@/components/brand/BrandDetail'
-import { ChatPanel } from '@/components/chat/ChatPanel'
+import { WikiSection } from '@/components/brand/WikiSection'
 import type { Task, Decision, Entry, Entity } from '@/types'
 
 interface Props {
@@ -23,6 +23,15 @@ async function getBrandData(brandId: string) {
     .single()
 
   if (!brand) return null
+
+  // Wiki page for this entity
+  const slug = (brand.normalized_name as string).replace(/\s+/g, '-')
+  const { data: wikiPage } = await db
+    .from('wiki_pages')
+    .select('*, entities(type, name)')
+    .eq('org_id', ORG_ID)
+    .eq('slug', slug)
+    .single()
 
   // Tasks for this brand
   const { data: taskEntityLinks } = await db
@@ -103,7 +112,7 @@ async function getBrandData(brandId: string) {
     linkedEntities = (entityData ?? []) as Entity[]
   }
 
-  return { brand, tasks, entries, decisions, linkedEntities }
+  return { brand, tasks, entries, decisions, linkedEntities, wikiPage }
 }
 
 export default async function BrandPage({ params }: Props) {
@@ -112,7 +121,7 @@ export default async function BrandPage({ params }: Props) {
 
   if (!data) notFound()
 
-  const { brand, tasks, entries, decisions, linkedEntities } = data
+  const { brand, tasks, entries, decisions, linkedEntities, wikiPage } = data
 
   return (
     <div className="min-h-screen bg-[#0f1117] flex flex-col">
@@ -122,16 +131,23 @@ export default async function BrandPage({ params }: Props) {
           href="/"
           className="text-slate-500 hover:text-slate-300 text-sm transition-colors"
         >
-          ← Back
+          &larr; Back
         </Link>
         <span className="text-slate-600">/</span>
         <span className="text-slate-200 font-medium text-sm">{brand.name}</span>
       </header>
 
-      {/* Main layout */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden">
-        {/* Brand detail */}
-        <div className="flex-1 overflow-y-auto p-4">
+      {/* Main content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto p-4 space-y-6">
+          {/* Wiki content — shown first */}
+          <WikiSection
+            wikiPage={wikiPage}
+            brandName={brand.name}
+            slug={(brand.normalized_name as string).replace(/\s+/g, '-')}
+          />
+
+          {/* Existing tabs (tasks, entries, decisions) */}
           <BrandDetail
             brand={brand}
             tasks={tasks}
@@ -139,18 +155,6 @@ export default async function BrandPage({ params }: Props) {
             entries={entries}
             entities={linkedEntities}
           />
-        </div>
-
-        {/* Chat panel */}
-        <div className="lg:w-[380px] border-t lg:border-t-0 lg:border-l border-[#2a2d3a] flex flex-col h-[500px] lg:h-auto">
-          <div className="px-4 py-3 border-b border-[#2a2d3a] shrink-0">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Chat
-            </h2>
-          </div>
-          <div className="flex-1 min-h-0">
-            <ChatPanel />
-          </div>
         </div>
       </div>
     </div>
