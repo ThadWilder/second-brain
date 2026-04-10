@@ -53,7 +53,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="flex justify-center mb-4">
-            <Image src="/logo.jpg" alt="Dumpbox" width={120} height={120} className="rounded-2xl" />
+            <Image src="/logo-icon.png" alt="Dumpbox" width={120} height={120} className="" />
           </div>
           <h1 className="text-5xl sm:text-6xl font-black tracking-tighter text-[var(--text)] mb-4">
             DUMPBOX

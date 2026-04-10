@@ -132,7 +132,7 @@ export default async function BrandPage({ params }: Props) {
           href="/"
           className="text-[var(--muted)] hover:text-[var(--text)] text-sm transition-colors flex items-center gap-2"
         >
-          <Image src="/logo.jpg" alt="Dumpbox" width={24} height={24} className="rounded" />
+          <Image src="/logo-icon.png" alt="Dumpbox" width={24} height={24} />
           &larr; Back
         </Link>
         <span className="text-[var(--border)]">/</span>
