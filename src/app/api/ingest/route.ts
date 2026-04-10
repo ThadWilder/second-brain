@@ -21,6 +21,7 @@ import {
 import type { PostmarkAttachment } from '@/lib/postmark'
 import type { Attachment } from '@/types'
 import { hasValidSession } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
@@ -65,6 +66,16 @@ async function uploadPostmarkAttachments(
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // ── Rate limit: 30 req/min per IP ──────────────────────────────────
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  const rl = rateLimit(`ingest:${ip}`, 30)
+  if (rl.limited) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) } },
+    )
+  }
+
   const rawBody = await req.text()
   let body: Record<string, unknown>
 

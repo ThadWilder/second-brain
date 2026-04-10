@@ -11,12 +11,23 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 import { hasValidSession } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
 const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // ── Rate limit: 10 req/min per IP ──────────────────────────────────
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  const rl = rateLimit(`upload:${ip}`, 10)
+  if (rl.limited) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) } },
+    )
+  }
+
   const authenticated = await hasValidSession()
   if (!authenticated) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
