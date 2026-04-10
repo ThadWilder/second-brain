@@ -44,6 +44,18 @@ const TYPE_CONFIG: Record<string, {
     border: 'border-teal-200',
     bg: 'hover:bg-teal-50',
   },
+  vendor_team: {
+    icon: '👤',
+    accent: 'text-purple-700',
+    border: 'border-purple-200',
+    bg: 'hover:bg-purple-50',
+  },
+  freelancer: {
+    icon: '💻',
+    accent: 'text-orange-700',
+    border: 'border-orange-200',
+    bg: 'hover:bg-orange-50',
+  },
   topic: {
     icon: '🏷️',
     accent: 'text-amber-700',

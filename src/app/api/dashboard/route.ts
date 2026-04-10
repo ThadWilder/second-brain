@@ -38,6 +38,8 @@ export async function GET(): Promise<NextResponse> {
   const vendorEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'vendor')
   const departmentEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'department')
   const franchiseeEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'franchisee')
+  const vendorTeamEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'vendor_team')
+  const freelancerEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'freelancer')
 
   // Entity task summaries
   async function getEntityTaskSummary(entityId: string) {
@@ -75,6 +77,16 @@ export async function GET(): Promise<NextResponse> {
   }))
 
   const franchisees = await Promise.all(franchiseeEntities.map(async (f: Entity) => {
+    const s = await getEntityTaskSummary(f.id)
+    return { entity: f, ...s }
+  }))
+
+  const vendorTeam = await Promise.all(vendorTeamEntities.map(async (v: Entity) => {
+    const s = await getEntityTaskSummary(v.id)
+    return { entity: v, ...s }
+  }))
+
+  const freelancers = await Promise.all(freelancerEntities.map(async (f: Entity) => {
     const s = await getEntityTaskSummary(f.id)
     return { entity: f, ...s }
   }))
@@ -133,7 +145,7 @@ export async function GET(): Promise<NextResponse> {
   )
 
   return NextResponse.json({
-    stats, brands, people, vendors, departments, franchisees,
+    stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, regularTasks, staleFromYesterday,
     pendingResponses: pendingResponses ?? [],
     clarifications: clarifications ?? [],

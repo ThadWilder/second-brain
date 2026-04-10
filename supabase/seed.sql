@@ -26,8 +26,10 @@ INSERT INTO entities (org_id, name, normalized_name, type, first_seen, last_seen
   -- Departments
   ('00000000-0000-0000-0000-000000000001', 'TMS', 'tms', 'department', now(), now()),
   -- Vendors
-  ('00000000-0000-0000-0000-000000000001', 'Moe', 'moe', 'vendor', now(), now()),
-  ('00000000-0000-0000-0000-000000000001', 'Red Brick', 'red brick', 'vendor', now(), now());
+  ('00000000-0000-0000-0000-000000000001', 'The Marketing Agency', 'the marketing agency', 'vendor', now(), now()),
+  ('00000000-0000-0000-0000-000000000001', 'Red Brick', 'red brick', 'vendor', now(), now()),
+  -- Vendor Team
+  ('00000000-0000-0000-0000-000000000001', 'Moe', 'moe', 'vendor_team', now(), now());
 
 -- Brand aliases (full names for abbreviated brands)
 INSERT INTO entity_aliases (entity_id, alias, normalized_alias)
@@ -50,4 +52,14 @@ UNION ALL
   FROM entities WHERE name = 'TMS' AND org_id = '00000000-0000-0000-0000-000000000001'
 UNION ALL
   SELECT id, 'Threshold Brands', 'threshold brands'
-  FROM entities WHERE name = 'HQ' AND org_id = '00000000-0000-0000-0000-000000000001';
+  FROM entities WHERE name = 'HQ' AND org_id = '00000000-0000-0000-0000-000000000001'
+UNION ALL
+  SELECT id, 'TMA', 'tma'
+  FROM entities WHERE name = 'The Marketing Agency' AND org_id = '00000000-0000-0000-0000-000000000001';
+
+-- Relationships: link Moe to The Marketing Agency
+INSERT INTO entity_relationships (org_id, from_entity_id, to_entity_id, relationship)
+  SELECT '00000000-0000-0000-0000-000000000001', moe.id, tma.id, 'works_at'
+  FROM entities moe, entities tma
+  WHERE moe.name = 'Moe' AND moe.org_id = '00000000-0000-0000-0000-000000000001'
+    AND tma.name = 'The Marketing Agency' AND tma.org_id = '00000000-0000-0000-0000-000000000001';

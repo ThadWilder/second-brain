@@ -248,7 +248,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   }
 
   const {
-    stats, brands, people, vendors, departments, franchisees,
+    stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, regularTasks, staleFromYesterday,
     pendingResponses, clarifications,
     heatmapCells, heatmapDays, brandNames,
@@ -398,6 +398,8 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             <EntityCards title="Franchisees" entities={franchisees} type="franchisee" allEntities={allEntities} />
             <EntityCards title="People" entities={people} type="contact" allEntities={allEntities} />
             <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} />
+            <EntityCards title="Vendor Team" entities={vendorTeam} type="vendor_team" allEntities={allEntities} />
+            <EntityCards title="Freelancers" entities={freelancers} type="freelancer" allEntities={allEntities} />
           </div>
         </div>
       </div>
@@ -413,6 +415,8 @@ interface DashboardData {
   vendors: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   departments: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   franchisees: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
+  vendorTeam: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
+  freelancers: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   escalatedTasks: any[]
   regularTasks: any[]
   staleFromYesterday: any[]
