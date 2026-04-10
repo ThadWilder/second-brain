@@ -111,41 +111,43 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               }
 
               case 'status_idle': {
-                // Agent is done — check if it needs more tool results or is truly finished
-                const status = await getSessionStatus(sessionId)
-                if (status === 'idle') {
-                  // Done — persist and close
-                  if (assistantContent) {
-                    await db.from('messages').insert({
-                      conversation_id,
-                      role: 'assistant',
-                      content: assistantContent,
-                    })
-                  }
-                  send('message_stop', {})
-                  controller.close()
-                  return
-                }
+                // Don't stop immediately — there might be more events coming
+                // after tool results. Just note it and let the outer loop check.
                 break
               }
             }
           }
 
-          // Check if session is idle (no new events)
-          if (events.length === 0) {
-            const status = await getSessionStatus(sessionId)
-            if (status === 'idle') {
-              if (assistantContent) {
-                await db.from('messages').insert({
-                  conversation_id,
-                  role: 'assistant',
-                  content: assistantContent,
-                })
+          // After processing all new events, check if we're done
+          const status = await getSessionStatus(sessionId)
+          if (status === 'idle') {
+            // Give one more poll to catch any final agent text
+            await new Promise((r) => setTimeout(r, 500))
+            const finalEvents = await getSessionEvents(sessionId)
+            for (const event of finalEvents) {
+              if (processedEventIds.has(event.id)) continue
+              processedEventIds.add(event.id)
+              if (event.type === 'agent') {
+                for (const block of event.content ?? []) {
+                  if (block.type === 'text' && block.text) {
+                    assistantContent += block.text
+                    send('content_delta', { delta: block.text })
+                  }
+                }
               }
-              send('message_stop', {})
-              controller.close()
-              return
             }
+
+            // Now we're truly done
+            if (assistantContent) {
+              await db.from('messages').insert({
+                conversation_id,
+                role: 'assistant',
+                content: assistantContent,
+              })
+            }
+            send('message_stop', {})
+            controller.close()
+            return
           }
         }
 
