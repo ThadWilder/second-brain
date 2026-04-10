@@ -2,9 +2,15 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
+import { hasValidSession } from '@/lib/auth'
 
 /** GET /api/wiki — list all wiki pages */
 export async function GET(): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const db = getServiceClient()
 
   const { data, error } = await db

@@ -8,9 +8,15 @@ export const fetchCache = 'force-no-store'
 
 import { NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
+import { hasValidSession } from '@/lib/auth'
 import type { Entity } from '@/types'
 
 export async function GET(): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const db = getServiceClient()
   const today = new Date().toISOString().slice(0, 10)
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()

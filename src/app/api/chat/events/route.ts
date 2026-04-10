@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
+import { hasValidSession } from '@/lib/auth'
 import {
   sendUserMessage,
   sendToolResult,
@@ -30,6 +31,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export const maxDuration = 120
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { conversation_id, message, attachments } = await req.json()
 
   if (!conversation_id || !message) {

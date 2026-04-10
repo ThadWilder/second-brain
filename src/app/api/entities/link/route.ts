@@ -8,8 +8,14 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
+import { hasValidSession } from '@/lib/auth'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { from_entity_id, to_entity_id, relationship } = await req.json()
 
   if (!from_entity_id || !to_entity_id || !relationship) {
@@ -30,6 +36,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 }
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { id } = await req.json()
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
@@ -40,6 +51,11 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const entityId = new URL(req.url).searchParams.get('entity_id')
   if (!entityId) return NextResponse.json({ error: 'Missing entity_id' }, { status: 400 })
 

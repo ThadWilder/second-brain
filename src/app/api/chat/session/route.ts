@@ -7,10 +7,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { createSession } from '@/lib/managed-agents'
+import { hasValidSession } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(_req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const sessionId = await createSession()
     const db = getServiceClient()

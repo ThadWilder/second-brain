@@ -2,12 +2,18 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
+import { hasValidSession } from '@/lib/auth'
 
 /** GET /api/wiki/:slug — get a single wiki page with links */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { slug } = await params
   const db = getServiceClient()
 
@@ -46,6 +52,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { slug } = await params
   const db = getServiceClient()
 

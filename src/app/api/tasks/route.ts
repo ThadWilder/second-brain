@@ -11,8 +11,14 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { deEscalateTask } from '@/lib/escalation'
+import { hasValidSession } from '@/lib/auth'
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const body = await req.json()
   const { id, status, due_date, escalation } = body
 
@@ -72,6 +78,11 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const brand_id = searchParams.get('brand_id')
   const status = searchParams.get('status')
