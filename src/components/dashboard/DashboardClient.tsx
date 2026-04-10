@@ -387,6 +387,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               needsResponse={pendingResponses}
               tasks={regularTasks}
               staleFromYesterday={staleFromYesterday}
+              onRefresh={fetchData}
             />
           </div>
 

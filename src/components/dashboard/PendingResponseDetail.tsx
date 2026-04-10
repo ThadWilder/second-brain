@@ -1,0 +1,177 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Clock, FileText, Users, CheckCircle, Loader2 } from 'lucide-react'
+
+interface PendingResponseData {
+  pending_response: {
+    id: string
+    summary: string
+    responded: boolean
+    created_at: string
+  }
+  source_entry: { id: string; raw_text: string; source: string; created_at: string } | null
+  entities: Array<{ id: string; name: string; type: string; role: string }>
+}
+
+export function PendingResponseDetail({
+  pendingResponseId,
+  onUpdate,
+}: {
+  pendingResponseId: string
+  onUpdate?: () => void
+}) {
+  const [data, setData] = useState<PendingResponseData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [marking, setMarking] = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/pending-responses/${pendingResponseId}`)
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .finally(() => setLoading(false))
+  }, [pendingResponseId])
+
+  async function markResponded() {
+    setMarking(true)
+    await fetch(`/api/pending-responses/${pendingResponseId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ responded: true }),
+    })
+    // Re-fetch
+    const r = await fetch(`/api/pending-responses/${pendingResponseId}`)
+    setData(await r.json())
+    setMarking(false)
+    onUpdate?.()
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-5 h-5 text-[var(--muted)] animate-spin" />
+      </div>
+    )
+  }
+
+  if (!data?.pending_response) {
+    return (
+      <p className="text-sm text-[var(--muted)] py-8 text-center">Pending response not found.</p>
+    )
+  }
+
+  const { pending_response: pr, source_entry, entities } = data
+
+  return (
+    <div className="space-y-5">
+      {/* Summary */}
+      <div>
+        <p className="text-sm text-[var(--text)] leading-relaxed">{pr.summary}</p>
+      </div>
+
+      {/* Waiting duration */}
+      <Section label="Status">
+        <div className="flex items-center gap-2 text-xs">
+          <Clock className="w-3.5 h-3.5 text-[var(--muted)]" />
+          <span className="text-[var(--text)]">
+            {pr.responded ? 'Responded' : `Waiting for ${formatAge(pr.created_at)}`}
+          </span>
+        </div>
+
+        {!pr.responded && (
+          <button
+            onClick={markResponded}
+            disabled={marking}
+            className="mt-3 flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
+          >
+            {marking ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CheckCircle className="w-3.5 h-3.5" />
+            )}
+            Mark as responded
+          </button>
+        )}
+
+        {pr.responded && (
+          <div className="mt-2 flex items-center gap-2 text-xs text-green-700">
+            <CheckCircle className="w-3.5 h-3.5" />
+            <span>Done</span>
+          </div>
+        )}
+      </Section>
+
+      {/* Linked entities */}
+      {entities.length > 0 && (
+        <Section label="Linked Entities">
+          <div className="space-y-1.5">
+            {entities.map((e) => (
+              <div key={e.id + e.role} className="flex items-center gap-2 text-xs">
+                <Users className="w-3.5 h-3.5 text-[var(--muted)]" />
+                <span className="text-[var(--text)]">{e.name}</span>
+                <span className="text-[var(--muted)] capitalize">({e.role})</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Source Dumpling */}
+      {source_entry && (
+        <Section label="Source Dumpling">
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <FileText className="w-3.5 h-3.5 text-[var(--muted)]" />
+              <span className="text-xs text-[var(--muted)] capitalize">{source_entry.source}</span>
+              <span className="text-xs text-[var(--muted)]">
+                {formatDate(source_entry.created_at)}
+              </span>
+            </div>
+            <p className="text-xs text-[var(--text)] leading-relaxed line-clamp-6 whitespace-pre-wrap">
+              {source_entry.raw_text}
+            </p>
+          </div>
+        </Section>
+      )}
+
+      {/* Timestamps */}
+      <Section label="Timestamps">
+        <div className="text-xs text-[var(--muted)] flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5" />
+          <span>Created {formatDate(pr.created_at)}</span>
+        </div>
+      </Section>
+    </div>
+  )
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="border-t border-[var(--border)] pt-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-2">
+        {label}
+      </h4>
+      {children}
+    </div>
+  )
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function formatAge(isoDate: string): string {
+  const diff = Date.now() - new Date(isoDate).getTime()
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  if (hours < 1) return 'less than an hour'
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  return `${days}d`
+}

@@ -52,3 +52,13 @@ body {
 .animate-slide-in {
   animation: slide-in 0.2s ease-out;
 }
+
+/* Detail panel slide-in from right */
+@keyframes panel-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-panel-slide-in {
+  animation: panel-slide-in 0.25s ease-out;
+}

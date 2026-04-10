@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { DetailPanel } from './DetailPanel'
+import { TaskDetail } from './TaskDetail'
+import { PendingResponseDetail } from './PendingResponseDetail'
 import type { TaskWithEntities } from '@/types'
 
 interface Props {
@@ -10,13 +13,34 @@ interface Props {
   needsResponse: Array<{ id: string; summary: string; created_at: string }>
   tasks: TaskWithEntities[]
   staleFromYesterday: TaskWithEntities[]
+  onRefresh?: () => void
 }
 
-export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday }: Props) {
+type PanelState =
+  | { type: 'task'; id: string; title: string }
+  | { type: 'pending'; id: string; title: string }
+  | null
+
+export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
+  const [panel, setPanel] = useState<PanelState>(null)
 
   const handleComplete = (id: string) => {
     setCompletedIds((prev) => new Set([...prev, id]))
+  }
+
+  const closePanel = useCallback(() => setPanel(null), [])
+
+  const handleTaskClick = (task: TaskWithEntities) => {
+    setPanel({ type: 'task', id: task.id, title: task.description })
+  }
+
+  const handlePendingClick = (pr: { id: string; summary: string }) => {
+    setPanel({ type: 'pending', id: pr.id, title: pr.summary })
+  }
+
+  const handlePanelUpdate = () => {
+    onRefresh?.()
   }
 
   const visibleTasks = tasks.filter((t) => !completedIds.has(t.id))
@@ -33,6 +57,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
               task={task}
               variant="escalated"
               onComplete={handleComplete}
+              onClick={() => handleTaskClick(task)}
             />
           ))}
         </Section>
@@ -44,7 +69,8 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
           {needsResponse.map((pr) => (
             <div
               key={pr.id}
-              className="flex items-start gap-3 py-2 px-3 rounded-lg bg-amber-50 border border-amber-200"
+              onClick={() => handlePendingClick(pr)}
+              className="flex items-start gap-3 py-2 px-3 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors"
             >
               <span className="text-amber-700 shrink-0 mt-0.5">›</span>
               <div className="flex-1 min-w-0">
@@ -67,6 +93,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
               task={task}
               variant="normal"
               onComplete={handleComplete}
+              onClick={() => handleTaskClick(task)}
             />
           ))}
         </Section>
@@ -83,6 +110,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
                 task={task}
                 variant="stale"
                 onComplete={handleComplete}
+                onClick={() => handleTaskClick(task)}
               />
             ))}
         </Section>
@@ -96,6 +124,20 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
             All clear. No open dumplings.
           </div>
         )}
+
+      {/* Detail Panel */}
+      <DetailPanel
+        open={panel !== null}
+        onClose={closePanel}
+        title={panel?.type === 'task' ? 'Task Detail' : 'Pending Response'}
+      >
+        {panel?.type === 'task' && (
+          <TaskDetail taskId={panel.id} onUpdate={handlePanelUpdate} />
+        )}
+        {panel?.type === 'pending' && (
+          <PendingResponseDetail pendingResponseId={panel.id} onUpdate={handlePanelUpdate} />
+        )}
+      </DetailPanel>
     </div>
   )
 }
@@ -129,10 +171,12 @@ function TaskRow({
   task,
   variant,
   onComplete,
+  onClick,
 }: {
   task: TaskWithEntities
   variant: 'escalated' | 'normal' | 'stale'
   onComplete: (id: string) => void
+  onClick: () => void
 }) {
   const brand = task.entities?.find((e) => e.role === 'brand')
 
@@ -144,13 +188,16 @@ function TaskRow({
 
   return (
     <div
-      className={`flex items-start gap-3 py-2 px-3 rounded-lg border ${variantStyles[variant]}`}
+      className={`flex items-start gap-3 py-2 px-3 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${variantStyles[variant]}`}
+      onClick={onClick}
     >
-      <TaskCheckbox
-        taskId={task.id}
-        checked={task.status === 'done'}
-        onComplete={onComplete}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <TaskCheckbox
+          taskId={task.id}
+          checked={task.status === 'done'}
+          onComplete={onComplete}
+        />
+      </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-[var(--text)] leading-snug">{task.description}</p>
         <div className="flex items-center gap-2 mt-1">
