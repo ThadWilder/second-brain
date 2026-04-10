@@ -14,7 +14,7 @@ export async function GET(): Promise<NextResponse> {
   const db = getServiceClient()
   const today = new Date().toISOString().slice(0, 10)
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+  const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
 
   // Stats
   const [escalationsRes, needsResponseRes, openTasksRes, closed7dRes] = await Promise.all([
@@ -98,7 +98,7 @@ export async function GET(): Promise<NextResponse> {
   // Heatmap
   const { data: entryEntityData } = await db.from('entry_entities')
     .select('entries(created_at), entities(name, type)')
-    .gte('entries.created_at', fourteenDaysAgo).eq('entities.type', 'brand')
+    .gte('entries.created_at', tenDaysAgo).eq('entities.type', 'brand')
 
   const heatmapMap: Record<string, number> = {}
   for (const row of entryEntityData ?? []) {
@@ -109,7 +109,7 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const heatmapDays: string[] = []
-  for (let i = 13; i >= 0; i--) {
+  for (let i = 9; i >= 0; i--) {
     heatmapDays.push(new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
   }
 

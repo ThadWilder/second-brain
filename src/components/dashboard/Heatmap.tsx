@@ -6,7 +6,7 @@ import type { HeatmapCell } from '@/types'
 interface Props {
   data: HeatmapCell[]
   brands: string[]
-  days: string[]  // ISO date strings, last 14
+  days: string[]  // ISO date strings, last 10
 }
 
 function getColor(count: number, max: number): string {
@@ -79,16 +79,16 @@ export function Heatmap({ data, brands, days }: Props) {
         ))}
 
         {/* Legend */}
-        <div className="flex items-center gap-1 mt-2 ml-28">
-          <span className="text-[10px] text-[var(--muted)]">less</span>
+        <div className="flex items-center gap-1.5 mt-3 ml-28">
+          <span className="text-[10px] text-[var(--muted)] mr-0.5">Less</span>
           {[0, 0.25, 0.5, 0.75, 1].map((level) => (
             <div
               key={level}
-              className="w-3 h-3 rounded-sm"
+              className="w-3.5 h-3.5 rounded-sm"
               style={{ backgroundColor: getColor(level * maxCount, maxCount) }}
             />
           ))}
-          <span className="text-[10px] text-[var(--muted)]">more</span>
+          <span className="text-[10px] text-[var(--muted)] ml-0.5">More</span>
         </div>
       </div>
     </div>

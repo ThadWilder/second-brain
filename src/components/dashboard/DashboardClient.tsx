@@ -268,7 +268,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
       {/* Header */}
       <header className="bg-[#2c2014] px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <Image src="/logo-icon.png" alt="Dumpbox" width={32} height={32} className="brightness-[2] invert" />
+          <Image src="/logo-icon-white.png" alt="Dumpbox" width={32} height={32} />
           <span className="text-white font-bold tracking-tight text-lg">Dumpbox</span>
           <span className="text-white/20 select-none">/</span>
           <span className="text-sm text-white/50">
@@ -367,7 +367,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                 <StatusSummary stats={stats} />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Activity (14 days)</h2>
+                <h2 className="text-sm font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Activity (10 days)</h2>
                 <Heatmap data={heatmapCells} brands={brandNames} days={heatmapDays} />
               </div>
             </div>
