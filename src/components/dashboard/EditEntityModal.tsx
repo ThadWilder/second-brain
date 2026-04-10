@@ -22,6 +22,7 @@ const RELATIONSHIP_TYPES = [
   { value: 'member_of', label: 'member of' },
   { value: 'works_on', label: 'works on' },
   { value: 'works_at', label: 'works at' },
+  { value: 'franchisee_of', label: 'franchisee of' },
   { value: 'manages', label: 'manages' },
   { value: 'reports_to', label: 'reports to' },
   { value: 'works_for', label: 'works for' },
