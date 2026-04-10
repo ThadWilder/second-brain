@@ -212,6 +212,9 @@ async function executeTool(
     case 'query_decisions': return queryDecisions(db, input)
     case 'update_task':   return updateTask(db, input)
     case 'create_task':   return createTask(db, input)
+    case 'assign_entity_to_task': return assignEntityToTask(db, input)
+    case 'add_note_to_task': return addNoteToTask(db, input)
+    case 'close_tasks_for_brand': return closeTasksForBrand(db, input)
     case 'log_decision':  return logDecision(db, input)
     case 'flag_pending_response': return flagPendingResponse(db, input)
     default: return { error: `Unknown tool: ${toolName}` }
@@ -233,6 +236,44 @@ async function searchWikiTool(db: SupabaseClient, input: { query: string }) {
     .filter((p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q) || p.slug.includes(q))
     .map((p) => ({ slug: p.slug, title: p.title, summary: p.summary }))
   return { matches, total: matches.length }
+}
+
+// ─── Entity resolution helper ────────────────────────────────────────
+
+/**
+ * Resolve an entity name to an ID. Checks normalized_name first, then
+ * entity_aliases.normalized_alias. Returns { id, name } or null.
+ */
+async function resolveEntityByName(db: SupabaseClient, name: string, type?: string) {
+  const normalized = name.toLowerCase().trim().replace(/\s+/g, ' ')
+
+  // 1. Exact match on normalized_name
+  let query = db.from('entities').select('id, name').eq('org_id', ORG_ID).eq('normalized_name', normalized)
+  if (type) query = query.eq('type', type)
+  const { data: exact } = await query.limit(1).single()
+  if (exact) return exact
+
+  // 2. Cross-type match (no type filter)
+  if (type) {
+    const { data: crossType } = await db.from('entities').select('id, name').eq('org_id', ORG_ID).eq('normalized_name', normalized).limit(1).single()
+    if (crossType) return crossType
+  }
+
+  // 3. Alias lookup
+  const { data: alias } = await db.from('entity_aliases').select('entity_id').eq('normalized_alias', normalized).limit(1).single()
+  if (alias) {
+    const { data: entity } = await db.from('entities').select('id, name').eq('id', alias.entity_id).single()
+    if (entity) return entity
+  }
+
+  // 4. ILIKE fallback for partial matches
+  const safeName = name.replace(/[%_\\]/g, '\\$&')
+  let ilikeQuery = db.from('entities').select('id, name').eq('org_id', ORG_ID).ilike('name', `%${safeName}%`)
+  if (type) ilikeQuery = ilikeQuery.eq('type', type)
+  const { data: fuzzy } = await ilikeQuery.limit(1).single()
+  if (fuzzy) return fuzzy
+
+  return null
 }
 
 // ─── Structured data tools ────────────────────────────────────────────
@@ -276,40 +317,193 @@ async function queryDecisions(db: SupabaseClient, input: { limit?: number; since
   return error ? { error: error.message } : { decisions: data }
 }
 
-async function updateTask(db: SupabaseClient, input: { id: string; status?: string; due_date?: string; description?: string; waiting_on?: string }) {
-  const { id, ...changes } = input
-  const updates: Record<string, unknown> = {}
-  let prevStatus: string | null = null
-  if (changes.status) {
-    const { data: cur } = await db.from('tasks').select('status').eq('id', id).single()
-    prevStatus = cur?.status ?? null
-    updates.status = changes.status
-    if (changes.status === 'done') updates.resolved_at = new Date().toISOString()
+async function updateTask(db: SupabaseClient, input: { task_id?: string; id?: string; status?: string; escalation?: boolean; due_date?: string | null; description?: string; waiting_on?: string | null }) {
+  const taskId = input.task_id ?? input.id
+  if (!taskId) return { error: 'task_id is required' }
+
+  try {
+    const { data: cur } = await db.from('tasks').select('status, escalation, due_date, description').eq('id', taskId).single()
+    if (!cur) return { error: `Task ${taskId} not found` }
+
+    const updates: Record<string, unknown> = {}
+    const events: Array<{ task_id: string; event_type: string; metadata: Record<string, unknown> }> = []
+
+    // Status change
+    if (input.status && input.status !== cur.status) {
+      // Map 'closed' to 'done' for DB compatibility
+      const dbStatus = input.status === 'closed' ? 'done' : input.status
+      updates.status = dbStatus
+      if (dbStatus === 'done') updates.resolved_at = new Date().toISOString()
+      events.push({ task_id: taskId, event_type: 'status_change', metadata: { from: cur.status, to: dbStatus } })
+    }
+
+    // Escalation change
+    if (input.escalation !== undefined && input.escalation !== cur.escalation) {
+      updates.escalation = input.escalation
+      events.push({ task_id: taskId, event_type: input.escalation ? 'escalated' : 'de_escalated', metadata: { source: 'chat' } })
+    }
+
+    // Due date change
+    if (input.due_date !== undefined && input.due_date !== cur.due_date) {
+      updates.due_date = input.due_date
+      events.push({ task_id: taskId, event_type: 'due_date_changed', metadata: { from: cur.due_date, to: input.due_date } })
+    }
+
+    if (input.description) updates.description = input.description
+    if (input.waiting_on !== undefined) updates.waiting_on = input.waiting_on
+
+    if (Object.keys(updates).length === 0) return { success: true, task_id: taskId, message: 'No changes needed' }
+
+    const { error } = await db.from('tasks').update(updates).eq('id', taskId)
+    if (error) return { error: error.message }
+
+    if (events.length > 0) await db.from('task_events').insert(events)
+
+    // De-escalate if done
+    const newStatus = updates.status as string | undefined
+    if (newStatus === 'done') await deEscalateTask(db, taskId, 'task_done')
+
+    const changeList = Object.keys(updates).join(', ')
+    return { success: true, task_id: taskId, message: `Updated ${changeList} on task ${taskId}.` }
+  } catch (err) {
+    return { error: `Failed to update task: ${err instanceof Error ? err.message : String(err)}` }
   }
-  if (changes.due_date !== undefined) updates.due_date = changes.due_date
-  if (changes.description) updates.description = changes.description
-  if (changes.waiting_on !== undefined) updates.waiting_on = changes.waiting_on
-  const { error } = await db.from('tasks').update(updates).eq('id', id)
-  if (error) return { error: error.message }
-  if (changes.status && prevStatus !== changes.status) {
-    await db.from('task_events').insert({ task_id: id, event_type: 'status_change', metadata: { from: prevStatus, to: changes.status } })
-    if (changes.status === 'done') await deEscalateTask(db, id, 'task_done')
-  }
-  return { success: true, task_id: id }
 }
 
-async function createTask(db: SupabaseClient, input: { description: string; brand_name?: string; due_date?: string; waiting_on?: string }) {
-  const { data: task, error } = await db.from('tasks')
-    .insert({ org_id: ORG_ID, description: input.description, due_date: input.due_date ?? null, waiting_on: input.waiting_on ?? null })
-    .select().single()
-  if (error) return { error: error.message }
-  await db.from('task_events').insert({ task_id: task.id, event_type: 'created', metadata: { source: 'chat' } })
-  if (input.brand_name) {
-    const safeName = input.brand_name.replace(/[%_\\]/g, '\\$&')
-    const { data: brand } = await db.from('entities').select('id').eq('org_id', ORG_ID).ilike('name', `%${safeName}%`).eq('type', 'brand').single()
-    if (brand) await db.from('task_entities').insert({ task_id: task.id, entity_id: brand.id, role: 'brand' })
+async function createTask(db: SupabaseClient, input: { description: string; brand_name?: string; assignee_name?: string; due_date?: string; escalation?: boolean }) {
+  try {
+    const { data: task, error } = await db.from('tasks')
+      .insert({
+        org_id: ORG_ID,
+        description: input.description,
+        due_date: input.due_date ?? null,
+        escalation: input.escalation ?? false,
+      })
+      .select().single()
+    if (error) return { error: error.message }
+
+    await db.from('task_events').insert({ task_id: task.id, event_type: 'created', metadata: { source: 'chat' } })
+
+    const linked: string[] = []
+
+    if (input.brand_name) {
+      const brand = await resolveEntityByName(db, input.brand_name, 'brand')
+      if (brand) {
+        await db.from('task_entities').insert({ task_id: task.id, entity_id: brand.id, role: 'brand' })
+        linked.push(`brand: ${brand.name}`)
+      }
+    }
+
+    if (input.assignee_name) {
+      const assignee = await resolveEntityByName(db, input.assignee_name)
+      if (assignee) {
+        await db.from('task_entities').insert({ task_id: task.id, entity_id: assignee.id, role: 'assignee' })
+        linked.push(`assignee: ${assignee.name}`)
+      }
+    }
+
+    const linkMsg = linked.length > 0 ? ` Linked ${linked.join(', ')}.` : ''
+    return { success: true, task_id: task.id, message: `Created task '${input.description}'.${linkMsg}` }
+  } catch (err) {
+    return { error: `Failed to create task: ${err instanceof Error ? err.message : String(err)}` }
   }
-  return { success: true, task_id: task.id }
+}
+
+async function assignEntityToTask(db: SupabaseClient, input: { task_id: string; entity_name: string; role: string }) {
+  try {
+    const entity = await resolveEntityByName(db, input.entity_name)
+    if (!entity) return { error: `Could not find an entity matching "${input.entity_name}". Please check the name and try again.` }
+
+    // Check task exists
+    const { data: task } = await db.from('tasks').select('id, description').eq('id', input.task_id).single()
+    if (!task) return { error: `Task ${input.task_id} not found.` }
+
+    // Check for existing link to avoid duplicates
+    const { data: existing } = await db.from('task_entities')
+      .select('task_id')
+      .eq('task_id', input.task_id)
+      .eq('entity_id', entity.id)
+      .eq('role', input.role)
+      .limit(1)
+      .single()
+
+    if (existing) return { success: true, message: `${entity.name} is already linked as ${input.role} on this task.` }
+
+    const { error } = await db.from('task_entities').insert({ task_id: input.task_id, entity_id: entity.id, role: input.role })
+    if (error) return { error: error.message }
+
+    return { success: true, message: `Linked ${entity.name} as ${input.role} on task '${task.description}'.` }
+  } catch (err) {
+    return { error: `Failed to assign entity: ${err instanceof Error ? err.message : String(err)}` }
+  }
+}
+
+async function addNoteToTask(db: SupabaseClient, input: { task_id: string; note: string }) {
+  try {
+    const { data: task } = await db.from('tasks').select('id, description').eq('id', input.task_id).single()
+    if (!task) return { error: `Task ${input.task_id} not found.` }
+
+    const { error } = await db.from('task_events').insert({
+      task_id: input.task_id,
+      event_type: 'note_added',
+      metadata: { note: input.note },
+    })
+    if (error) return { error: error.message }
+
+    return { success: true, message: `Added note to task '${task.description}'.` }
+  } catch (err) {
+    return { error: `Failed to add note: ${err instanceof Error ? err.message : String(err)}` }
+  }
+}
+
+async function closeTasksForBrand(db: SupabaseClient, input: { brand_name: string }) {
+  try {
+    const brand = await resolveEntityByName(db, input.brand_name, 'brand')
+    if (!brand) return { error: `Could not find a brand matching "${input.brand_name}".` }
+
+    // Find all open tasks linked to this brand
+    const { data: taskLinks } = await db.from('task_entities')
+      .select('task_id')
+      .eq('entity_id', brand.id)
+      .eq('role', 'brand')
+
+    if (!taskLinks?.length) return { success: true, message: `No tasks found linked to ${brand.name}.` }
+
+    const taskIds = taskLinks.map((t) => t.task_id)
+
+    // Get only open/blocked tasks (not already done)
+    const { data: openTasks } = await db.from('tasks')
+      .select('id, description, status')
+      .in('id', taskIds)
+      .in('status', ['open', 'blocked'])
+      .eq('org_id', ORG_ID)
+
+    if (!openTasks?.length) return { success: true, message: `No open tasks found for ${brand.name}.` }
+
+    // Close each task and log events
+    const now = new Date().toISOString()
+    const events = openTasks.map((t) => ({
+      task_id: t.id,
+      event_type: 'status_change',
+      metadata: { from: t.status, to: 'done' },
+    }))
+
+    await db.from('tasks')
+      .update({ status: 'done', resolved_at: now })
+      .in('id', openTasks.map((t) => t.id))
+
+    await db.from('task_events').insert(events)
+
+    // De-escalate all closed tasks
+    for (const t of openTasks) {
+      await deEscalateTask(db, t.id, 'task_done')
+    }
+
+    const names = openTasks.map((t) => `'${t.description}'`).join(', ')
+    return { success: true, message: `Closed ${openTasks.length} task(s) for ${brand.name}: ${names}.` }
+  } catch (err) {
+    return { error: `Failed to close tasks: ${err instanceof Error ? err.message : String(err)}` }
+  }
 }
 
 async function logDecision(db: SupabaseClient, input: { summary: string; brand_name?: string; made_by?: string }) {

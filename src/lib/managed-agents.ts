@@ -215,32 +215,72 @@ export const AGENT_TOOL_DEFINITIONS = [
   {
     type: 'custom',
     name: 'update_task',
-    description: 'Update a task status, due date, or other fields.',
+    description: 'Update a task\'s status, escalation, due date, or waiting_on field.',
     input_schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'Task UUID' },
-        status: { type: 'string', enum: ['open', 'done', 'blocked'] },
-        due_date: { type: 'string' },
-        description: { type: 'string' },
-        waiting_on: { type: 'string' },
+        task_id: { type: 'string', description: 'Task UUID' },
+        status: { type: 'string', enum: ['open', 'blocked', 'closed'] },
+        escalation: { type: 'boolean', description: 'Escalation flag' },
+        due_date: { type: ['string', 'null'], description: 'ISO date or null to clear' },
+        waiting_on: { type: ['string', 'null'], description: 'Who/what the task is waiting on, or null to clear' },
       },
-      required: ['id'],
+      required: ['task_id'],
     },
   },
   {
     type: 'custom',
     name: 'create_task',
-    description: 'Create a new task.',
+    description: 'Create a new task from conversation.',
     input_schema: {
       type: 'object',
       properties: {
-        description: { type: 'string' },
-        brand_name: { type: 'string' },
-        due_date: { type: 'string' },
-        waiting_on: { type: 'string' },
+        description: { type: 'string', description: 'Task description' },
+        brand_name: { type: 'string', description: 'Brand to link the task to' },
+        assignee_name: { type: 'string', description: 'Contact to assign the task to' },
+        due_date: { type: 'string', description: 'ISO date' },
+        escalation: { type: 'boolean', description: 'Whether to escalate immediately (default false)' },
       },
       required: ['description'],
+    },
+  },
+  {
+    type: 'custom',
+    name: 'assign_entity_to_task',
+    description: 'Link an entity (person, brand, etc.) to a task. Use to assign someone to a task or associate a brand.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'string', description: 'Task UUID' },
+        entity_name: { type: 'string', description: 'Name of the entity to link (resolved by fuzzy match)' },
+        role: { type: 'string', enum: ['assignee', 'brand', 'related'], description: 'Role of the entity on this task' },
+      },
+      required: ['task_id', 'entity_name', 'role'],
+    },
+  },
+  {
+    type: 'custom',
+    name: 'add_note_to_task',
+    description: 'Add a note to a task\'s event timeline.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'string', description: 'Task UUID' },
+        note: { type: 'string', description: 'Note text to add' },
+      },
+      required: ['task_id', 'note'],
+    },
+  },
+  {
+    type: 'custom',
+    name: 'close_tasks_for_brand',
+    description: 'Bulk close all open tasks linked to a brand.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        brand_name: { type: 'string', description: 'Brand name to close tasks for' },
+      },
+      required: ['brand_name'],
     },
   },
   {
