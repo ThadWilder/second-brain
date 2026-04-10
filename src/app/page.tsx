@@ -278,14 +278,7 @@ export default async function DashboardPage() {
               <ClarificationBanner clarifications={clarifications} />
             )}
 
-            {/* Zone 2: Entity Cards — Brands, People, Vendors */}
-            <div className="space-y-5">
-              <BrandCards brands={brands} />
-              <EntityCards title="People" entities={people} type="contact" allEntities={allEntityList} />
-              <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntityList} />
-            </div>
-
-            {/* Zone 3: Priorities */}
+            {/* Priorities — first thing after status */}
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
                 Today's Priorities
@@ -296,6 +289,13 @@ export default async function DashboardPage() {
                 tasks={regularTasks}
                 staleFromYesterday={staleFromYesterday}
               />
+            </div>
+
+            {/* Entity Cards — Brands, People, Vendors */}
+            <div className="space-y-5">
+              <BrandCards brands={brands} />
+              <EntityCards title="People" entities={people} type="contact" allEntities={allEntityList} />
+              <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntityList} />
             </div>
           </div>
         </div>
