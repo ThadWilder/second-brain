@@ -9,8 +9,14 @@ interface Props {
   days: string[]  // ISO date strings, last 10
 }
 
-function getColor(count: number, max: number): string {
-  if (count === 0) return '#f5ede3'
+function isWeekend(isoDate: string): boolean {
+  const d = new Date(isoDate + 'T12:00:00')
+  const day = d.getDay()
+  return day === 0 || day === 6
+}
+
+function getColor(count: number, max: number, weekend: boolean): string {
+  if (count === 0) return weekend ? '#ebe4da' : '#f5ede3'
   const intensity = Math.min(count / Math.max(max, 1), 1)
   if (intensity < 0.33) return '#fde68a'
   if (intensity < 0.66) return '#f59e0b'
@@ -47,7 +53,9 @@ export function Heatmap({ data, brands, days }: Props) {
           {days.map((day) => (
             <div
               key={day}
-              className="w-5 text-[10px] text-[var(--muted)] text-center leading-none"
+              className={`w-5 text-[10px] text-center leading-none ${
+                isWeekend(day) ? 'text-[var(--border)]' : 'text-[var(--muted)]'
+              }`}
               title={day}
             >
               {formatDayLabel(day)}
@@ -71,7 +79,7 @@ export function Heatmap({ data, brands, days }: Props) {
                   key={day}
                   title={`${brand} · ${day} · ${count} dumplings`}
                   className="w-5 h-5 rounded-sm cursor-default"
-                  style={{ backgroundColor: getColor(count, maxCount) }}
+                  style={{ backgroundColor: getColor(count, maxCount, isWeekend(day)) }}
                 />
               )
             })}
