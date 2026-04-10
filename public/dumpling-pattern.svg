@@ -1,128 +1,134 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
   <defs>
     <style>
-      .line { fill: none; stroke: #c4b39e; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: 0.35; }
+      .line { fill: none; stroke: #c0ad96; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: 0.45; }
     </style>
   </defs>
 
-  <!-- Dumpling - top left -->
-  <g transform="translate(80, 60) scale(1.1) rotate(-12)">
-    <path class="line" d="M0,30 Q35,-8 70,30" />
-    <path class="line" d="M0,30 Q35,60 70,30" />
-    <path class="line" d="M14,27 Q21,18 28,27" />
-    <path class="line" d="M28,24 Q35,15 42,24" />
-    <path class="line" d="M42,27 Q49,18 56,27" />
-    <path class="line" d="M28,-2 Q26,-10 30,-16" />
-    <path class="line" d="M40,-2 Q38,-10 42,-16" />
+  <!-- Row 1 -->
+  <g transform="translate(50, 30) scale(1.1) rotate(-12)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M14,27 Q21,18 28,27" /><path class="line" d="M28,24 Q35,15 42,24" /><path class="line" d="M42,27 Q49,18 56,27" />
+    <path class="line" d="M28,-2 Q26,-10 30,-16" /><path class="line" d="M40,-2 Q38,-10 42,-16" />
   </g>
 
-  <!-- Frying pan - right side high -->
-  <g transform="translate(850, 120) scale(1.3) rotate(25)">
-    <circle class="line" cx="40" cy="40" r="35" />
-    <line class="line" x1="75" y1="40" x2="120" y2="40" />
-    <circle class="line" cx="120" cy="40" r="4" />
+  <g transform="translate(280, 60) scale(0.85) rotate(20)">
+    <circle class="line" cx="35" cy="35" r="30" />
+    <line class="line" x1="65" y1="35" x2="105" y2="35" /><circle class="line" cx="105" cy="35" r="4" />
   </g>
 
-  <!-- Chopsticks - center left -->
-  <g transform="translate(150, 380) scale(1.2) rotate(-30)">
-    <line class="line" x1="0" y1="60" x2="70" y2="0" />
-    <line class="line" x1="10" y1="60" x2="76" y2="6" />
+  <g transform="translate(500, 25) scale(1.0) rotate(-5)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M18,27 Q25,18 32,27" /><path class="line" d="M32,24 Q39,15 46,24" />
   </g>
 
-  <!-- Big dumpling - center -->
-  <g transform="translate(520, 280) scale(1.4) rotate(8)">
-    <path class="line" d="M0,30 Q35,-8 70,30" />
-    <path class="line" d="M0,30 Q35,60 70,30" />
-    <path class="line" d="M14,27 Q21,18 28,27" />
-    <path class="line" d="M28,24 Q35,15 42,24" />
-    <path class="line" d="M42,27 Q49,18 56,27" />
+  <g transform="translate(720, 40) scale(0.9) rotate(35)">
+    <line class="line" x1="0" y1="55" x2="65" y2="0" /><line class="line" x1="9" y1="55" x2="71" y2="5" />
   </g>
 
-  <!-- Steam wisps - upper right -->
-  <g transform="translate(980, 50) scale(1.0)">
-    <path class="line" d="M0,30 Q-8,15 0,0 Q8,-12 0,-22" />
-    <path class="line" d="M15,30 Q7,15 15,0 Q23,-12 15,-22" />
+  <!-- Row 2 -->
+  <g transform="translate(130, 190) scale(0.9) rotate(15)">
+    <line class="line" x1="0" y1="55" x2="65" y2="0" /><line class="line" x1="9" y1="55" x2="71" y2="5" />
   </g>
 
-  <!-- Dumpling - lower right -->
-  <g transform="translate(900, 680) scale(1.2) rotate(-20)">
-    <path class="line" d="M0,30 Q35,-8 70,30" />
-    <path class="line" d="M0,30 Q35,60 70,30" />
-    <path class="line" d="M14,27 Q21,18 28,27" />
-    <path class="line" d="M28,24 Q35,15 42,24" />
-    <path class="line" d="M42,27 Q49,18 56,27" />
+  <g transform="translate(370, 170) scale(1.2) rotate(-18)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M14,27 Q21,18 28,27" /><path class="line" d="M28,24 Q35,15 42,24" /><path class="line" d="M42,27 Q49,18 56,27" />
     <path class="line" d="M30,-2 Q28,-10 32,-16" />
   </g>
 
-  <!-- Frying pan - bottom left -->
-  <g transform="translate(60, 750) scale(1.1) rotate(-15)">
-    <circle class="line" cx="40" cy="40" r="35" />
-    <line class="line" x1="75" y1="40" x2="115" y2="40" />
-    <circle class="line" cx="115" cy="40" r="4" />
+  <g transform="translate(620, 200) scale(1.0)">
+    <path class="line" d="M0,25 Q-7,12 0,0 Q7,-10 0,-18" />
+    <path class="line" d="M16,25 Q9,12 16,0 Q23,-10 16,-18" />
   </g>
 
-  <!-- Chopsticks - far right mid -->
-  <g transform="translate(1050, 450) scale(1.0) rotate(45)">
-    <line class="line" x1="0" y1="60" x2="70" y2="0" />
-    <line class="line" x1="10" y1="60" x2="76" y2="6" />
+  <g transform="translate(800, 180) scale(1.1) rotate(-25)">
+    <circle class="line" cx="35" cy="35" r="30" />
+    <line class="line" x1="65" y1="35" x2="105" y2="35" /><circle class="line" cx="105" cy="35" r="4" />
   </g>
 
-  <!-- Small dumpling - mid left -->
-  <g transform="translate(280, 600) scale(0.9) rotate(22)">
-    <path class="line" d="M0,30 Q35,-8 70,30" />
-    <path class="line" d="M0,30 Q35,60 70,30" />
-    <path class="line" d="M18,27 Q25,18 32,27" />
-    <path class="line" d="M32,24 Q39,15 46,24" />
+  <!-- Row 3 -->
+  <g transform="translate(30, 340) scale(1.0) rotate(28)">
+    <circle class="line" cx="35" cy="35" r="30" />
+    <line class="line" x1="65" y1="35" x2="105" y2="35" /><circle class="line" cx="105" cy="35" r="4" />
   </g>
 
-  <!-- Steam - bottom center -->
-  <g transform="translate(600, 850) scale(1.2)">
-    <path class="line" d="M0,30 Q-8,15 0,0 Q8,-12 0,-22" />
+  <g transform="translate(240, 350) scale(1.1) rotate(8)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M14,27 Q21,18 28,27" /><path class="line" d="M28,24 Q35,15 42,24" /><path class="line" d="M42,27 Q49,18 56,27" />
+    <path class="line" d="M28,-2 Q26,-10 30,-16" /><path class="line" d="M40,-2 Q38,-10 42,-16" />
   </g>
 
-  <!-- Dumpling - bottom right corner -->
-  <g transform="translate(750, 1000) scale(1.3) rotate(-5)">
-    <path class="line" d="M0,30 Q35,-8 70,30" />
-    <path class="line" d="M0,30 Q35,60 70,30" />
-    <path class="line" d="M14,27 Q21,18 28,27" />
-    <path class="line" d="M28,24 Q35,15 42,24" />
+  <g transform="translate(510, 330) scale(0.8) rotate(-40)">
+    <line class="line" x1="0" y1="55" x2="65" y2="0" /><line class="line" x1="9" y1="55" x2="71" y2="5" />
+  </g>
+
+  <g transform="translate(680, 360) scale(1.0) rotate(12)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M18,27 Q25,18 32,27" /><path class="line" d="M32,24 Q39,15 46,24" />
     <path class="line" d="M42,27 Q49,18 56,27" />
   </g>
 
-  <!-- Frying pan - top center -->
-  <g transform="translate(400, 80) scale(0.9) rotate(-35)">
-    <circle class="line" cx="40" cy="40" r="35" />
-    <line class="line" x1="75" y1="40" x2="115" y2="40" />
-    <circle class="line" cx="115" cy="40" r="4" />
+  <!-- Row 4 -->
+  <g transform="translate(100, 510) scale(1.2) rotate(-10)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M14,27 Q21,18 28,27" /><path class="line" d="M28,24 Q35,15 42,24" />
   </g>
 
-  <!-- Chopsticks - bottom left low -->
-  <g transform="translate(350, 1050) scale(1.1) rotate(10)">
-    <line class="line" x1="0" y1="60" x2="70" y2="0" />
-    <line class="line" x1="10" y1="60" x2="76" y2="6" />
+  <g transform="translate(350, 500) scale(0.95) rotate(42)">
+    <circle class="line" cx="35" cy="35" r="30" />
+    <line class="line" x1="65" y1="35" x2="105" y2="35" /><circle class="line" cx="105" cy="35" r="4" />
   </g>
 
-  <!-- Dumpling - far left mid -->
-  <g transform="translate(30, 480) scale(1.0) rotate(35)">
-    <path class="line" d="M0,30 Q35,-8 70,30" />
-    <path class="line" d="M0,30 Q35,60 70,30" />
-    <path class="line" d="M18,27 Q25,18 32,27" />
-    <path class="line" d="M32,24 Q39,15 46,24" />
-    <path class="line" d="M25,-2 Q23,-10 27,-16" />
-    <path class="line" d="M37,-2 Q35,-10 39,-16" />
+  <g transform="translate(570, 520) scale(1.1)">
+    <path class="line" d="M0,25 Q-7,12 0,0 Q7,-10 0,-18" />
+    <path class="line" d="M16,25 Q9,12 16,0 Q23,-10 16,-18" />
+    <path class="line" d="M32,25 Q25,12 32,0 Q39,-10 32,-18" />
   </g>
 
-  <!-- Steam - right edge -->
-  <g transform="translate(1100, 800) scale(1.3)">
-    <path class="line" d="M0,30 Q-8,15 0,0 Q8,-12 0,-22" />
-    <path class="line" d="M18,30 Q10,15 18,0 Q26,-12 18,-22" />
+  <g transform="translate(760, 490) scale(1.0) rotate(-30)">
+    <line class="line" x1="0" y1="55" x2="65" y2="0" /><line class="line" x1="9" y1="55" x2="71" y2="5" />
   </g>
 
-  <!-- Small pan - center low -->
-  <g transform="translate(620, 550) scale(0.7) rotate(60)">
-    <circle class="line" cx="40" cy="40" r="35" />
-    <line class="line" x1="75" y1="40" x2="110" y2="40" />
-    <circle class="line" cx="110" cy="40" r="4" />
+  <!-- Row 5 -->
+  <g transform="translate(40, 660) scale(0.9) rotate(18)">
+    <line class="line" x1="0" y1="55" x2="65" y2="0" /><line class="line" x1="9" y1="55" x2="71" y2="5" />
+  </g>
+
+  <g transform="translate(220, 680) scale(1.0) rotate(-22)">
+    <circle class="line" cx="35" cy="35" r="30" />
+    <line class="line" x1="65" y1="35" x2="105" y2="35" /><circle class="line" cx="105" cy="35" r="4" />
+  </g>
+
+  <g transform="translate(460, 650) scale(1.3) rotate(5)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M14,27 Q21,18 28,27" /><path class="line" d="M28,24 Q35,15 42,24" /><path class="line" d="M42,27 Q49,18 56,27" />
+    <path class="line" d="M28,-2 Q26,-10 30,-16" /><path class="line" d="M40,-2 Q38,-10 42,-16" />
+  </g>
+
+  <g transform="translate(730, 670) scale(1.0) rotate(-15)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M18,27 Q25,18 32,27" /><path class="line" d="M32,24 Q39,15 46,24" />
+  </g>
+
+  <!-- Row 6 -->
+  <g transform="translate(80, 820) scale(1.1) rotate(30)">
+    <path class="line" d="M0,30 Q35,-8 70,30" /><path class="line" d="M0,30 Q35,60 70,30" />
+    <path class="line" d="M14,27 Q21,18 28,27" /><path class="line" d="M28,24 Q35,15 42,24" /><path class="line" d="M42,27 Q49,18 56,27" />
+  </g>
+
+  <g transform="translate(340, 830) scale(0.85) rotate(-35)">
+    <line class="line" x1="0" y1="55" x2="65" y2="0" /><line class="line" x1="9" y1="55" x2="71" y2="5" />
+  </g>
+
+  <g transform="translate(550, 810) scale(0.95) rotate(50)">
+    <circle class="line" cx="35" cy="35" r="30" />
+    <line class="line" x1="65" y1="35" x2="105" y2="35" /><circle class="line" cx="105" cy="35" r="4" />
+  </g>
+
+  <g transform="translate(780, 840) scale(1.0)">
+    <path class="line" d="M0,25 Q-7,12 0,0 Q7,-10 0,-18" />
+    <path class="line" d="M16,25 Q9,12 16,0 Q23,-10 16,-18" />
   </g>
 
 </svg>
