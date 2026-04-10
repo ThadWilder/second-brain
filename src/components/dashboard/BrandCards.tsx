@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { CheckCircle, AlertTriangle, AlertOctagon } from 'lucide-react'
+import { CollapsibleSection } from './CollapsibleSection'
 import type { BrandSummary } from '@/types'
 
 const HEALTH_STYLES = {
@@ -30,12 +31,12 @@ export function BrandCards({ brands }: Props) {
   if (!brands.length) return null
 
   return (
-    <div>
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3 flex items-center gap-1.5">
-        <span>🏢</span>
-        Brands
-        <span className="text-[var(--muted)] font-normal">({brands.length})</span>
-      </h2>
+    <CollapsibleSection
+      title="Brands"
+      icon="🏢"
+      count={brands.length}
+      defaultExpanded={true}
+    >
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       {brands.map((b) => {
         const styles = HEALTH_STYLES[b.health]
@@ -77,7 +78,7 @@ export function BrandCards({ brands }: Props) {
         )
       })}
       </div>
-    </div>
+    </CollapsibleSection>
   )
 }
 

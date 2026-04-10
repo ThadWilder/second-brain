@@ -119,6 +119,12 @@ export async function GET(): Promise<NextResponse> {
     .eq('org_id', ORG_ID).eq('resolved', false)
     .order('created_at', { ascending: true }).limit(10)
 
+  // Entity relationships (for grouping people by their org)
+  const { data: entityRelationshipsData } = await db
+    .from('entity_relationships')
+    .select('from_entity_id, to_entity_id, relationship')
+    .eq('org_id', ORG_ID)
+
   // Heatmap
   const { data: entryEntityData } = await db.from('entry_entities')
     .select('entries(created_at), entities(name, type)')
@@ -152,6 +158,7 @@ export async function GET(): Promise<NextResponse> {
     heatmapCells, heatmapDays,
     brandNames: brandEntities.map((b: Entity) => b.name),
     allEntities: allEntities ?? [],
+    entityRelationships: entityRelationshipsData ?? [],
   }, {
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate',

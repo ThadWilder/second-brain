@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Pencil, GitMerge } from 'lucide-react'
 import { MergeModal } from './MergeModal'
 import { EditEntityModal } from './EditEntityModal'
+import { CollapsibleSection } from './CollapsibleSection'
 import type { Entity } from '@/types'
 
 const TYPE_CONFIG: Record<string, {
@@ -71,130 +72,212 @@ export interface EntityCardData {
   last_activity: string | null
 }
 
+export interface EntityRelationship {
+  from_entity_id: string
+  to_entity_id: string
+  relationship: string
+}
+
 interface Props {
   title: string
   entities: EntityCardData[]
   type: string
-  allEntities?: Entity[]  // all entities across all types (for relationship picker in edit modal)
+  allEntities?: Entity[]
+  entityRelationships?: EntityRelationship[]
 }
 
-export function EntityCards({ title, entities, type, allEntities: allEntitiesProp }: Props) {
+export function EntityCards({ title, entities, type, allEntities: allEntitiesProp, entityRelationships }: Props) {
   const config = TYPE_CONFIG[type] ?? TYPE_CONFIG.topic
   const router = useRouter()
   const [mergeTarget, setMergeTarget] = useState<Entity | null>(null)
   const [editTarget, setEditTarget] = useState<Entity | null>(null)
 
+  const allEntitiesOfType = entities.map((e) => e.entity)
+
+  // Default expanded: brands and people always expanded, others expanded only if they have entities
+  const defaultExpanded = type === 'brand' || type === 'contact' || entities.length > 0
+
+  // Group contacts by relationship target
+  const contactGroups = useMemo(() => {
+    if (type !== 'contact' || !entityRelationships || !allEntitiesProp) return null
+
+    const entityMap = new Map(allEntitiesProp.map((e) => [e.id, e]))
+    const groupingRels = ['member_of', 'works_on']
+
+    // Build groups: map of target entity name -> entity cards
+    const groups = new Map<string, { targetName: string; items: EntityCardData[] }>()
+    const assigned = new Set<string>()
+
+    for (const item of entities) {
+      const rels = entityRelationships.filter(
+        (r) => r.from_entity_id === item.entity.id && groupingRels.includes(r.relationship)
+      )
+      for (const rel of rels) {
+        const target = entityMap.get(rel.to_entity_id)
+        if (target) {
+          const key = target.id
+          if (!groups.has(key)) {
+            groups.set(key, { targetName: target.name, items: [] })
+          }
+          groups.get(key)!.items.push(item)
+          assigned.add(item.entity.id)
+        }
+      }
+    }
+
+    // Unassigned group
+    const unassigned = entities.filter((e) => !assigned.has(e.entity.id))
+
+    // Sort groups alphabetically, then unassigned last
+    const sorted = Array.from(groups.values()).sort((a, b) => a.targetName.localeCompare(b.targetName))
+
+    return { sorted, unassigned }
+  }, [type, entities, entityRelationships, allEntitiesProp])
+
   if (!entities.length) return null
 
-  const allEntitiesOfType = entities.map((e) => e.entity)
+  function renderCard(item: EntityCardData) {
+    const hasEscalation = item.escalated_tasks > 0
+    const borderColor = hasEscalation ? 'border-red-300' : config.border
+
+    return (
+      <div
+        key={item.entity.id}
+        className={`group relative rounded-lg border bg-[var(--surface)] p-3
+                    transition-colors ${borderColor} ${config.bg}`}
+      >
+        {/* Action buttons */}
+        <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setEditTarget(item.entity)
+            }}
+            className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] flex items-center gap-0.5"
+            title="Edit details"
+          >
+            <Pencil className="w-3 h-3" />
+            edit
+          </button>
+          {entities.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setMergeTarget(item.entity)
+              }}
+              className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] flex items-center gap-0.5"
+              title="Merge into another entity"
+            >
+              <GitMerge className="w-3 h-3" />
+              merge
+            </button>
+          )}
+        </div>
+
+        <Link href={`/brand/${item.entity.id}`} className="block">
+          <div className="flex items-start gap-2 mb-1.5 min-w-0">
+            <span className="text-sm leading-none mt-0.5">{config.icon}</span>
+            <div className="min-w-0">
+              <span className="text-sm font-medium text-[var(--text)] truncate block">
+                {item.entity.name}
+              </span>
+              {type === 'contact' && item.entity.metadata && (
+                <div className="flex items-center gap-1.5">
+                  {(item.entity.metadata as Record<string, string>).category && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                      getCategoryStyle((item.entity.metadata as Record<string, string>).category)
+                    }`}>
+                      {formatCategory((item.entity.metadata as Record<string, string>).category)}
+                    </span>
+                  )}
+                  {(item.entity.metadata as Record<string, string>).role && (
+                    <span className="text-[11px] text-[var(--muted)]">
+                      {(item.entity.metadata as Record<string, string>).role}
+                    </span>
+                  )}
+                </div>
+              )}
+              {type === 'vendor' && item.entity.metadata && (
+                <span className="text-[11px] text-[var(--muted)] line-clamp-1">
+                  {(item.entity.metadata as Record<string, string>).notes ?? ''}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs">
+            {hasEscalation && (
+              <span className="bg-red-50 text-red-700 px-1.5 py-0.5 rounded">
+                {item.escalated_tasks} 🔥
+              </span>
+            )}
+            {item.open_tasks > 0 && (
+              <span className="text-[var(--muted)]">
+                {item.open_tasks} open
+              </span>
+            )}
+            {item.open_tasks === 0 && !hasEscalation && (
+              <span className="text-[var(--muted)]">no tasks</span>
+            )}
+          </div>
+
+          {item.last_activity && (
+            <div className="mt-1 text-[11px] text-[var(--muted)] truncate">
+              {formatRelativeTime(item.last_activity)}
+            </div>
+          )}
+        </Link>
+      </div>
+    )
+  }
+
+  function renderGrid(items: EntityCardData[]) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {items.map(renderCard)}
+      </div>
+    )
+  }
 
   return (
     <>
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3 flex items-center gap-1.5">
-          <span>{config.icon}</span>
-          {title}
-          <span className="text-[var(--muted)] font-normal">({entities.length})</span>
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {entities.map((item) => {
-            const hasEscalation = item.escalated_tasks > 0
-            const borderColor = hasEscalation ? 'border-red-300' : config.border
-
-            return (
-              <div
-                key={item.entity.id}
-                className={`group relative rounded-lg border bg-[var(--surface)] p-3
-                            transition-colors ${borderColor} ${config.bg}`}
-              >
-                {/* Action buttons — top right, visible on hover */}
-                <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setEditTarget(item.entity)
-                    }}
-                    className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] flex items-center gap-0.5"
-                    title="Edit details"
-                  >
-                    <Pencil className="w-3 h-3" />
-                    edit
-                  </button>
-                  {entities.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setMergeTarget(item.entity)
-                      }}
-                      className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] flex items-center gap-0.5"
-                      title="Merge into another entity"
-                    >
-                      <GitMerge className="w-3 h-3" />
-                      merge
-                    </button>
-                  )}
+      <CollapsibleSection
+        title={title}
+        icon={config.icon}
+        count={entities.length}
+        defaultExpanded={defaultExpanded}
+      >
+        {contactGroups ? (
+          <div className="space-y-4">
+            {contactGroups.sorted.map((group) => (
+              <div key={group.targetName}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-0.5 h-3.5 bg-[var(--accent)] rounded-full" />
+                  <span className="text-xs text-[var(--muted)] font-medium">
+                    {group.targetName}
+                  </span>
                 </div>
-
-                <Link href={`/brand/${item.entity.id}`} className="block">
-                  <div className="flex items-start gap-2 mb-1.5 min-w-0">
-                    <span className="text-sm leading-none mt-0.5">{config.icon}</span>
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium text-[var(--text)] truncate block">
-                        {item.entity.name}
-                      </span>
-                      {type === 'contact' && item.entity.metadata && (
-                        <div className="flex items-center gap-1.5">
-                          {(item.entity.metadata as Record<string, string>).category && (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
-                              getCategoryStyle((item.entity.metadata as Record<string, string>).category)
-                            }`}>
-                              {formatCategory((item.entity.metadata as Record<string, string>).category)}
-                            </span>
-                          )}
-                          {(item.entity.metadata as Record<string, string>).role && (
-                            <span className="text-[11px] text-[var(--muted)]">
-                              {(item.entity.metadata as Record<string, string>).role}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {type === 'vendor' && item.entity.metadata && (
-                        <span className="text-[11px] text-[var(--muted)] line-clamp-1">
-                          {(item.entity.metadata as Record<string, string>).notes ?? ''}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs">
-                    {hasEscalation && (
-                      <span className="bg-red-50 text-red-700 px-1.5 py-0.5 rounded">
-                        {item.escalated_tasks} 🔥
-                      </span>
-                    )}
-                    {item.open_tasks > 0 && (
-                      <span className="text-[var(--muted)]">
-                        {item.open_tasks} open
-                      </span>
-                    )}
-                    {item.open_tasks === 0 && !hasEscalation && (
-                      <span className="text-[var(--muted)]">no tasks</span>
-                    )}
-                  </div>
-
-                  {item.last_activity && (
-                    <div className="mt-1 text-[11px] text-[var(--muted)] truncate">
-                      {formatRelativeTime(item.last_activity)}
-                    </div>
-                  )}
-                </Link>
+                {renderGrid(group.items)}
               </div>
-            )
-          })}
-        </div>
-      </div>
+            ))}
+            {contactGroups.unassigned.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-0.5 h-3.5 bg-[var(--border)] rounded-full" />
+                  <span className="text-xs text-[var(--muted)] font-medium">
+                    Unassigned
+                  </span>
+                </div>
+                {renderGrid(contactGroups.unassigned)}
+              </div>
+            )}
+          </div>
+        ) : (
+          renderGrid(entities)
+        )}
+      </CollapsibleSection>
 
       {/* Edit modal */}
       {editTarget && (

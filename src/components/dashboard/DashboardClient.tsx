@@ -253,6 +253,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
     pendingResponses, clarifications,
     heatmapCells, heatmapDays, brandNames,
     allEntities,
+    entityRelationships,
   } = data
 
   // Show last 5 assistant responses for the inline response row
@@ -396,7 +397,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             <BrandCards brands={brands} />
             <EntityCards title="Internal Team" entities={departments} type="department" allEntities={allEntities} />
             <EntityCards title="Franchisees" entities={franchisees} type="franchisee" allEntities={allEntities} />
-            <EntityCards title="People" entities={people} type="contact" allEntities={allEntities} />
+            <EntityCards title="People" entities={people} type="contact" allEntities={allEntities} entityRelationships={entityRelationships} />
             <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} />
             <EntityCards title="Vendor Team" entities={vendorTeam} type="vendor_team" allEntities={allEntities} />
             <EntityCards title="Freelancers" entities={freelancers} type="freelancer" allEntities={allEntities} />
@@ -426,4 +427,5 @@ interface DashboardData {
   heatmapDays: string[]
   brandNames: string[]
   allEntities: any[]
+  entityRelationships: Array<{ from_entity_id: string; to_entity_id: string; relationship: string }>
 }
