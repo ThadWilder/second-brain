@@ -300,12 +300,11 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
           {/* ── Hero dump box ── */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] border-l-[4px] border-l-[var(--accent)] rounded-xl p-6 shadow-sm">
-            <p className="text-sm text-[var(--muted)] mb-3">🥟 Dump anything — emails, screenshots, thoughts...</p>
+          <div className="bg-[var(--surface)] border border-[var(--border)] border-l-[4px] border-l-[var(--accent)] rounded-xl px-5 py-4 shadow-sm">
             <ChatInput
               onSend={handleSend}
               disabled={isStreaming || isIngesting}
-              placeholder="start typing or paste something..."
+              placeholder="throw it in the basket 🥟"
               autoFocus
               large
             />
