@@ -11,43 +11,43 @@ const STAT_CONFIGS = [
     key: 'escalations' as const,
     label: 'Escalations',
     color: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
-    icon: '🔥',
+    bg: 'bg-[var(--surface)] border-[var(--border)]',
+    dot: 'bg-red-500',
   },
   {
     key: 'needs_response' as const,
     label: 'Needs Response',
     color: 'text-amber-700',
-    bg: 'bg-amber-50 border-amber-200',
-    icon: '📬',
+    bg: 'bg-[var(--surface)] border-[var(--border)]',
+    dot: 'bg-amber-500',
   },
   {
     key: 'open_tasks' as const,
     label: 'Open Tasks',
-    color: 'text-blue-700',
-    bg: 'bg-blue-50 border-blue-200',
-    icon: '📋',
+    color: 'text-[var(--accent)]',
+    bg: 'bg-[var(--surface)] border-[var(--border)]',
+    dot: 'bg-[var(--accent)]',
   },
   {
     key: 'closed_7d' as const,
     label: 'Closed (7d)',
     color: 'text-green-700',
-    bg: 'bg-green-50 border-green-200',
-    icon: '✓',
+    bg: 'bg-[var(--surface)] border-[var(--border)]',
+    dot: 'bg-green-500',
   },
 ]
 
 export function StatusSummary({ stats }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-4 gap-3">
       {STAT_CONFIGS.map((config) => (
         <div
           key={config.key}
           className={`rounded-lg border p-3 ${config.bg}`}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-base leading-none">{config.icon}</span>
-            <span className="text-xs text-[var(--muted)] font-medium uppercase tracking-wide">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className={`w-2 h-2 rounded-full ${config.dot}`} />
+            <span className="text-xs text-[var(--muted)] font-medium">
               {config.label}
             </span>
           </div>
