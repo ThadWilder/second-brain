@@ -29,8 +29,12 @@ export async function middleware(request: NextRequest) {
       return setCorsHeaders(response, origin)
     }
 
+    // Exempt webhook and cron routes from CORS origin checking (they have their own auth)
+    const isWebhookOrCron = pathname.startsWith('/api/ingest') || pathname.startsWith('/api/cron')
+
     // Block cross-origin mutations from disallowed origins
     if (
+      !isWebhookOrCron &&
       origin &&
       !ALLOWED_ORIGINS.includes(origin) &&
       ['POST', 'PATCH', 'DELETE'].includes(request.method)
