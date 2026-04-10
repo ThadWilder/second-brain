@@ -100,6 +100,13 @@ export async function sendBriefingEmail(params: {
 // ─────────────────────────────────────────
 // Parse Postmark inbound webhook payload
 // ─────────────────────────────────────────
+export interface PostmarkAttachment {
+  Name: string
+  Content: string // base64 encoded
+  ContentType: string
+  ContentLength: number
+}
+
 export interface PostmarkInbound {
   MessageID: string
   From: string
@@ -108,10 +115,12 @@ export interface PostmarkInbound {
   HtmlBody: string
   InReplyTo?: string
   StrippedTextReply?: string
+  Attachments: PostmarkAttachment[]
 }
 
 export function parsePostmarkInbound(body: unknown): PostmarkInbound {
   const payload = body as Record<string, unknown>
+  const rawAttachments = (payload.Attachments as PostmarkAttachment[]) ?? []
   return {
     MessageID: payload.MessageID as string,
     From: payload.From as string,
@@ -120,5 +129,6 @@ export function parsePostmarkInbound(body: unknown): PostmarkInbound {
     HtmlBody: (payload.HtmlBody as string) ?? '',
     InReplyTo: payload.InReplyTo as string | undefined,
     StrippedTextReply: payload.StrippedTextReply as string | undefined,
+    Attachments: rawAttachments,
   }
 }

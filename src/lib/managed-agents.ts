@@ -51,15 +51,35 @@ export async function createSession(): Promise<string> {
   return data.id
 }
 
-/** Send a user message to a session. */
-export async function sendUserMessage(sessionId: string, text: string): Promise<void> {
+/** Send a user message to a session, optionally with image attachments. */
+export async function sendUserMessage(
+  sessionId: string,
+  text: string,
+  imageUrls?: Array<{ url: string; filename: string }>
+): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const content: any[] = []
+
+  if (text) {
+    content.push({ type: 'text', text })
+  }
+
+  if (imageUrls?.length) {
+    for (const img of imageUrls) {
+      content.push({
+        type: 'image',
+        source: { type: 'url', url: img.url },
+      })
+    }
+  }
+
   const res = await fetch(`${BASE}/v1/sessions/${sessionId}/events`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({
       events: [{
         type: 'user',
-        content: [{ type: 'text', text }],
+        content,
       }],
     }),
   })

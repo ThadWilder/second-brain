@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ChatInput } from './ChatInput'
 import { ChatMessage } from './ChatMessage'
-import type { ChatMessage as ChatMessageType } from '@/types'
+import type { ChatMessage as ChatMessageType, Attachment } from '@/types'
 
 export function ChatPanel() {
   const [conversationId, setConversationId] = useState<string | null>(null)
@@ -37,13 +37,14 @@ export function ChatPanel() {
     }
   }
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, attachments?: Attachment[]) {
     if (!conversationId || isStreaming) return
 
     setError(null)
     const userMsg: ChatMessageType = {
       role: 'user',
       content: text,
+      attachments,
       created_at: new Date().toISOString(),
     }
     setMessages((prev) => [...prev, userMsg])
@@ -64,7 +65,11 @@ export function ChatPanel() {
       const res = await fetch('/api/chat/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation_id: conversationId, message: text }),
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          message: text,
+          attachments: attachments ?? [],
+        }),
         signal: abortRef.current.signal,
       })
 

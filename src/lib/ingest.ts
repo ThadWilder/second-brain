@@ -24,6 +24,7 @@ import { deEscalateTask, escalateTask } from './escalation'
 import { updateWikiPagesForEntry } from './wiki'
 import { ORG_ID } from './supabase'
 import type {
+  Attachment,
   ClassifyEntityInput,
   CreateTaskInput,
   LogDecisionInput,
@@ -226,23 +227,63 @@ Extract all tasks, decisions, and pending responses precisely.
 Be conservative — only extract what is clearly stated.
 When resolving relative dates like "Friday" or "next week", use today's date (${today}) as the reference.`
 
+    // Build message content — text + optional images for vision
+    const attachments: Attachment[] = entry.attachments ?? []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userContent: any[] = []
+
+    if (entry.raw_text) {
+      userContent.push({ type: 'text', text: entry.raw_text })
+    }
+
+    for (const att of attachments) {
+      if (att.type.startsWith('image/')) {
+        userContent.push({
+          type: 'image',
+          source: { type: 'url', url: att.url },
+        })
+        userContent.push({
+          type: 'text',
+          text: `[Attached image: ${att.filename}] — Please describe/transcribe the content of this image and include it in your analysis.`,
+        })
+      }
+    }
+
+    // Fallback: if no content blocks were added, use raw_text
+    const messageContent = userContent.length > 0 ? userContent : entry.raw_text
+
     // Single Claude API call with all tools
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await (anthropic.messages.create as any)({
       model: CLAUDE_MODEL,
       max_tokens: 2048,
       system: systemPrompt,
-      messages: [{ role: 'user', content: entry.raw_text }],
+      messages: [{ role: 'user', content: messageContent }],
       tools: INGEST_TOOLS,
       tool_choice: { type: 'auto' },
     })
 
-    // Collect all tool calls from response
+    // Collect all tool calls and text blocks from response
     const toolCalls: Array<{ name: string; input: unknown }> = []
+    const responseTexts: string[] = []
     for (const block of response.content) {
       if (block.type === 'tool_use') {
         toolCalls.push({ name: block.name, input: block.input })
+      } else if (block.type === 'text' && block.text) {
+        responseTexts.push(block.text)
       }
+    }
+
+    // If images were present, append Claude's description to raw_text
+    if (attachments.length > 0 && responseTexts.length > 0) {
+      const imageDescription = responseTexts.join('\n')
+      const updatedText = entry.raw_text
+        ? `${entry.raw_text}\n\n---\n[Image description by AI]:\n${imageDescription}`
+        : `[Image description by AI]:\n${imageDescription}`
+      await db
+        .from('entries')
+        .update({ raw_text: updatedText })
+        .eq('id', entryId)
     }
 
     // Process tool calls

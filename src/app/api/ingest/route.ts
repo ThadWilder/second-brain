@@ -18,8 +18,51 @@ import {
   verifyPostmarkWebhook,
   parsePostmarkInbound,
 } from '@/lib/postmark'
+import type { PostmarkAttachment } from '@/lib/postmark'
+import type { Attachment } from '@/types'
 import { hasValidSession } from '@/lib/auth'
 import crypto from 'crypto'
+
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+
+async function uploadPostmarkAttachments(
+  attachments: PostmarkAttachment[]
+): Promise<Attachment[]> {
+  const db = getServiceClient()
+  const results: Attachment[] = []
+
+  for (const att of attachments) {
+    if (!IMAGE_TYPES.includes(att.ContentType)) continue
+
+    const ext = att.Name.split('.').pop() ?? 'png'
+    const storagePath = `email/${crypto.randomUUID()}.${ext}`
+    const buffer = Buffer.from(att.Content, 'base64')
+
+    const { error } = await db.storage
+      .from('attachments')
+      .upload(storagePath, buffer, {
+        contentType: att.ContentType,
+        upsert: false,
+      })
+
+    if (error) {
+      console.error(`Failed to upload attachment ${att.Name}:`, error.message)
+      continue
+    }
+
+    const { data: urlData } = db.storage
+      .from('attachments')
+      .getPublicUrl(storagePath)
+
+    results.push({
+      url: urlData.publicUrl,
+      type: att.ContentType,
+      filename: att.Name,
+    })
+  }
+
+  return results
+}
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const rawBody = await req.text()
@@ -54,6 +97,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let dedupeKey: string
   let sourceMeta: Record<string, unknown> = {}
   let inReplyTo: string | undefined
+  let attachments: Attachment[] = []
 
   if (source === 'email') {
     const inbound = parsePostmarkInbound(body)
@@ -65,11 +109,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       from: inbound.From,
       message_id: inbound.MessageID,
     }
+
+    // Upload image attachments from email
+    if (inbound.Attachments.length > 0) {
+      attachments = await uploadPostmarkAttachments(inbound.Attachments)
+    }
   } else {
     // paste / chat / meeting_notes
     rawText = (body.text as string) ?? (body.raw_text as string) ?? ''
-    if (!rawText) {
-      return NextResponse.json({ error: 'No text provided' }, { status: 400 })
+    // Accept attachments passed from client
+    if (Array.isArray(body.attachments)) {
+      attachments = body.attachments as Attachment[]
+    }
+    if (!rawText && attachments.length === 0) {
+      return NextResponse.json({ error: 'No text or attachments provided' }, { status: 400 })
     }
     dedupeKey = crypto.randomUUID()
     sourceMeta = { source }
@@ -96,6 +149,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       source_meta: sourceMeta,
       source_dedupe_key: dedupeKey,
       processing_status: 'pending',
+      attachments,
     })
     .select()
     .single()

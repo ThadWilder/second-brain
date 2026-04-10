@@ -1,21 +1,48 @@
 'use client'
 
 import { useState, useRef, KeyboardEvent } from 'react'
+import type { Attachment } from '@/types'
 
 interface Props {
-  onSend: (message: string) => void
+  onSend: (message: string, attachments?: Attachment[]) => void
   disabled?: boolean
   placeholder?: string
 }
 
+const ACCEPT = 'image/png,image/jpeg,image/jpg,image/gif,image/webp'
+
 export function ChatInput({ onSend, disabled, placeholder }: Props) {
   const [value, setValue] = useState('')
+  const [pendingFiles, setPendingFiles] = useState<Array<{ file: File; preview: string }>>([])
+  const [uploading, setUploading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  function handleSend() {
+  async function uploadFile(file: File): Promise<Attachment | null> {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: form })
+    if (!res.ok) return null
+    return res.json()
+  }
+
+  async function handleSend() {
     const text = value.trim()
-    if (!text || disabled) return
-    onSend(text)
+    if ((!text && pendingFiles.length === 0) || disabled || uploading) return
+
+    let attachments: Attachment[] | undefined
+    if (pendingFiles.length > 0) {
+      setUploading(true)
+      const results = await Promise.all(pendingFiles.map((pf) => uploadFile(pf.file)))
+      attachments = results.filter((a): a is Attachment => a !== null)
+      setUploading(false)
+
+      // Clean up object URLs
+      pendingFiles.forEach((pf) => URL.revokeObjectURL(pf.preview))
+      setPendingFiles([])
+    }
+
+    onSend(text, attachments)
     setValue('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -36,37 +63,109 @@ export function ChatInput({ onSend, disabled, placeholder }: Props) {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files) return
+    const newFiles = Array.from(files).map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }))
+    setPendingFiles((prev) => [...prev, ...newFiles])
+    // Reset input so the same file can be re-selected
+    e.target.value = ''
+  }
+
+  function removeFile(index: number) {
+    setPendingFiles((prev) => {
+      URL.revokeObjectURL(prev[index].preview)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
   return (
-    <div className="flex items-end gap-2 bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-2">
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onInput={handleInput}
-        disabled={disabled}
-        placeholder={placeholder ?? 'Ask a question or dump info...'}
-        rows={1}
-        className="flex-1 bg-transparent resize-none text-sm text-slate-200 placeholder:text-slate-500
-                   focus:outline-none leading-relaxed py-1 px-1 min-h-[32px] max-h-[160px]
-                   disabled:opacity-50"
-      />
-      <button
-        onClick={handleSend}
-        disabled={disabled || !value.trim()}
-        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
-                   bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed
-                   transition-colors"
-        aria-label="Send"
-      >
-        {disabled ? (
-          <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        ) : (
-          <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none">
-            <path d="M2 14L14 8L2 2v5l8 1-8 1v5z" fill="currentColor" />
+    <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-2">
+      {/* Image previews */}
+      {pendingFiles.length > 0 && (
+        <div className="flex gap-2 px-1 pb-2 overflow-x-auto">
+          {pendingFiles.map((pf, i) => (
+            <div key={i} className="relative shrink-0 group">
+              <img
+                src={pf.preview}
+                alt={pf.file.name}
+                className="w-16 h-16 object-cover rounded-lg border border-[#2a2d3a]"
+              />
+              <button
+                onClick={() => removeFile(i)}
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full
+                           flex items-center justify-center text-[8px] text-white
+                           opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label={`Remove ${pf.file.name}`}
+              >
+                x
+              </button>
+              <p className="text-[8px] text-slate-500 text-center mt-0.5 max-w-[64px] truncate">
+                {pf.file.name}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-end gap-2">
+        {/* File upload button */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled || uploading}
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
+                     text-slate-400 hover:text-slate-200 hover:bg-[#2a2d3a]
+                     disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Attach image"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="2" y="2" width="16" height="16" rx="2" />
+            <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
+            <path d="M2 14l4-4 3 3 4-5 5 6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        )}
-      </button>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPT}
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onInput={handleInput}
+          disabled={disabled || uploading}
+          placeholder={placeholder ?? 'Ask a question or dump info...'}
+          rows={1}
+          className="flex-1 bg-transparent resize-none text-sm text-slate-200 placeholder:text-slate-500
+                     focus:outline-none leading-relaxed py-1 px-1 min-h-[32px] max-h-[160px]
+                     disabled:opacity-50"
+        />
+        <button
+          onClick={handleSend}
+          disabled={disabled || uploading || (!value.trim() && pendingFiles.length === 0)}
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
+                     bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed
+                     transition-colors"
+          aria-label="Send"
+        >
+          {disabled || uploading ? (
+            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none">
+              <path d="M2 14L14 8L2 2v5l8 1-8 1v5z" fill="currentColor" />
+            </svg>
+          )}
+        </button>
+      </div>
     </div>
   )
 }

@@ -14,6 +14,12 @@ export type EventType =
   | 'note_added'
   | 'nudged'
 
+export interface Attachment {
+  url: string
+  type: string
+  filename: string
+}
+
 export interface Entry {
   id: string
   org_id: string
@@ -24,6 +30,7 @@ export interface Entry {
   processing_status: ProcessingStatus
   processing_error: string | null
   attempt_count: number
+  attachments: Attachment[]
   created_at: string
   processed_at: string | null
 }
@@ -216,6 +223,7 @@ export interface IngestResult {
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  attachments?: Attachment[]
   created_at?: string
   isStreaming?: boolean
 }

@@ -30,7 +30,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export const maxDuration = 120
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const { conversation_id, message } = await req.json()
+  const { conversation_id, message, attachments } = await req.json()
 
   if (!conversation_id || !message) {
     return NextResponse.json({ error: 'Missing conversation_id or message' }, { status: 400 })
@@ -54,8 +54,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   await db.from('messages').insert({ conversation_id, role: 'user', content: message })
   await db.from('conversations').update({ last_active_at: new Date().toISOString() }).eq('id', conversation_id)
 
-  // Send user message to Managed Agent
-  await sendUserMessage(sessionId, message)
+  // Send user message to Managed Agent (with optional image attachments)
+  const imageUrls = (attachments ?? [])
+    .filter((a: { type: string }) => a.type.startsWith('image/'))
+    .map((a: { url: string; filename: string }) => ({ url: a.url, filename: a.filename }))
+  await sendUserMessage(sessionId, message, imageUrls.length > 0 ? imageUrls : undefined)
 
   // Build SSE stream
   const encoder = new TextEncoder()
