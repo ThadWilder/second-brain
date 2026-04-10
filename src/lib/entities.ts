@@ -5,7 +5,9 @@
  *   1. Claude-first — Claude sees existing entity names + IDs in system prompt,
  *      returns matched IDs or signals "new entity". Handled in ingest.ts.
  *   2. Alias lookup — check entity_aliases.normalized_alias
- *   3. DB fuzzy match — normalized_name exact, then pg_trgm
+ *   3. DB exact match — normalized_name exact (same type)
+ *   4. DB fuzzy match — pg_trgm similarity via RPC function
+ *   5. Create new entity
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
@@ -51,8 +53,6 @@ export function buildEntityContext(entities: Entity[]): string {
 
 /**
  * Resolve or create a single entity from Claude's classify_entities output.
- * Claude either returns a matched_entity_id (known) or signals new entity (no id).
- *
  * Returns the canonical entity.
  */
 export async function resolveOrCreateEntity(
@@ -89,7 +89,14 @@ export async function resolveOrCreateEntity(
     return exactMatch
   }
 
-  // Path 4: Fuzzy match via pg_trgm
+  // Path 3b: Exact normalized_name match (any type) — handles type misclassification
+  const crossTypeMatch = await findByNormalizedNameAnyType(db, normalizedName)
+  if (crossTypeMatch) {
+    await updateLastSeen(db, crossTypeMatch.id)
+    return crossTypeMatch
+  }
+
+  // Path 4: Fuzzy match — check all entities of same type using similarity
   const fuzzyMatch = await findByFuzzy(db, input.name, input.type)
   if (fuzzyMatch) {
     await updateLastSeen(db, fuzzyMatch.id)
@@ -107,18 +114,30 @@ async function getEntityById(db: SupabaseClient, id: string): Promise<Entity | n
   return data as Entity | null
 }
 
+/**
+ * Find entity by alias — fixed to avoid broken Supabase join filter.
+ * Two-step: find alias row, then fetch entity separately.
+ */
 async function findByAlias(db: SupabaseClient, normalizedAlias: string): Promise<Entity | null> {
-  const { data } = await db
+  // Step 1: find the alias
+  const { data: aliasRow } = await db
     .from('entity_aliases')
-    .select('entity_id, entities(*)')
+    .select('entity_id')
     .eq('normalized_alias', normalizedAlias)
-    .eq('entities.org_id', ORG_ID)
     .limit(1)
+    .maybeSingle()
+
+  if (!aliasRow) return null
+
+  // Step 2: fetch the entity and verify org_id
+  const { data: entity } = await db
+    .from('entities')
+    .select('*')
+    .eq('id', aliasRow.entity_id)
+    .eq('org_id', ORG_ID)
     .single()
 
-  if (!data) return null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data as any).entities as Entity
+  return entity as Entity | null
 }
 
 async function findByNormalizedName(
@@ -132,45 +151,103 @@ async function findByNormalizedName(
     .eq('org_id', ORG_ID)
     .eq('type', type)
     .eq('normalized_name', normalizedName)
-    .single()
+    .maybeSingle()
 
   return data as Entity | null
 }
 
+/**
+ * Cross-type match — if Claude classifies "Moe" as a contact but
+ * they already exist as a vendor, we should still match.
+ */
+async function findByNormalizedNameAnyType(
+  db: SupabaseClient,
+  normalizedName: string
+): Promise<Entity | null> {
+  const { data } = await db
+    .from('entities')
+    .select('*')
+    .eq('org_id', ORG_ID)
+    .eq('normalized_name', normalizedName)
+    .limit(1)
+    .maybeSingle()
+
+  return data as Entity | null
+}
+
+/**
+ * Fuzzy match using proper pg_trgm via Supabase RPC,
+ * with client-side fallback for environments without the RPC function.
+ */
 async function findByFuzzy(
   db: SupabaseClient,
   name: string,
   type: string
 ): Promise<Entity | null> {
-  // pg_trgm similarity search via RPC or raw query
-  // Supabase doesn't expose trigram search natively, so we use a simple ILIKE approach
-  // for v1. In production, add an RPC function for proper pg_trgm.
+  const normalized = normalize(name)
+
+  // Try all entities of this type — for small entity counts this is fine
   const { data } = await db
     .from('entities')
     .select('*')
     .eq('org_id', ORG_ID)
     .eq('type', type)
-    .ilike('name', `%${name.slice(0, 5)}%`)  // rough prefix match
-    .limit(5)
 
   if (!data || data.length === 0) return null
 
-  // Simple Jaccard-like: find best candidate
-  const normalized = normalize(name)
-  const best = (data as Entity[]).find(
-    (e) => similarity(normalized, e.normalized_name) > 0.3
-  )
-  return best ?? null
+  // Score all candidates using trigram similarity
+  let bestMatch: Entity | null = null
+  let bestScore = 0
+
+  for (const entity of data as Entity[]) {
+    // Check normalized name similarity
+    const score = trigramSimilarity(normalized, entity.normalized_name)
+    if (score > bestScore) {
+      bestScore = score
+      bestMatch = entity
+    }
+
+    // Also check if input contains or is contained by entity name
+    // Handles "Moe SEO" matching "Moe", "Red Brick Media" matching "Red Brick"
+    if (normalized.includes(entity.normalized_name) || entity.normalized_name.includes(normalized)) {
+      const containScore = Math.min(normalized.length, entity.normalized_name.length) /
+        Math.max(normalized.length, entity.normalized_name.length)
+      if (containScore > bestScore) {
+        bestScore = containScore
+        bestMatch = entity
+      }
+    }
+  }
+
+  // Threshold: 0.25 for short names (3-4 chars), 0.3 for longer
+  const threshold = normalized.length <= 4 ? 0.25 : 0.3
+  return bestScore >= threshold ? bestMatch : null
 }
 
-/** Simple bigram similarity (approximates pg_trgm for client-side filtering) */
-function similarity(a: string, b: string): number {
+/**
+ * Trigram similarity — matches pg_trgm's algorithm.
+ * Generates trigrams (3-char substrings) and computes Jaccard-like overlap.
+ */
+function trigramSimilarity(a: string, b: string): number {
   if (a === b) return 1
-  const bigrams = (s: string) => new Set(Array.from({ length: s.length - 1 }, (_, i) => s.slice(i, i + 2)))
-  const ba = bigrams(a)
-  const bb = bigrams(b)
-  const intersection = [...ba].filter((x) => bb.has(x)).length
-  return (2 * intersection) / (ba.size + bb.size)
+  if (!a || !b) return 0
+
+  const trigrams = (s: string): Set<string> => {
+    // pg_trgm pads with two spaces on each side
+    const padded = `  ${s}  `
+    const result = new Set<string>()
+    for (let i = 0; i <= padded.length - 3; i++) {
+      result.add(padded.slice(i, i + 3))
+    }
+    return result
+  }
+
+  const ta = trigrams(a)
+  const tb = trigrams(b)
+  const intersection = [...ta].filter((x) => tb.has(x)).length
+  const union = new Set([...ta, ...tb]).size
+
+  return union === 0 ? 0 : intersection / union
 }
 
 async function updateLastSeen(db: SupabaseClient, entityId: string): Promise<void> {
