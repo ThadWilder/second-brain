@@ -266,30 +266,30 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col">
       {/* Header */}
-      <header className="border-b border-[var(--border)] px-6 py-5 flex items-center justify-between shrink-0">
+      <header className="bg-[#2c2014] px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <Image src="/logo-icon.png" alt="Dumpbox" width={36} height={36} />
-          <span className="text-[var(--text)] font-bold tracking-tight text-lg">Dumpbox</span>
-          <span className="text-[var(--border)] select-none">/</span>
-          <span className="text-sm text-[var(--muted)]">
+          <Image src="/logo-icon.png" alt="Dumpbox" width={32} height={32} className="brightness-[2] invert" />
+          <span className="text-white font-bold tracking-tight text-lg">Dumpbox</span>
+          <span className="text-white/20 select-none">/</span>
+          <span className="text-sm text-white/50">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </span>
         </div>
         <nav className="flex items-center gap-6">
           {stats.escalations > 0 && (
-            <span className="text-sm text-red-700 font-medium">
+            <span className="text-sm text-orange-300 font-medium">
               {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
             </span>
           )}
           <a
             href="/wiki"
-            className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            className="text-sm text-white/50 hover:text-white transition-colors"
           >
             Wiki
           </a>
           <button
             onClick={handleSignOut}
-            className="text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            className="text-sm text-white/50 hover:text-white transition-colors"
           >
             Sign out
           </button>
@@ -300,8 +300,8 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
           {/* ── Hero dump box ── */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
-            <p className="text-sm text-[var(--muted)] mb-3">Dump anything — emails, screenshots, thoughts...</p>
+          <div className="bg-[var(--surface)] border border-[var(--border)] border-l-[4px] border-l-[var(--accent)] rounded-xl p-6 shadow-sm">
+            <p className="text-sm text-[var(--muted)] mb-3">🥟 Dump anything — emails, screenshots, thoughts...</p>
             <ChatInput
               onSend={handleSend}
               disabled={isStreaming || isIngesting}
@@ -363,11 +363,11 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Status</h2>
+                <h2 className="text-sm font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Status</h2>
                 <StatusSummary stats={stats} />
               </div>
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Activity (14 days)</h2>
+                <h2 className="text-sm font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Activity (14 days)</h2>
                 <Heatmap data={heatmapCells} brands={brandNames} days={heatmapDays} />
               </div>
             </div>
@@ -380,7 +380,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
           {/* ── Priorities ── */}
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm" id="priorities-section">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-4">
+            <h2 className="text-sm font-bold text-[var(--text)] mb-4 pb-2 border-b-2 border-[var(--accent)] inline-block">
               Today&apos;s Priorities
             </h2>
             <Priorities
