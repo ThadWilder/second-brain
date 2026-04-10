@@ -1,11 +1,32 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/browser'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+const taglines = [
+  'dump everything. forget nothing.',
+  'your brain called. it wants a break.',
+  'chaos in, clarity out.',
+  'think less. dump more.',
+  'remember everything. organize nothing.',
+]
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [taglineIndex, setTaglineIndex] = useState(0)
+  const [fade, setFade] = useState(true)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false)
+      setTimeout(() => {
+        setTaglineIndex((i) => (i + 1) % taglines.length)
+        setFade(true)
+      }, 400)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   async function handleGoogleLogin() {
     setLoading(true)
@@ -26,19 +47,45 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1117] flex items-center justify-center">
-      <div className="w-full max-w-sm mx-auto px-6">
-        <div className="text-center mb-8">
-          <h1 className="text-slate-200 font-semibold tracking-tight text-lg mb-1">
-            SECOND BRAIN
+    <div className="min-h-screen bg-[#0f1117] flex items-center justify-center px-6">
+      <div className="w-full max-w-md mx-auto">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <h1 className="text-5xl sm:text-6xl font-black tracking-tighter text-white mb-4">
+            DUMPBOX
           </h1>
-          <p className="text-slate-500 text-sm">Sign in to continue</p>
+          <p
+            className={`text-lg text-slate-400 italic transition-opacity duration-400 ${fade ? 'opacity-100' : 'opacity-0'}`}
+          >
+            {taglines[taglineIndex]}
+          </p>
         </div>
 
+        {/* One-liners */}
+        <div className="space-y-3 mb-10 text-sm text-slate-500">
+          <p>
+            <span className="text-slate-400">Forward an email.</span>{' '}
+            We&apos;ll figure it out.
+          </p>
+          <p>
+            <span className="text-slate-400">Paste a screenshot.</span>{' '}
+            We&apos;ll read it.
+          </p>
+          <p>
+            <span className="text-slate-400">Type a thought.</span>{' '}
+            We&apos;ll remember it.
+          </p>
+          <p>
+            <span className="text-slate-400">Ask a question.</span>{' '}
+            We&apos;ll know the answer.
+          </p>
+        </div>
+
+        {/* Sign in */}
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-medium text-sm px-4 py-2.5 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold text-sm px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -65,8 +112,8 @@ export default function LoginPage() {
           <p className="mt-4 text-sm text-red-400 text-center">{error}</p>
         )}
 
-        <p className="mt-6 text-xs text-slate-600 text-center">
-          Access restricted to authorized accounts only.
+        <p className="mt-8 text-xs text-slate-600 text-center">
+          your personal chaos organizer — not enterprise software
         </p>
       </div>
     </div>

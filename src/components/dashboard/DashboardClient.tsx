@@ -62,7 +62,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
       {/* Header */}
       <header className="border-b border-[#2a2d3a] px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-slate-200 font-semibold tracking-tight text-sm">SECOND BRAIN</span>
+          <span className="text-slate-200 font-semibold tracking-tight text-sm">DUMPBOX</span>
           <span className="text-xs text-slate-500">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>

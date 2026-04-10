@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Second Brain',
-  description: 'Brand operations command center',
+  title: 'Dumpbox',
+  description: 'Dump everything. Forget nothing.',
 }
 
 export default function RootLayout({
