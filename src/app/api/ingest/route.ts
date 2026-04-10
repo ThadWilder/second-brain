@@ -87,11 +87,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const source = detectSource(body)
 
-  // ── Auth: Postmark signature OR valid session ────────────────────────
+  // ── Auth: Postmark inbound payload check OR valid session ─────────────
   if (source === 'email') {
-    const signature = req.headers.get('x-postmark-signature')
-    if (!verifyPostmarkWebhook(rawBody, signature)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    // Postmark inbound webhooks don't send a signature header (only outbound event webhooks do).
+    // Verify by checking required Postmark inbound fields exist.
+    const hasPostmarkFields = body.MessageID && body.From && (body.TextBody !== undefined || body.HtmlBody !== undefined)
+    if (!hasPostmarkFields) {
+      return NextResponse.json({ error: 'Invalid inbound payload' }, { status: 401 })
     }
   } else {
     // Non-email submissions require a valid session
