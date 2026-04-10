@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { entity_id, name, metadata, archived } = await req.json()
+  const { entity_id, name, type, metadata, archived } = await req.json()
 
   if (!entity_id) {
     return NextResponse.json({ error: 'Missing entity_id' }, { status: 400 })
@@ -46,6 +46,11 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (metadata) {
     const currentMeta = (entity.metadata as Record<string, unknown>) ?? {}
     updates.metadata = { ...currentMeta, ...metadata }
+  }
+
+  // Change type
+  if (type && type !== entity.type) {
+    updates.type = type
   }
 
   // Archive/unarchive

@@ -45,6 +45,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
   const meta = (entity.metadata ?? {}) as Record<string, string>
 
   const [name, setName] = useState(entity.name)
+  const [entityType, setEntityType] = useState(entity.type)
   const [role, setRole] = useState(meta.role ?? '')
   const [company, setCompany] = useState(meta.company ?? '')
   const [notes, setNotes] = useState(meta.notes ?? '')
@@ -118,6 +119,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
         body: JSON.stringify({
           entity_id: entity.id,
           name: name !== entity.name ? name : undefined,
+          type: entityType !== entity.type ? entityType : undefined,
           metadata,
         }),
       })
@@ -221,6 +223,23 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
             onChange={(e) => setName(e.target.value)}
             className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
           />
+        </Field>
+
+        {/* Type */}
+        <Field label="Type">
+          <select
+            value={entityType}
+            onChange={(e) => setEntityType(e.target.value)}
+            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)] appearance-none"
+          >
+            <option value="contact">Team Member</option>
+            <option value="brand">Brand</option>
+            <option value="department">Internal Team</option>
+            <option value="franchisee">Franchisee</option>
+            <option value="vendor">Vendor</option>
+            <option value="vendor_team">Vendor Team</option>
+            <option value="freelancer">Freelancer</option>
+          </select>
         </Field>
 
         {/* Role */}
