@@ -18,6 +18,7 @@ INSERT INTO entities (org_id, name, normalized_name, type, first_seen, last_seen
   ('00000000-0000-0000-0000-000000000001', 'HAP', 'hap', 'brand', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'PLP', 'plp', 'brand', now(), now()),
   -- Team
+  ('00000000-0000-0000-0000-000000000001', 'Brandy Murch', 'brandy murch', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Michelle', 'michelle', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Dustin', 'dustin', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Amanda', 'amanda', 'contact', now(), now()),
@@ -34,4 +35,10 @@ UNION ALL
   FROM entities WHERE name = 'HAP' AND org_id = '00000000-0000-0000-0000-000000000001'
 UNION ALL
   SELECT id, 'Plumbing Paramedics', 'plumbing paramedics'
-  FROM entities WHERE name = 'PLP' AND org_id = '00000000-0000-0000-0000-000000000001';
+  FROM entities WHERE name = 'PLP' AND org_id = '00000000-0000-0000-0000-000000000001'
+UNION ALL
+  SELECT id, 'Brandy', 'brandy'
+  FROM entities WHERE name = 'Brandy Murch' AND org_id = '00000000-0000-0000-0000-000000000001'
+UNION ALL
+  SELECT id, 'bmurch', 'bmurch'
+  FROM entities WHERE name = 'Brandy Murch' AND org_id = '00000000-0000-0000-0000-000000000001';
