@@ -114,7 +114,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   if (source === 'email') {
     const inbound = parsePostmarkInbound(body)
-    rawText = inbound.StrippedTextReply || inbound.TextBody
+    // StrippedTextReply often contains only the sender's signature on forwards.
+    // Use TextBody when it has substantially more content (the full thread).
+    const stripped = (inbound.StrippedTextReply || '').trim()
+    const full = (inbound.TextBody || '').trim()
+    // Strip cid references and URLs to measure real text content
+    const strippedClean = stripped.replace(/\[cid:[^\]]+\]/g, '').replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim()
+    rawText = (strippedClean.length > 50 && stripped.length >= full.length * 0.3) ? stripped : full
     dedupeKey = inbound.MessageID
     inReplyTo = inbound.InReplyTo
     sourceMeta = {
