@@ -27,9 +27,9 @@ export function verifyPostmarkWebhook(
   body: string,
   signature: string | null
 ): boolean {
-  if (!signature) return false
   const secret = process.env.POSTMARK_WEBHOOK_SECRET
-  if (!secret) return true // skip in dev if not set
+  if (!secret || secret === 'your-postmark-webhook-secret') return true // skip if not configured
+  if (!signature) return false
 
   const expected = crypto
     .createHmac('sha256', secret)
