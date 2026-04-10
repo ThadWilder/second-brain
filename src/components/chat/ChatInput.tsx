@@ -122,6 +122,20 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
       )}
 
       <div className="flex items-end gap-2">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onInput={handleInput}
+          disabled={disabled || uploading}
+          placeholder={placeholder ?? 'Ask a question or dump info...'}
+          rows={large ? 2 : 1}
+          className={`flex-1 bg-transparent resize-none text-[var(--text)] placeholder:text-[var(--muted)]
+                     focus:outline-none leading-relaxed
+                     disabled:opacity-50
+                     ${large ? 'text-base py-2 min-h-[56px] max-h-[240px]' : 'text-sm py-1 min-h-[32px] max-h-[160px]'}`}
+        />
         {/* File upload button */}
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -141,21 +155,6 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
           multiple
           onChange={handleFileChange}
           className="hidden"
-        />
-
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onInput={handleInput}
-          disabled={disabled || uploading}
-          placeholder={placeholder ?? 'Ask a question or dump info...'}
-          rows={large ? 2 : 1}
-          className={`flex-1 bg-transparent resize-none text-[var(--text)] placeholder:text-[var(--muted)]
-                     focus:outline-none leading-relaxed px-1
-                     disabled:opacity-50
-                     ${large ? 'text-base py-2 min-h-[56px] max-h-[240px]' : 'text-sm py-1 min-h-[32px] max-h-[160px]'}`}
         />
         <button
           onClick={handleSend}
