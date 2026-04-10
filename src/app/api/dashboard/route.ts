@@ -32,7 +32,7 @@ export async function GET(): Promise<NextResponse> {
   }
 
   // All entities
-  const { data: allEntities } = await db.from('entities').select('*').eq('org_id', ORG_ID).order('name')
+  const { data: allEntities } = await db.from('entities').select('*').eq('org_id', ORG_ID).eq('archived', false).order('name')
   const brandEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'brand')
   const contactEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'contact')
   const vendorEntities = (allEntities ?? []).filter((e: Entity) => e.type === 'vendor')

@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
-  const { entity_id, name, metadata } = await req.json()
+  const { entity_id, name, metadata, archived } = await req.json()
 
   if (!entity_id) {
     return NextResponse.json({ error: 'Missing entity_id' }, { status: 400 })
@@ -40,6 +40,11 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (metadata) {
     const currentMeta = (entity.metadata as Record<string, unknown>) ?? {}
     updates.metadata = { ...currentMeta, ...metadata }
+  }
+
+  // Archive/unarchive
+  if (typeof archived === 'boolean') {
+    updates.archived = archived
   }
 
   if (Object.keys(updates).length === 0) {

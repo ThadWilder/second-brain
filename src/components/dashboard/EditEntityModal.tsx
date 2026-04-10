@@ -136,6 +136,27 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
     }
   }
 
+  async function handleArchive() {
+    if (!confirm(`Archive ${entity.name}? They'll be hidden from the dashboard but their history is preserved.`)) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/entities/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity_id: entity.id, archived: true }),
+      })
+      if (res.ok) {
+        onSaved()
+      } else {
+        setError('Archive failed')
+      }
+    } catch {
+      setError('Network error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function addRelationship() {
     if (!newRelTarget || !newRelType) return
     setAddingRel(true)
@@ -329,7 +350,15 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
         {/* ── Actions ────────────────────────────────────────────────── */}
         {error && <p className="text-xs text-[var(--danger)] mt-3">{error}</p>}
 
-        <div className="flex justify-end gap-2 mt-5">
+        <div className="flex justify-between items-center mt-5">
+          <button
+            onClick={handleArchive}
+            disabled={saving}
+            className="px-3 py-1.5 text-xs rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors"
+          >
+            Archive
+          </button>
+          <div className="flex gap-2">
           <button
             onClick={onClose}
             className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--accent)] transition-colors"
@@ -343,6 +372,7 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
+          </div>
         </div>
       </div>
     </div>
