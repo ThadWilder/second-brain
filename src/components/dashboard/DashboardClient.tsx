@@ -361,7 +361,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           {/* ── Status + Heatmap ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">📊 Status</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Status</h2>
               <StatusSummary stats={stats} />
             </div>
             <div>
@@ -378,7 +378,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           {/* ── Priorities ── */}
           <div id="priorities-section">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
-              📋 Today&apos;s Priorities
+              Today&apos;s Priorities
             </h2>
             <Priorities
               escalated={escalatedTasks}

@@ -15,15 +15,18 @@ const STATS: { key: keyof DashboardStats; label: string }[] = [
 
 export function StatusSummary({ stats }: Props) {
   return (
-    <div className="flex items-baseline gap-8">
+    <div className="grid grid-cols-4 gap-3">
       {STATS.map(({ key, label }) => (
-        <div key={key}>
-          <span className="text-3xl font-bold tabular-nums text-[var(--text)]">
+        <div
+          key={key}
+          className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-4"
+        >
+          <div className="text-2xl font-bold tabular-nums text-[var(--text)]">
             {stats[key]}
-          </span>
-          <span className="text-sm text-[var(--muted)] ml-1.5">
+          </div>
+          <div className="text-xs text-[var(--muted)] mt-1">
             {label}
-          </span>
+          </div>
         </div>
       ))}
     </div>
