@@ -1,5 +1,6 @@
 -- Dumpbox seed data
--- 10 brands, 3 team members, 2 vendors
+-- 10 brands, 2 internal team (Threshold Brands HQ, TMS), 4 team contacts,
+-- 2 vendors (The Marketing Agency, Red Brick), 1 vendor team (Moe)
 
 TRUNCATE wiki_links, wiki_pages, decision_entities, task_events, task_entities,
   entry_entities, entity_relationships, entity_aliases, pending_responses,
@@ -23,7 +24,7 @@ INSERT INTO entities (org_id, name, normalized_name, type, first_seen, last_seen
   ('00000000-0000-0000-0000-000000000001', 'Michelle', 'michelle', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Dustin', 'dustin', 'contact', now(), now()),
   ('00000000-0000-0000-0000-000000000001', 'Amanda', 'amanda', 'contact', now(), now()),
-  -- Departments
+  -- Internal Team
   ('00000000-0000-0000-0000-000000000001', 'TMS', 'tms', 'department', now(), now()),
   -- Vendors
   ('00000000-0000-0000-0000-000000000001', 'The Marketing Agency', 'the marketing agency', 'vendor', now(), now()),
