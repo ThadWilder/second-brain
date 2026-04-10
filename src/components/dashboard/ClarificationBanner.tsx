@@ -17,6 +17,16 @@ interface Props {
   clarifications: Clarification[]
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  brand: 'Brand',
+  department: 'Internal Team',
+  franchisee: 'Franchisee',
+  contact: 'Team Member',
+  vendor: 'Vendor',
+  vendor_team: 'Vendor Team',
+  freelancer: 'Freelancer',
+}
+
 const CATEGORY_OPTIONS = [
   { value: 'contact', label: 'Team Member' },
   { value: 'brand', label: 'Brand' },
@@ -31,7 +41,7 @@ const CATEGORY_OPTIONS = [
 export function ClarificationBanner({ clarifications }: Props) {
   const [items, setItems] = useState(clarifications)
   const [loading, setLoading] = useState<string | null>(null)
-  const [sourcePanel, setSourcePanel] = useState<{ entryId: string; question: string } | null>(null)
+  const [sourcePanel, setSourcePanel] = useState<{ entryId: string; entityId: string | null; question: string } | null>(null)
 
   if (!items.length && !sourcePanel) return null
 
@@ -68,7 +78,7 @@ export function ClarificationBanner({ clarifications }: Props) {
               <p className="text-sm text-[var(--text)]">{c.question}</p>
               {c.entry_id && (
                 <button
-                  onClick={() => setSourcePanel({ entryId: c.entry_id!, question: c.question })}
+                  onClick={() => setSourcePanel({ entryId: c.entry_id!, entityId: c.entity_id, question: c.question })}
                   className="shrink-0 flex items-center gap-1 px-2 py-0.5 text-[10px] text-[var(--muted)] hover:text-[var(--accent)] border border-[var(--border)] rounded-md hover:border-[var(--accent)] transition-colors"
                   title="View source dumpling"
                 >
@@ -118,6 +128,7 @@ export function ClarificationBanner({ clarifications }: Props) {
       {sourcePanel && (
         <SourcePanel
           entryId={sourcePanel.entryId}
+          entityId={sourcePanel.entityId}
           question={sourcePanel.question}
           onClose={() => setSourcePanel(null)}
         />
@@ -126,24 +137,32 @@ export function ClarificationBanner({ clarifications }: Props) {
   )
 }
 
-function SourcePanel({ entryId, question, onClose }: { entryId: string; question: string; onClose: () => void }) {
+function SourcePanel({ entryId, entityId, question, onClose }: { entryId: string; entityId: string | null; question: string; onClose: () => void }) {
   const [entry, setEntry] = useState<{ raw_text: string; source: string; created_at: string; source_meta: Record<string, string> } | null>(null)
+  const [entity, setEntity] = useState<{ name: string; type: string; normalized_name: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/entries/${entryId}`)
-        if (res.ok) {
-          const data = await res.json()
+        const [entryRes, entityRes] = await Promise.all([
+          fetch(`/api/entries/${entryId}`),
+          entityId ? fetch(`/api/entities/${entityId}`) : Promise.resolve(null),
+        ])
+        if (entryRes.ok) {
+          const data = await entryRes.json()
           setEntry(data.entry)
+        }
+        if (entityRes?.ok) {
+          const data = await entityRes.json()
+          setEntity(data.entity)
         }
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [entryId])
+  }, [entryId, entityId])
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
@@ -167,6 +186,23 @@ function SourcePanel({ entryId, question, onClose }: { entryId: string; question
             <p className="text-xs text-[var(--muted)] mb-1">Question</p>
             <p className="text-sm text-[var(--text)]">{question}</p>
           </div>
+
+          {entity && (
+            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-3">
+              <p className="text-xs text-[var(--muted)] mb-1">Entity Claude Found</p>
+              <p className="text-sm text-[var(--text)] font-medium">{entity.name}</p>
+              <p className="text-xs text-[var(--muted)] mt-1">
+                Resolved as: <span className="text-[var(--accent)] font-medium">{TYPE_LABELS[entity.type] ?? entity.type}</span>
+              </p>
+            </div>
+          )}
+
+          {!entity && !loading && entityId && (
+            <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-3">
+              <p className="text-xs text-[var(--muted)] mb-1">Entity Claude Found</p>
+              <p className="text-sm text-[var(--text)] italic">Unknown — could not resolve to an existing entity</p>
+            </div>
+          )}
 
           {loading ? (
             <p className="text-xs text-[var(--muted)]">Loading...</p>
