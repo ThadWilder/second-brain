@@ -17,7 +17,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/dashboard')
+      const res = await fetch(`/api/dashboard?t=${Date.now()}`)
       if (res.ok) {
         const newData = await res.json()
         setData(newData)
