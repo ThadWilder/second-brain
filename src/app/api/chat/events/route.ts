@@ -105,8 +105,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
                 const result = await executeTool(db, toolName, toolInput)
                 send('tool_result', { tool_use_id: toolUseId, result })
 
-                // Submit result back to agent
+                // Submit result back to agent — then wait for it to process
                 await sendToolResult(sessionId, toolUseId, result)
+                // Give agent time to start running with the result
+                await new Promise((r) => setTimeout(r, 1500))
                 break
               }
 
@@ -118,11 +120,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             }
           }
 
-          // After processing all new events, check if we're done
+          // After processing all new events, check if we're done.
+          // Count how many status_idle events we've seen — we need to see idle
+          // AFTER agent text has been produced (not just after tool_use).
+          const idleCount = Array.from(processedEventIds).filter(id => {
+            const evt = events.find(e => e.id === id)
+            return evt?.type === 'status_idle'
+          }).length
+
+          // Only check for done if we've seen at least one agent text event
+          // or we've polled many times with no new events
+          const hasAgentText = assistantContent.length > 0
           const status = await getSessionStatus(sessionId)
-          if (status === 'idle') {
-            // Give one more poll to catch any final agent text
-            await new Promise((r) => setTimeout(r, 500))
+
+          if (status === 'idle' && (hasAgentText || maxPolls < 50)) {
+            // One final poll to be sure
+            await new Promise((r) => setTimeout(r, 800))
             const finalEvents = await getSessionEvents(sessionId)
             for (const event of finalEvents) {
               if (processedEventIds.has(event.id)) continue
@@ -137,7 +150,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               }
             }
 
-            // Now we're truly done
             if (assistantContent) {
               await db.from('messages').insert({
                 conversation_id,
