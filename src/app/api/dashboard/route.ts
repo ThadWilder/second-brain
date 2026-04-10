@@ -115,7 +115,7 @@ export async function GET(): Promise<NextResponse> {
 
   // Clarifications
   const { data: clarifications } = await db.from('pending_clarifications')
-    .select('id, entity_id, question, context, field, suggestions')
+    .select('id, entity_id, entry_id, question, context, field, suggestions')
     .eq('org_id', ORG_ID).eq('resolved', false)
     .order('created_at', { ascending: true }).limit(10)
 

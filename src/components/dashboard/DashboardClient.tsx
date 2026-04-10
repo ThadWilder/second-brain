@@ -422,7 +422,7 @@ interface DashboardData {
   regularTasks: any[]
   staleFromYesterday: any[]
   pendingResponses: Array<{ id: string; summary: string; created_at: string }>
-  clarifications: Array<{ id: string; entity_id: string | null; question: string; context: string | null; field: string; suggestions: string[] | null }>
+  clarifications: Array<{ id: string; entity_id: string | null; entry_id: string | null; question: string; context: string | null; field: string; suggestions: string[] | null }>
   heatmapCells: Array<{ brand_id: string; brand_name: string; date: string; count: number }>
   heatmapDays: string[]
   brandNames: string[]
