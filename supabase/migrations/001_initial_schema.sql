@@ -288,4 +288,25 @@ BEGIN
   INSERT INTO entity_aliases (entity_id, alias, normalized_alias)
   SELECT id, 'Moe SEO', 'moe seo' FROM entities WHERE org_id = org AND normalized_name = 'moe' AND type = 'vendor'
   ON CONFLICT DO NOTHING;
+
+  -- Aliases for PHP / HAP / PLP
+  INSERT INTO entity_aliases (entity_id, alias, normalized_alias)
+  SELECT id, 'Plumbing & Heating Paramedics', 'plumbing & heating paramedics' FROM entities WHERE org_id = org AND normalized_name = 'php' AND type = 'brand'
+  ON CONFLICT DO NOTHING;
+
+  INSERT INTO entity_aliases (entity_id, alias, normalized_alias)
+  SELECT id, 'Plumbing and Heating Paramedics', 'plumbing and heating paramedics' FROM entities WHERE org_id = org AND normalized_name = 'php' AND type = 'brand'
+  ON CONFLICT DO NOTHING;
+
+  INSERT INTO entity_aliases (entity_id, alias, normalized_alias)
+  SELECT id, 'Heating & Air Paramedics', 'heating & air paramedics' FROM entities WHERE org_id = org AND normalized_name = 'hap' AND type = 'brand'
+  ON CONFLICT DO NOTHING;
+
+  INSERT INTO entity_aliases (entity_id, alias, normalized_alias)
+  SELECT id, 'Heating and Air Paramedics', 'heating and air paramedics' FROM entities WHERE org_id = org AND normalized_name = 'hap' AND type = 'brand'
+  ON CONFLICT DO NOTHING;
+
+  INSERT INTO entity_aliases (entity_id, alias, normalized_alias)
+  SELECT id, 'Plumbing Paramedics', 'plumbing paramedics' FROM entities WHERE org_id = org AND normalized_name = 'plp' AND type = 'brand'
+  ON CONFLICT DO NOTHING;
 END $$;
