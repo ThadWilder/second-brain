@@ -212,14 +212,18 @@ export async function processEntry(
     const existingEntities = await loadAllEntities(db)
     const entityContext = buildEntityContext(existingEntities)
 
+    const today = new Date().toISOString().slice(0, 10)
     const systemPrompt = `You are an AI assistant processing operational notes for a marketing agency.
+Today's date is ${today}.
+
 The user manages these brands and contacts:
 
 ${entityContext}
 
 When classifying entities, prefer matching to existing ones by returning their ID.
 Extract all tasks, decisions, and pending responses precisely.
-Be conservative — only extract what is clearly stated.`
+Be conservative — only extract what is clearly stated.
+When resolving relative dates like "Friday" or "next week", use today's date (${today}) as the reference.`
 
     // Single Claude API call with all tools
     const response = await anthropic.messages.create({
@@ -260,9 +264,11 @@ Be conservative — only extract what is clearly stated.`
       if (call.name === 'classify_entities') {
         const input = call.input as { entities: ClassifyEntityInput[] }
         for (const entityInput of input.entities) {
+          const createdBefore = new Date()
           const entity = await resolveOrCreateEntity(db, entityInput)
           const key = normalize(entityInput.name)
-          const isNew = entity.created_at === entity.first_seen
+          // Entity is "new" if it was created during this ingest (within last 5 seconds)
+          const isNew = (new Date(entity.created_at).getTime()) > (createdBefore.getTime() - 5000)
           entityMap.set(key, { id: entity.id, isNew })
           entityMap.set(entity.normalized_name, { id: entity.id, isNew })
 
