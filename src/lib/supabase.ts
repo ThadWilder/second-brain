@@ -13,11 +13,16 @@ export function getSupabase(): SupabaseClient {
 }
 
 // Server-only client with full privileges (for API routes)
+// Creates a fresh client every call to avoid stale data in serverless functions
 export function getServiceClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
   return createClient(url, serviceKey, {
     auth: { persistSession: false },
+    db: { schema: 'public' },
+    global: {
+      headers: { 'Cache-Control': 'no-cache' },
+    },
   })
 }
 
