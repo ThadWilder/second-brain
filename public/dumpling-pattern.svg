@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
   <defs>
     <style>
-      .line { fill: none; stroke: #e0d5c8; stroke-width: 0.8; stroke-linecap: round; stroke-linejoin: round; opacity: 0.4; }
+      .line { fill: none; stroke: #c9b9a5; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
     </style>
   </defs>
   <!-- Dumpling 1 - top left area -->

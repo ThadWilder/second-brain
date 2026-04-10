@@ -93,7 +93,7 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
   }
 
   return (
-    <div className={`bg-[var(--surface)] border border-[var(--border)] rounded-xl ${large ? 'p-3' : 'p-2'}`}>
+    <div className={`${large ? 'p-0' : 'bg-[var(--surface)] border border-[var(--border)] rounded-xl p-2'}`}>
       {/* Image previews */}
       {pendingFiles.length > 0 && (
         <div className="flex gap-2 px-1 pb-2 overflow-x-auto">
