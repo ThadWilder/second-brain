@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <style>
+      .line { fill: none; stroke: #e0d5c8; stroke-width: 0.8; stroke-linecap: round; stroke-linejoin: round; opacity: 0.4; }
+    </style>
+  </defs>
+  <!-- Dumpling 1 - top left area -->
+  <g transform="translate(30, 35) scale(0.5)">
+    <!-- dumpling body -->
+    <path class="line" d="M0,20 Q25,-5 50,20" />
+    <path class="line" d="M0,20 Q25,40 50,20" />
+    <!-- pleats -->
+    <path class="line" d="M10,18 Q15,12 20,18" />
+    <path class="line" d="M20,16 Q25,10 30,16" />
+    <path class="line" d="M30,18 Q35,12 40,18" />
+    <!-- steam -->
+    <path class="line" d="M20,0 Q18,-6 22,-10" />
+    <path class="line" d="M30,0 Q28,-6 32,-10" />
+  </g>
+  <!-- Frying pan - center right -->
+  <g transform="translate(130, 30) scale(0.45)">
+    <!-- pan circle -->
+    <circle class="line" cx="30" cy="30" r="25" />
+    <!-- handle -->
+    <line class="line" x1="55" y1="30" x2="85" y2="30" />
+    <!-- handle end -->
+    <circle class="line" cx="85" cy="30" r="3" />
+  </g>
+  <!-- Dumpling 2 - bottom right -->
+  <g transform="translate(140, 145) scale(0.5) rotate(15)">
+    <path class="line" d="M0,20 Q25,-5 50,20" />
+    <path class="line" d="M0,20 Q25,40 50,20" />
+    <path class="line" d="M12,18 Q17,12 22,18" />
+    <path class="line" d="M22,16 Q27,10 32,16" />
+    <path class="line" d="M32,18 Q37,12 42,18" />
+  </g>
+  <!-- Chopsticks - bottom left -->
+  <g transform="translate(20, 140) scale(0.5)">
+    <line class="line" x1="0" y1="40" x2="50" y2="0" />
+    <line class="line" x1="8" y1="40" x2="55" y2="5" />
+  </g>
+  <!-- Small steam/sparkle - center -->
+  <g transform="translate(95, 100) scale(0.4)">
+    <path class="line" d="M0,10 Q-3,0 0,-8 Q3,0 0,10" />
+    <path class="line" d="M-8,2 Q0,-1 8,2 Q0,5 -8,2" />
+  </g>
+</svg>
