@@ -26,8 +26,16 @@ interface Props {
 }
 
 export function BrandCards({ brands }: Props) {
+  if (!brands.length) return null
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div>
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+        <span>🏢</span>
+        Brands
+        <span className="text-slate-500 font-normal">({brands.length})</span>
+      </h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       {brands.map((b) => {
         const styles = HEALTH_STYLES[b.health]
         return (
@@ -65,6 +73,7 @@ export function BrandCards({ brands }: Props) {
           </Link>
         )
       })}
+      </div>
     </div>
   )
 }

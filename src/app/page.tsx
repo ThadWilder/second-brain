@@ -9,6 +9,7 @@
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { StatusSummary } from '@/components/dashboard/StatusSummary'
 import { BrandCards } from '@/components/dashboard/BrandCards'
+import { EntityCards } from '@/components/dashboard/EntityCards'
 import { Priorities } from '@/components/dashboard/Priorities'
 import { Heatmap } from '@/components/dashboard/Heatmap'
 import { ChatPanel } from '@/components/chat/ChatPanel'
@@ -17,6 +18,7 @@ import type {
   BrandSummary,
   TaskWithEntities,
   HeatmapCell,
+  Entity,
 } from '@/types'
 
 export const revalidate = 30  // ISR — refresh every 30 seconds
@@ -43,51 +45,67 @@ async function getDashboardData() {
     closed_7d: closed7dRes.count ?? 0,
   }
 
-  // Brand entities
-  const { data: brandEntities } = await db
+  // All entities by type
+  const { data: allEntities } = await db
     .from('entities')
     .select('*')
     .eq('org_id', ORG_ID)
-    .eq('type', 'brand')
     .order('name')
+
+  const brandEntities = (allEntities ?? []).filter((e) => e.type === 'brand')
+  const contactEntities = (allEntities ?? []).filter((e) => e.type === 'contact')
+  const vendorEntities = (allEntities ?? []).filter((e) => e.type === 'vendor')
+
+  // Helper: get task summary for any entity
+  async function getEntityTaskSummary(entityId: string) {
+    const { data: taskLinks } = await db
+      .from('task_entities')
+      .select('task_id')
+      .eq('entity_id', entityId)
+
+    const taskIds = taskLinks?.map((t) => t.task_id) ?? []
+    let openCount = 0
+    let escalatedCount = 0
+    let lastActivity: string | null = null
+
+    if (taskIds.length > 0) {
+      const { data: tasks } = await db
+        .from('tasks')
+        .select('id, status, escalation, updated_at')
+        .in('id', taskIds)
+
+      openCount = tasks?.filter((t) => t.status === 'open').length ?? 0
+      escalatedCount = tasks?.filter((t) => t.escalation && t.status === 'open').length ?? 0
+      const dates = tasks?.map((t) => t.updated_at).sort().reverse()
+      lastActivity = dates?.[0] ?? null
+    }
+
+    return { open_tasks: openCount, escalated_tasks: escalatedCount, last_activity: lastActivity }
+  }
 
   // Brand summaries
   const brands: BrandSummary[] = await Promise.all(
-    (brandEntities ?? []).map(async (brand) => {
-      const { data: brandTaskIds } = await db
-        .from('task_entities')
-        .select('task_id')
-        .eq('entity_id', brand.id)
-        .eq('role', 'brand')
-
-      const taskIds = brandTaskIds?.map((t) => t.task_id) ?? []
-
-      let openCount = 0
-      let escalatedCount = 0
-      let lastActivity: string | null = null
-
-      if (taskIds.length > 0) {
-        const { data: brandTasks } = await db
-          .from('tasks')
-          .select('id, status, escalation, updated_at')
-          .in('id', taskIds)
-
-        openCount = brandTasks?.filter((t) => t.status === 'open').length ?? 0
-        escalatedCount = brandTasks?.filter((t) => t.escalation && t.status === 'open').length ?? 0
-        const dates = brandTasks?.map((t) => t.updated_at).sort().reverse()
-        lastActivity = dates?.[0] ?? null
-      }
-
+    brandEntities.map(async (brand) => {
+      const summary = await getEntityTaskSummary(brand.id)
       const health: BrandSummary['health'] =
-        escalatedCount > 0 ? 'red' : openCount > 0 ? 'amber' : 'green'
+        summary.escalated_tasks > 0 ? 'red' : summary.open_tasks > 0 ? 'amber' : 'green'
+      return { entity: brand, ...summary, health }
+    })
+  )
 
-      return {
-        entity: brand,
-        open_tasks: openCount,
-        escalated_tasks: escalatedCount,
-        last_activity: lastActivity,
-        health,
-      }
+  // People summaries
+  const people = await Promise.all(
+    contactEntities.map(async (contact) => {
+      const summary = await getEntityTaskSummary(contact.id)
+      return { entity: contact as Entity, ...summary }
+    })
+  )
+
+  // Vendor summaries
+  const vendors = await Promise.all(
+    vendorEntities.map(async (vendor) => {
+      const summary = await getEntityTaskSummary(vendor.id)
+      return { entity: vendor as Entity, ...summary }
     })
   )
 
@@ -168,13 +186,15 @@ async function getDashboardData() {
   return {
     stats,
     brands,
+    people,
+    vendors,
     escalatedTasks,
     regularTasks,
     staleFromYesterday,
     pendingResponses: pendingResponses ?? [],
     heatmapCells,
     heatmapDays,
-    brandNames: (brandEntities ?? []).map((b) => b.name),
+    brandNames: brandEntities.map((b) => b.name),
   }
 }
 
@@ -182,6 +202,8 @@ export default async function DashboardPage() {
   const {
     stats,
     brands,
+    people,
+    vendors,
     escalatedTasks,
     regularTasks,
     staleFromYesterday,
@@ -237,12 +259,11 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {/* Zone 2: Brand Cards */}
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-                Brands
-              </h2>
+            {/* Zone 2: Entity Cards — Brands, People, Vendors */}
+            <div className="space-y-5">
               <BrandCards brands={brands} />
+              <EntityCards title="People" entities={people} type="contact" />
+              <EntityCards title="Vendors" entities={vendors} type="vendor" />
             </div>
 
             {/* Zone 3: Priorities */}
