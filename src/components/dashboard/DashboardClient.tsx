@@ -269,8 +269,8 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
       {/* Header */}
       <header className="border-b border-[var(--border)] px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Image src="/logo-icon.png" alt="Dumpbox" width={32} height={32} />
-          <span className="text-[var(--text)] font-semibold tracking-tight text-sm">🥟 DUMPBOX</span>
+          <Image src="/logo-icon.png" alt="Dumpbox" width={40} height={40} />
+          <span className="text-[var(--text)] font-semibold tracking-tight text-sm">DUMPBOX</span>
           <span className="text-xs text-[var(--muted)]">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
