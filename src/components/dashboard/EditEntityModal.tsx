@@ -18,27 +18,33 @@ interface Props {
   onSaved: () => void
 }
 
-const CATEGORY_OPTIONS = [
-  { value: 'team', label: 'Team member' },
-  { value: 'client_contact', label: 'Client contact' },
-  { value: 'freelancer', label: 'Freelancer' },
-  { value: 'external', label: 'External' },
-]
-
 const RELATIONSHIP_TYPES = [
-  { value: 'works_for', label: 'works for' },
+  { value: 'member_of', label: 'member of' },
+  { value: 'works_on', label: 'works on' },
+  { value: 'works_at', label: 'works at' },
   { value: 'manages', label: 'manages' },
-  { value: 'rep_for', label: 'rep for' },
+  { value: 'reports_to', label: 'reports to' },
+  { value: 'works_for', label: 'works for' },
+  { value: 'works_with', label: 'works with' },
   { value: 'contracted_by', label: 'contracted by' },
   { value: 'supplies', label: 'supplies' },
-  { value: 'works_with', label: 'works with' },
 ]
+
+const TYPE_LABELS: Record<string, string> = {
+  brand: 'Brands',
+  department: 'Internal Team',
+  franchisee: 'Franchisees',
+  contact: 'People',
+  vendor: 'Vendors',
+  vendor_team: 'Vendor Team',
+  freelancer: 'Freelancers',
+  topic: 'Topics',
+}
 
 export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props) {
   const meta = (entity.metadata ?? {}) as Record<string, string>
 
   const [name, setName] = useState(entity.name)
-  const [category, setCategory] = useState(meta.category ?? '')
   const [role, setRole] = useState(meta.role ?? '')
   const [company, setCompany] = useState(meta.company ?? '')
   const [notes, setNotes] = useState(meta.notes ?? '')
@@ -102,7 +108,6 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
 
     try {
       const metadata: Record<string, string> = {}
-      if (category) metadata.category = category
       if (role) metadata.role = role
       if (company) metadata.company = company
       if (notes) metadata.notes = notes
@@ -197,29 +202,8 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
           />
         </Field>
 
-        {/* Category (contacts only) */}
-        {isContact && (
-          <Field label="Category">
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORY_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setCategory(opt.value)}
-                  className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
-                    category === opt.value
-                      ? 'border-[var(--accent)] bg-amber-50 text-[var(--accent)]'
-                      : 'border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </Field>
-        )}
-
         {/* Role */}
-        {(isContact || isVendor) && (
+        {(isContact || isVendor || entity.type === 'vendor_team' || entity.type === 'freelancer') && (
           <Field label="Role / Title">
             <input
               value={role}
@@ -230,8 +214,8 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
           </Field>
         )}
 
-        {/* Company */}
-        {isContact && (
+        {/* Company / Org */}
+        {(isContact || entity.type === 'vendor_team' || entity.type === 'freelancer') && (
           <Field label="Company">
             <input
               value={company}
@@ -307,11 +291,11 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
                 className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text)] focus:outline-none focus:border-[var(--accent)] appearance-none"
               >
                 <option value="">Select entity...</option>
-                {['brand', 'vendor', 'contact', 'topic'].map((type) => {
+                {Object.entries(TYPE_LABELS).map(([type, label]) => {
                   const group = relTargets.filter((e) => e.type === type)
                   if (!group.length) return null
                   return (
-                    <optgroup key={type} label={type.charAt(0).toUpperCase() + type.slice(1) + 's'}>
+                    <optgroup key={type} label={label}>
                       {group.map((e) => (
                         <option key={e.id} value={e.id}>{e.name}</option>
                       ))}
