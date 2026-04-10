@@ -199,7 +199,7 @@ export async function updateWikiPagesForEntry(
   return { pages_updated: pagesUpdated }
 }
 
-async function updateWikiPageForEntity(
+export async function updateWikiPageForEntity(
   db: SupabaseClient,
   entity: Entity,
   entry: { raw_text: string; source: string; created_at: string },

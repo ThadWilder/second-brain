@@ -28,7 +28,6 @@ import {
   normalize,
 } from './entities'
 import { deEscalateTask, escalateTask } from './escalation'
-import { updateWikiPagesForEntry } from './wiki'
 import { ORG_ID } from './supabase'
 import type {
   Attachment,
@@ -541,12 +540,22 @@ When resolving relative dates like "Friday" or "next week", use today's date (${
       }
     }
 
-    // ── Step 5: Wiki update (non-blocking — failure doesn't fail the ingest) ──
-    // Runs after all structured data is written so Claude has full context.
+    // ── Step 5: Queue wiki updates (processed asynchronously by /api/wiki/process) ──
     if (touchedEntityIds.size > 0) {
-      updateWikiPagesForEntry(db, entryId, [...touchedEntityIds]).catch((err) => {
-        console.error('Wiki update error (non-fatal):', err)
-      })
+      await db.from('wiki_queue').insert(
+        [...touchedEntityIds].map(entityId => ({
+          org_id: ORG_ID,
+          entry_id: entryId,
+          entity_id: entityId,
+          status: 'pending',
+        }))
+      )
+
+      // Fire-and-forget: trigger the wiki processor
+      fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://dumpbox.app'}/api/wiki/process`, {
+        method: 'POST',
+        headers: { 'x-wiki-secret': process.env.CRON_SECRET || '' },
+      }).catch(() => {}) // don't await, don't fail
     }
 
     // Finalize
