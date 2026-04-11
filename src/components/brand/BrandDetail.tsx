@@ -377,9 +377,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                   {formatDate(entry.created_at)}
                 </span>
               </div>
-              <p className="text-sm text-[var(--text)] line-clamp-3 leading-relaxed">
-                <AutoLinkText text={entry.raw_text} />
-              </p>
+              <ExpandableText text={entry.raw_text} />
               <LinkChips links={entry.links ?? []} />
             </div>
           ))}
@@ -426,6 +424,27 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           onClose={() => setShowCombineModal(false)}
           onCombined={handleCombined}
         />
+      )}
+    </div>
+  )
+}
+
+function ExpandableText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = text.length > 200
+
+  return (
+    <div>
+      <p className={`text-sm text-[var(--text)] leading-relaxed whitespace-pre-wrap ${!expanded && isLong ? 'line-clamp-3' : ''}`}>
+        <AutoLinkText text={text} />
+      </p>
+      {isLong && (
+        <button
+          onClick={(e) => { e.preventDefault(); setExpanded(!expanded) }}
+          className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] mt-1"
+        >
+          {expanded ? 'show less' : 'show more'}
+        </button>
       )}
     </div>
   )
