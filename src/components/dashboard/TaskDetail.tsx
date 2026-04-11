@@ -305,7 +305,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
           {task.waiting_on ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-sm font-medium border bg-amber-50 text-amber-700 border-amber-200">
               <Hourglass className="w-3 h-3" />
-              Waiting On {task.waiting_on}
+              Waiting On {task.waiting_on?.toLowerCase().startsWith('brandy') ? 'You' : task.waiting_on}
             </span>
           ) : (
             <StatusBadge status={task.status} />

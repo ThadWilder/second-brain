@@ -561,7 +561,7 @@ function TaskRow({
           )}
           {task.waiting_on && (
             <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-              ⏳ {task.waiting_on}
+              ⏳ {isMe(task.waiting_on) ? 'You' : task.waiting_on}
             </span>
           )}
           {task.status === 'tracking' && (
@@ -576,6 +576,12 @@ function TaskRow({
       </div>
     </div>
   )
+}
+
+function isMe(name: string | null | undefined): boolean {
+  if (!name) return false
+  const n = name.toLowerCase().trim()
+  return n === 'brandy murch' || n === 'brandy'
 }
 
 function formatAge(isoDate: string): string {
