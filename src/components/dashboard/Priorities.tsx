@@ -274,9 +274,9 @@ function InboxGroups({
               onClick={() => toggleGroup(key)}
               className="w-full flex items-center gap-2 py-2 px-1 text-left hover:bg-[var(--surface-hover)] transition-colors rounded"
             >
-              <span className="text-[10px] text-[var(--muted)] font-mono">{isExpanded ? '▼' : '▶'}</span>
-              <span className="text-xs font-medium text-[var(--text)]">{label}</span>
-              <span className="text-[10px] text-[var(--muted)]">{groupTasks.length}</span>
+              <span className="text-sm text-[var(--muted)] font-mono">{isExpanded ? '▼' : '▶'}</span>
+              <span className="text-base font-semibold text-[var(--text)]">{label}</span>
+              <span className="text-sm text-[var(--muted)]">{groupTasks.length}</span>
             </button>
             {isExpanded && (
               <div className="ml-3 border-l-2 border-[var(--border)] pl-2 space-y-0.5">
