@@ -265,39 +265,19 @@ function InboxGroups({
   return (
     <div className="space-y-1">
       {groups.map(({ key, label, tasks: groupTasks }) => {
-        if (groupTasks.length === 1) {
-          // Single task — render normally
-          return (
-            <TaskRow
-              key={groupTasks[0].id}
-              task={groupTasks[0]}
-              variant="normal"
-              hasConsolidation={consolidationTaskIds?.has(groupTasks[0].id)}
-              needsReply={needsReplyTaskIds?.has(groupTasks[0].id)}
-              onComplete={onComplete}
-              onClick={() => onTaskClick(groupTasks[0])}
-              onRefresh={onRefresh}
-            />
-          )
-        }
-
-        // Multi-task group — collapsible
         const isExpanded = expandedGroups.has(key)
-        const first = groupTasks[0]
         return (
-          <div key={key} className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+          <div key={key}>
             <button
               onClick={() => toggleGroup(key)}
-              className="w-full flex items-center gap-3 py-3 px-4 text-left hover:bg-[var(--surface-hover)] transition-colors rounded-lg"
+              className="w-full flex items-center gap-2 py-2 px-1 text-left hover:bg-[var(--surface-hover)] transition-colors rounded"
             >
-              <span className="text-xs text-[var(--muted)] font-mono">{isExpanded ? '▼' : '▶'}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[var(--text)]">{label}</p>
-                <span className="text-xs text-[var(--muted)]">{groupTasks.length} tasks</span>
-              </div>
+              <span className="text-[10px] text-[var(--muted)] font-mono">{isExpanded ? '▼' : '▶'}</span>
+              <span className="text-xs font-medium text-[var(--text)]">{label}</span>
+              <span className="text-[10px] text-[var(--muted)]">{groupTasks.length}</span>
             </button>
             {isExpanded && (
-              <div className="border-t border-[var(--border)] px-2 py-1 space-y-0.5">
+              <div className="ml-3 border-l-2 border-[var(--border)] pl-2 space-y-0.5">
                 {groupTasks.map((task) => (
                   <TaskRow
                     key={task.id}
