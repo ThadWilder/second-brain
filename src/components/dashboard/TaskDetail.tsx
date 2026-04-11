@@ -47,6 +47,10 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [linkingEntity, setLinkingEntity] = useState(false)
   const [resolvingConsolidation, setResolvingConsolidation] = useState<string | null>(null)
   const [showTrackingSetup, setShowTrackingSetup] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [waitingOnInput, setWaitingOnInput] = useState('')
+  const [savingWaitingOn, setSavingWaitingOn] = useState(false)
+  const waitingInputRef = useRef<HTMLInputElement>(null)
 
   async function loadData() {
     const r = await fetch(`/api/tasks/${taskId}`)
@@ -98,6 +102,33 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   function showFeedback(msg: string) {
     setSavedFeedback(msg)
     setTimeout(() => setSavedFeedback(null), 2000)
+  }
+
+  const waitingOnSuggestions = waitingOnInput.trim().length > 0
+    ? allEntities
+        .filter((e) =>
+          ['contact', 'vendor', 'franchisee', 'freelancer', 'vendor_team', 'brand', 'department'].includes(e.type) &&
+          e.name.toLowerCase().includes(waitingOnInput.toLowerCase())
+        )
+        .slice(0, 6)
+    : []
+
+  async function saveWaitingOn(value: string) {
+    setSavingWaitingOn(true)
+    try {
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, waiting_on: value || null }),
+      })
+      setEditing(false)
+      setWaitingOnInput('')
+      await loadData()
+      showFeedback('Updated ✓')
+      onUpdate?.()
+    } finally {
+      setSavingWaitingOn(false)
+    }
   }
 
   async function updateTask(updates: Record<string, unknown>) {
@@ -196,34 +227,100 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         </div>
       )}
 
-      {/* Status + Escalation */}
+      {/* Status (read-only) */}
       <Section label="Status">
         <div className="flex items-center gap-2 flex-wrap">
-          {(['open', 'blocked', 'done', 'tracking'] as TaskStatus[]).map((s) => (
+          {task.waiting_on ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-sm font-medium border bg-amber-50 text-amber-700 border-amber-200">
+              <Hourglass className="w-3 h-3" />
+              Waiting On {task.waiting_on}
+            </span>
+          ) : (
+            <StatusBadge status={task.status} />
+          )}
+          {task.escalation && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-sm font-medium border border-red-300 bg-red-50 text-red-700">
+              <AlertTriangle className="w-3 h-3" />
+              Escalated
+            </span>
+          )}
+        </div>
+      </Section>
+
+      {/* Actions */}
+      <Section label="Actions">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Plate It — for open, tracking, waiting-on tasks */}
+          {(task.status === 'open' || task.status === 'tracking' || task.waiting_on) && task.status !== 'done' && (
             <button
-              key={s}
+              disabled={updating}
+              onClick={() => updateTask({ status: 'done', waiting_on: null })}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              Plate It
+            </button>
+          )}
+          {/* Track It — for open, waiting-on tasks (not already tracking) */}
+          {(task.status === 'open' || (task.waiting_on && task.status !== 'tracking')) && task.status !== 'done' && task.status !== 'dismissed' && (
+            <button
+              disabled={updating}
+              onClick={() => setShowTrackingSetup(true)}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+            >
+              <Eye className="w-3 h-3" />
+              Track It
+            </button>
+          )}
+          {/* Waiting On — for open, tracking tasks (not already waiting) */}
+          {(task.status === 'open' || task.status === 'tracking') && !task.waiting_on && (
+            <button
               disabled={updating}
               onClick={() => {
-                if (s === 'tracking') {
-                  setShowTrackingSetup(true)
-                } else {
-                  updateTask({ status: s })
-                }
+                setEditing(true)
+                setTimeout(() => waitingInputRef.current?.focus(), 0)
               }}
-              className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
-                task.status === s
-                  ? s === 'tracking'
-                    ? 'border-purple-300 bg-purple-50 text-purple-700 font-medium'
-                    : 'border-[var(--accent)] bg-amber-50 text-[var(--accent)] font-medium'
-                  : 'border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)]'
-              }`}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
             >
-              {s === 'tracking' ? '👁️ tracking' : s === 'done' ? 'plate it' : s}
+              <Hourglass className="w-3 h-3" />
+              Waiting On
             </button>
-          ))}
-
+          )}
+          {/* Take Over — for tracking, waiting-on tasks */}
+          {(task.status === 'tracking' || task.waiting_on) && task.status !== 'done' && task.status !== 'dismissed' && (
+            <button
+              disabled={updating}
+              onClick={() => updateTask({ status: 'open', waiting_on: null, tracked_owner: null, follow_up_date: null })}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Take Over
+            </button>
+          )}
+          {/* Not a Task — for open, tracking, waiting-on tasks */}
+          {(task.status === 'open' || task.status === 'tracking' || task.waiting_on) && task.status !== 'done' && task.status !== 'dismissed' && (
+            <button
+              disabled={updating}
+              onClick={() => updateTask({ status: 'dismissed', waiting_on: null })}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              <Ban className="w-3 h-3" />
+              Not a Task
+            </button>
+          )}
+          {/* Restore — for dismissed, plated tasks */}
+          {(task.status === 'dismissed' || task.status === 'done') && (
+            <button
+              disabled={updating}
+              onClick={() => updateTask({ status: 'open', waiting_on: null })}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Restore
+            </button>
+          )}
+          {/* Escalation toggle */}
           <span className="text-[var(--border)]">|</span>
-
           <button
             disabled={updating}
             onClick={() => updateTask({ escalation: !task.escalation })}
@@ -234,64 +331,8 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
             }`}
           >
             <AlertTriangle className="w-3 h-3" />
-            {task.escalation ? 'Escalated' : 'Escalate'}
+            {task.escalation ? 'De-escalate' : 'Escalate'}
           </button>
-        </div>
-      </Section>
-
-      {/* Quick Actions */}
-      <Section label="Actions">
-        <div className="flex items-center gap-2 flex-wrap">
-          {task.status !== 'tracking' && (
-            <button
-              disabled={updating}
-              onClick={() => setShowTrackingSetup(true)}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
-            >
-              <Eye className="w-3 h-3" />
-              Track
-            </button>
-          )}
-          {task.status === 'tracking' && (
-            <>
-              <button
-                disabled={updating}
-                onClick={() => updateTask({ status: 'open', tracked_owner: null, follow_up_date: null })}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-              >
-                <ArrowLeft className="w-3 h-3" />
-                Take Over
-              </button>
-              <button
-                disabled={updating}
-                onClick={() => updateTask({ status: 'done' })}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
-              >
-                <CheckCircle2 className="w-3 h-3" />
-                Plate It
-              </button>
-            </>
-          )}
-          {task.status === 'open' && !task.waiting_on && (
-            <button
-              disabled={updating}
-              onClick={() => updateTask({ status: 'done' })}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
-            >
-              <CheckCircle2 className="w-3 h-3" />
-              Plate It
-            </button>
-          )}
-          {task.status !== 'done' && (
-            <button
-              disabled={updating}
-              onClick={() => updateTask({ status: 'dismissed' })}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-            >
-              <Ban className="w-3 h-3" />
-              Not a task
-            </button>
-          )}
         </div>
       </Section>
 
@@ -361,19 +402,54 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         </Section>
       )}
 
-      {/* Waiting On */}
-      <Section label="Waiting On">
-        <WaitingOnField
-          taskId={taskId}
-          currentValue={task.waiting_on}
-          entities={allEntities}
-          onUpdate={async () => {
-            await loadData()
-            showFeedback('Updated ✓')
-            onUpdate?.()
-          }}
-        />
-      </Section>
+      {/* Waiting On Inline Form */}
+      {editing && (
+        <Section label="Set Waiting On">
+          <div className="relative">
+            <div className="flex items-center gap-1.5">
+              <input
+                ref={waitingInputRef}
+                autoFocus
+                value={waitingOnInput}
+                onChange={(e) => setWaitingOnInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && waitingOnInput.trim()) saveWaitingOn(waitingOnInput.trim())
+                  if (e.key === 'Escape') { setEditing(false); setWaitingOnInput('') }
+                }}
+                placeholder="Type a name..."
+                className="flex-1 text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+              />
+              <button
+                onClick={() => waitingOnInput.trim() && saveWaitingOn(waitingOnInput.trim())}
+                disabled={!waitingOnInput.trim() || savingWaitingOn}
+                className="px-2 py-1.5 text-xs rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
+              >
+                {savingWaitingOn ? '...' : 'Set'}
+              </button>
+              <button
+                onClick={() => { setEditing(false); setWaitingOnInput('') }}
+                className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            {waitingOnSuggestions.length > 0 && (
+              <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                {waitingOnSuggestions.map((entity) => (
+                  <button
+                    key={entity.id}
+                    onClick={() => saveWaitingOn(entity.name)}
+                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--surface-hover)] transition-colors flex items-center justify-between"
+                  >
+                    <span className="text-[var(--text)]">{entity.name}</span>
+                    <span className="text-[var(--muted)] capitalize">{entity.type}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
 
       {/* Linked Entities */}
       <Section label="Linked Entities">
@@ -502,133 +578,6 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
           </div>
         </div>
       </Section>
-    </div>
-  )
-}
-
-function WaitingOnField({
-  taskId,
-  currentValue,
-  entities,
-  onUpdate,
-}: {
-  taskId: string
-  currentValue: string | null
-  entities: Array<{ id: string; name: string; type: string }>
-  onUpdate: () => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [inputValue, setInputValue] = useState('')
-  const [saving, setSaving] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  const suggestions = inputValue.trim().length > 0
-    ? entities
-        .filter((e) =>
-          ['contact', 'vendor', 'franchisee', 'freelancer', 'vendor_team', 'brand', 'department'].includes(e.type) &&
-          e.name.toLowerCase().includes(inputValue.toLowerCase())
-        )
-        .slice(0, 6)
-    : []
-
-  async function save(value: string) {
-    setSaving(true)
-    try {
-      await fetch('/api/tasks', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: taskId, waiting_on: value || null }),
-      })
-      setEditing(false)
-      setInputValue('')
-      onUpdate()
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function clear() {
-    await save('')
-  }
-
-  if (currentValue && !editing) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md">
-          <Hourglass className="w-3 h-3" />
-          {currentValue}
-        </span>
-        <button
-          onClick={() => { setEditing(true); setInputValue(currentValue) }}
-          className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-        >
-          change
-        </button>
-        <button
-          onClick={clear}
-          disabled={saving}
-          className="text-[10px] text-[var(--muted)] hover:text-red-600 transition-colors"
-        >
-          clear
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-1">
-      {!editing ? (
-        <button
-          onClick={() => { setEditing(true); setTimeout(() => inputRef.current?.focus(), 0) }}
-          className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-        >
-          + Set waiting on...
-        </button>
-      ) : (
-        <div className="relative">
-          <div className="flex items-center gap-1.5">
-            <input
-              ref={inputRef}
-              autoFocus
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && inputValue.trim()) save(inputValue.trim())
-                if (e.key === 'Escape') { setEditing(false); setInputValue('') }
-              }}
-              placeholder="Type a name..."
-              className="flex-1 text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
-            />
-            <button
-              onClick={() => inputValue.trim() && save(inputValue.trim())}
-              disabled={!inputValue.trim() || saving}
-              className="px-2 py-1.5 text-xs rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
-            >
-              {saving ? '...' : 'Set'}
-            </button>
-            <button
-              onClick={() => { setEditing(false); setInputValue('') }}
-              className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-          {suggestions.length > 0 && (
-            <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg max-h-40 overflow-y-auto">
-              {suggestions.map((entity) => (
-                <button
-                  key={entity.id}
-                  onClick={() => save(entity.name)}
-                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--surface-hover)] transition-colors flex items-center justify-between"
-                >
-                  <span className="text-[var(--text)]">{entity.name}</span>
-                  <span className="text-[var(--muted)] capitalize">{entity.type}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
