@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Clock, Search, ChevronDown, ChevronUp, Mail, MessageSquare, ClipboardPaste, Mic, ClipboardCheck } from 'lucide-react'
+import { Clock, Search, ChevronDown, ChevronUp, Mail, MessageSquare, ClipboardPaste, Mic, ClipboardCheck, Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 
 interface HistoryEntity {
@@ -161,6 +161,7 @@ export default function HistoryPage() {
           <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
           <a href="/kpis" className="text-sm text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
           <a href="/audits" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={14} />Audits</a>
+          <a href="/reviews" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={14} />Reviews</a>
           <a href="/history" className="text-sm text-white font-medium">History</a>
           <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
