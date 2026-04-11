@@ -248,6 +248,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
         <nav className="flex items-center gap-6">
           <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
           <a href="/kpis" className="text-sm text-white font-medium">KPIs</a>
+          <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
           <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
