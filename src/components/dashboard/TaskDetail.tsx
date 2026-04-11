@@ -71,10 +71,11 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     setLinkingEntity(true)
     try {
       const entity = allEntities.find(e => e.id === entityId)
+      const role = entity && ['brand', 'department'].includes(entity.type) ? 'brand' : 'related'
       await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ link_entity_id: entityId, link_role: 'related' }),
+        body: JSON.stringify({ link_entity_id: entityId, link_role: role }),
       })
       // Optimistic update: add entity to local state immediately
       if (entity && data) {
