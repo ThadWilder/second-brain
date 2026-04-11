@@ -367,7 +367,7 @@ export async function processEntry(
       // Fire-and-forget: trigger the wiki processor
       fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://dumpbox.app'}/api/wiki/process`, {
         method: 'POST',
-        headers: { 'x-wiki-secret': process.env.CRON_SECRET || '' },
+        headers: { Authorization: `Bearer ${process.env.CRON_SECRET || ''}` },
       }).catch(() => {}) // don't await, don't fail
     }
 
