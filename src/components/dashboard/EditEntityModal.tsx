@@ -131,6 +131,31 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
         return
       }
 
+      // Auto-create works_for relationship when company is set
+      if (company) {
+        const companyEntity = allEntities.find((e) =>
+          e.name === company && ['brand', 'vendor', 'department'].includes(e.type)
+        )
+        if (companyEntity) {
+          // Check if relationship already exists
+          const hasRel = relationships.some(
+            (r) => r.entity.id === companyEntity.id &&
+            ['works_for', 'works_on', 'member_of', 'works_at'].includes(r.relationship)
+          )
+          if (!hasRel) {
+            await fetch('/api/entities/link', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from_entity_id: entity.id,
+                to_entity_id: companyEntity.id,
+                relationship: 'works_for',
+              }),
+            })
+          }
+        }
+      }
+
       onSaved()
     } catch {
       setError('Network error')
@@ -258,12 +283,25 @@ export function EditEntityModal({ entity, allEntities, onClose, onSaved }: Props
         {/* Company / Org */}
         {(isContact || entity.type === 'vendor_team' || entity.type === 'freelancer') && (
           <Field label="Company">
-            <input
+            <select
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. Miracle Method"
-              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
-            />
+              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+            >
+              <option value="">Select company...</option>
+              {['brand', 'vendor', 'department'].map((type) => {
+                const group = allEntities.filter((e) => e.type === type && e.id !== entity.id)
+                if (!group.length) return null
+                const label = { brand: 'Brands', vendor: 'Vendors', department: 'Internal Team' }[type] ?? type
+                return (
+                  <optgroup key={type} label={label}>
+                    {group.sort((a, b) => a.name.localeCompare(b.name)).map((e) => (
+                      <option key={e.id} value={e.name}>{e.name}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
+            </select>
           </Field>
         )}
 
