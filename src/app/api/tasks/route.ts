@@ -33,11 +33,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   let prevStatus: string | null = null
   let prevDueDate: string | null = null
   let prevWaitingOn: string | null = null
+  let prevEntryId: string | null = null
   if (status !== undefined || due_date !== undefined || waiting_on !== undefined || tracked_owner !== undefined || follow_up_date !== undefined) {
-    const { data: prev } = await db.from('tasks').select('status, due_date, waiting_on').eq('id', id).single()
+    const { data: prev } = await db.from('tasks').select('status, due_date, waiting_on, entry_id').eq('id', id).single()
     prevStatus = prev?.status ?? null
     prevDueDate = prev?.due_date ?? null
     prevWaitingOn = prev?.waiting_on ?? null
+    prevEntryId = prev?.entry_id ?? null
   }
 
   const updates: Record<string, unknown> = {}
@@ -70,6 +72,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     })
     if (status === 'done') {
       await deEscalateTask(db, id, 'task_done')
+      // Auto-resolve pending responses from the same source entry
+      if (prevEntryId) {
+        await db.from('pending_responses')
+          .update({ responded: true })
+          .eq('entry_id', prevEntryId)
+          .eq('responded', false)
+      }
     }
   }
 

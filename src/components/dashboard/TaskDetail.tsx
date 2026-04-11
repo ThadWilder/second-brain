@@ -692,9 +692,10 @@ function TrackingSetupForm({
   const [owner, setOwner] = useState(currentOwner ?? '')
   const [followUp, setFollowUp] = useState(currentFollowUp ?? '')
   const [saving, setSaving] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const suggestions = owner.trim().length > 0
+  const suggestions = showSuggestions && owner.trim().length > 0
     ? entities
         .filter((e) =>
           ['contact', 'vendor', 'franchisee', 'freelancer', 'vendor_team', 'brand', 'department'].includes(e.type) &&
@@ -716,7 +717,7 @@ function TrackingSetupForm({
         <input
           ref={inputRef}
           value={owner}
-          onChange={(e) => setOwner(e.target.value)}
+          onChange={(e) => { setOwner(e.target.value); setShowSuggestions(true) }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') onSave(owner.trim(), followUp)
             if (e.key === 'Escape') onCancel()
@@ -729,7 +730,7 @@ function TrackingSetupForm({
             {suggestions.map((entity) => (
               <button
                 key={entity.id}
-                onClick={() => setOwner(entity.name)}
+                onClick={() => { setOwner(entity.name); setShowSuggestions(false) }}
                 className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--surface-hover)] transition-colors flex items-center justify-between"
               >
                 <span className="text-[var(--text)]">{entity.name}</span>

@@ -138,10 +138,28 @@ export async function GET(): Promise<NextResponse> {
   const overdueFollowUps = normalizedTrackingTasks.filter((t: any) => t.follow_up_date && t.follow_up_date <= today)
   const staleTracking = normalizedTrackingTasks.filter((t: any) => !t.follow_up_date && t.updated_at < sevenDaysAgoDate)
 
-  // Pending responses
-  const { data: pendingResponses } = await db.from('pending_responses')
-    .select('id, summary, created_at').eq('org_id', ORG_ID).eq('responded', false)
-    .order('created_at', { ascending: true }).limit(10)
+  // Pending responses — include entry_id so we can dedupe against tasks
+  const { data: rawPendingResponses } = await db.from('pending_responses')
+    .select('id, summary, entry_id, created_at').eq('org_id', ORG_ID).eq('responded', false)
+    .order('created_at', { ascending: true }).limit(20)
+
+  // Find which tasks share an entry_id with a pending response
+  const allTaskEntryIds = new Set(
+    [...(allOpenTasks ?? []), ...(allTrackingTasks ?? [])]
+      .map((t: any) => t.entry_id)
+      .filter(Boolean)
+  )
+  const needsReplyTaskIds = new Set<string>()
+  const pendingResponses = (rawPendingResponses ?? []).filter((pr: any) => {
+    if (pr.entry_id && allTaskEntryIds.has(pr.entry_id)) {
+      // Find the matching task(s) and mark them as needs-reply
+      for (const t of [...(allOpenTasks ?? []), ...(allTrackingTasks ?? [])]) {
+        if ((t as any).entry_id === pr.entry_id) needsReplyTaskIds.add((t as any).id)
+      }
+      return false // hide from standalone pending responses
+    }
+    return true
+  })
 
   // Clarifications
   const { data: clarifications } = await db.from('pending_clarifications')
@@ -200,7 +218,8 @@ export async function GET(): Promise<NextResponse> {
     stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, regularTasks, staleFromYesterday,
     overdueFollowUps, staleTracking,
-    pendingResponses: pendingResponses ?? [],
+    pendingResponses,
+    needsReplyTaskIds: [...needsReplyTaskIds],
     clarifications: clarifications ?? [],
     consolidationSuggestions: consolidationSuggestions ?? [],
     consolidationTaskIds: [...consolidationTaskIds],

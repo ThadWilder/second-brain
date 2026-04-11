@@ -69,7 +69,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
     stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, regularTasks, staleFromYesterday,
     overdueFollowUps, staleTracking,
-    pendingResponses, clarifications,
+    pendingResponses, needsReplyTaskIds, clarifications,
     consolidationTaskIds,
     heatmapCells, heatmapDays, brandNames,
     allEntities,
@@ -226,6 +226,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             <Priorities
               escalated={escalatedTasks}
               needsResponse={pendingResponses}
+              needsReplyTaskIds={new Set(needsReplyTaskIds ?? [])}
               tasks={regularTasks}
               staleFromYesterday={staleFromYesterday}
               overdueFollowUps={overdueFollowUps ?? []}
@@ -274,6 +275,7 @@ interface DashboardData {
   pendingResponses: Array<{ id: string; summary: string; created_at: string }>
   clarifications: Array<{ id: string; entity_id: string | null; entry_id: string | null; question: string; context: string | null; field: string; suggestions: string[] | null }>
   consolidationSuggestions: Array<{ id: string; new_task_id: string; existing_task_id: string; merged_description: string; reason: string; created_at: string }>
+  needsReplyTaskIds: string[]
   consolidationTaskIds: string[]
   heatmapCells: Array<{ brand_id: string; brand_name: string; date: string; count: number }>
   heatmapDays: string[]

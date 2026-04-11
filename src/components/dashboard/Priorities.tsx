@@ -13,6 +13,7 @@ import type { TaskWithEntities } from '@/types'
 interface Props {
   escalated: TaskWithEntities[]
   needsResponse: Array<{ id: string; summary: string; created_at: string }>
+  needsReplyTaskIds?: Set<string>
   tasks: TaskWithEntities[]
   staleFromYesterday: TaskWithEntities[]
   overdueFollowUps: TaskWithEntities[]
@@ -26,7 +27,7 @@ type PanelState =
   | { type: 'pending'; id: string; title: string }
   | null
 
-export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday, overdueFollowUps, staleTracking, consolidationTaskIds, onRefresh }: Props) {
+export function Priorities({ escalated, needsResponse, needsReplyTaskIds, tasks, staleFromYesterday, overdueFollowUps, staleTracking, consolidationTaskIds, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
 
@@ -62,6 +63,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
               task={task}
               variant="escalated"
               hasConsolidation={consolidationTaskIds?.has(task.id)}
+              needsReply={needsReplyTaskIds?.has(task.id)}
               onComplete={handleComplete}
               onClick={() => handleTaskClick(task)}
               onRefresh={onRefresh}
@@ -102,6 +104,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
               task={task}
               variant="normal"
               hasConsolidation={consolidationTaskIds?.has(task.id)}
+              needsReply={needsReplyTaskIds?.has(task.id)}
               onComplete={handleComplete}
               onClick={() => handleTaskClick(task)}
               onRefresh={onRefresh}
@@ -224,6 +227,7 @@ function TaskRow({
   task,
   variant,
   hasConsolidation,
+  needsReply,
   onComplete,
   onClick,
   onRefresh,
@@ -231,6 +235,7 @@ function TaskRow({
   task: TaskWithEntities
   variant: 'escalated' | 'normal' | 'stale'
   hasConsolidation?: boolean
+  needsReply?: boolean
   onComplete: (id: string) => void
   onClick: () => void
   onRefresh?: () => void
@@ -428,6 +433,11 @@ function TaskRow({
           <AutoLinkText text={task.description} />
         </p>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {needsReply && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-amber-50 text-amber-700 border border-amber-200">
+              📬 needs reply
+            </span>
+          )}
           {hasConsolidation && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-50 text-violet-700 border border-violet-200">
               Related task found
