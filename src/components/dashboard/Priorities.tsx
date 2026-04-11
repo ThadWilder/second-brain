@@ -232,31 +232,25 @@ function InboxGroups({
 }) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 
-  // Group by entry_id (tasks from same source email)
+  // Group by brand (tasks about the same brand cluster together)
   const groups: Array<{ key: string; label: string; tasks: TaskWithEntities[] }> = []
-  const byEntry = new Map<string, TaskWithEntities[]>()
-  const noEntry: TaskWithEntities[] = []
+  const byBrand = new Map<string, TaskWithEntities[]>()
 
   for (const task of tasks) {
-    if (task.entry_id) {
-      const existing = byEntry.get(task.entry_id) ?? []
-      existing.push(task)
-      byEntry.set(task.entry_id, existing)
-    } else {
-      noEntry.push(task)
-    }
+    const brand = task.entities?.find((e) => e.role === 'brand')?.name ?? '_none'
+    const existing = byBrand.get(brand) ?? []
+    existing.push(task)
+    byBrand.set(brand, existing)
   }
 
-  for (const [entryId, entryTasks] of byEntry) {
-    groups.push({ key: entryId, label: getBrandLabel(entryTasks), tasks: entryTasks })
-  }
-  for (const task of noEntry) {
-    groups.push({ key: task.id, label: '', tasks: [task] })
-  }
+  // Sort: brands with more tasks first, then alphabetical
+  const sortedBrands = Array.from(byBrand.entries()).sort((a, b) => {
+    if (b[1].length !== a[1].length) return b[1].length - a[1].length
+    return a[0].localeCompare(b[0])
+  })
 
-  function getBrandLabel(tasks: TaskWithEntities[]): string {
-    const brands = new Set(tasks.flatMap((t) => t.entities?.filter((e) => e.role === 'brand').map((e) => e.name) ?? []))
-    return brands.size > 0 ? Array.from(brands).join(', ') : ''
+  for (const [brand, brandTasks] of sortedBrands) {
+    groups.push({ key: brand, label: brand === '_none' ? 'General' : brand, tasks: brandTasks })
   }
 
   function toggleGroup(key: string) {
