@@ -63,6 +63,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           continue
         }
 
+        // Skip locked pages — user has paused auto-updates
+        const slug = (entity.normalized_name as string).replace(/\s+/g, '-')
+        const { data: wikiPage } = await db
+          .from('wiki_pages')
+          .select('locked')
+          .eq('org_id', ORG_ID)
+          .eq('slug', slug)
+          .single()
+
+        if (wikiPage?.locked) {
+          await db
+            .from('wiki_queue')
+            .update({ status: 'done', processed_at: new Date().toISOString() })
+            .eq('id', item.id)
+          totalProcessed++
+          continue
+        }
+
         // entry_id may be null for wiki updates triggered by task/pending-response changes
         let entry: { raw_text: string; source: string; created_at: string } | null = null
         if (item.entry_id) {

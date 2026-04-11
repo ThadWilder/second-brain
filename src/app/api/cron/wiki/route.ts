@@ -62,7 +62,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             .single()
 
           if (entity && entry) {
-            await updateWikiPageForEntity(db, entity as Entity, entry, item.entry_id)
+            // Skip locked pages — user has paused auto-updates
+            const slug = (entity.normalized_name as string).replace(/\s+/g, '-')
+            const { data: wikiPage } = await db
+              .from('wiki_pages')
+              .select('locked')
+              .eq('org_id', ORG_ID)
+              .eq('slug', slug)
+              .single()
+
+            if (!wikiPage?.locked) {
+              await updateWikiPageForEntity(db, entity as Entity, entry, item.entry_id)
+            }
           }
 
           await db

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, BookOpen, Pencil, Pin, PinOff, Plus, Save, X } from 'lucide-react'
+import { ArrowLeft, BookOpen, Lock, Pencil, Pin, PinOff, Plus, Save, Unlock, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
 interface PinnedSection {
@@ -19,12 +19,41 @@ interface WikiPage {
   source_count: number
   updated_at: string
   pinned_sections: PinnedSection[]
+  locked: boolean
+  last_manual_edit: string | null
   entities: { type: string; name: string } | null
 }
 
 interface WikiLink {
   context?: string
   wiki_pages?: { slug: string; title: string }
+}
+
+/** Parse markdown content into sections by ## headers */
+function parseSections(content: string): Array<{ header: string; body: string }> {
+  const sections: Array<{ header: string; body: string }> = []
+  const lines = content.split('\n')
+  let currentHeader = ''
+  let currentBody: string[] = []
+
+  for (const line of lines) {
+    const headerMatch = line.match(/^## (.+)/)
+    if (headerMatch) {
+      if (currentHeader || currentBody.length > 0) {
+        sections.push({ header: currentHeader, body: currentBody.join('\n').trim() })
+      }
+      currentHeader = headerMatch[1]
+      currentBody = []
+    } else {
+      currentBody.push(line)
+    }
+  }
+
+  if (currentHeader || currentBody.length > 0) {
+    sections.push({ header: currentHeader, body: currentBody.join('\n').trim() })
+  }
+
+  return sections
 }
 
 export default function WikiPageClient() {
@@ -35,10 +64,19 @@ export default function WikiPageClient() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
-  // Edit mode state
+  // Full-page edit mode state
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Section edit mode state
+  const [editingSection, setEditingSection] = useState<string | null>(null)
+  const [sectionEditContent, setSectionEditContent] = useState('')
+  const [savingSection, setSavingSection] = useState(false)
+
+  // Lock state
+  const [locked, setLocked] = useState(false)
+  const [togglingLock, setTogglingLock] = useState(false)
 
   // Pinned sections state
   const [pinnedSections, setPinnedSections] = useState<PinnedSection[]>([])
@@ -57,12 +95,23 @@ export default function WikiPageClient() {
         if (data) {
           setPage(data.page)
           setPinnedSections(data.page.pinned_sections ?? [])
+          setLocked(data.page.locked ?? false)
           setOutLinks(data.outbound_links ?? [])
           setInLinks(data.inbound_links ?? [])
         }
       })
       .finally(() => setLoading(false))
   }, [slug])
+
+  // ── Full page edit ──
+
+  function startEditing() {
+    if (!page) return
+    const aiContent = stripPinnedFromContent(page.content, pinnedSections)
+    setEditContent(aiContent)
+    setEditing(true)
+    setEditingSection(null)
+  }
 
   async function saveContent() {
     if (!page) return
@@ -82,6 +131,60 @@ export default function WikiPageClient() {
     }
   }
 
+  // ── Section edit ──
+
+  function startSectionEdit(header: string, body: string) {
+    setEditingSection(header)
+    setSectionEditContent(body)
+    setEditing(false)
+  }
+
+  async function saveSectionEdit() {
+    if (!page || !editingSection) return
+    setSavingSection(true)
+    try {
+      const res = await fetch(`/api/wiki/${page.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ section: editingSection, content: sectionEditContent }),
+      })
+      if (res.ok) {
+        // Re-fetch page to get updated content
+        const refetch = await fetch(`/api/wiki/${page.slug}`)
+        if (refetch.ok) {
+          const data = await refetch.json()
+          setPage(data.page)
+          setPinnedSections(data.page.pinned_sections ?? [])
+        }
+        setEditingSection(null)
+      }
+    } finally {
+      setSavingSection(false)
+    }
+  }
+
+  // ── Lock toggle ──
+
+  async function toggleLock() {
+    if (!page) return
+    setTogglingLock(true)
+    try {
+      const res = await fetch(`/api/wiki/${page.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locked: !locked }),
+      })
+      if (res.ok) {
+        setLocked(!locked)
+        setPage({ ...page, locked: !locked })
+      }
+    } finally {
+      setTogglingLock(false)
+    }
+  }
+
+  // ── Pinned sections ──
+
   async function savePinnedSections(sections: PinnedSection[]) {
     if (!page) return
     const res = await fetch(`/api/wiki/${page.slug}`, {
@@ -93,14 +196,6 @@ export default function WikiPageClient() {
       setPinnedSections(sections)
       setPage({ ...page, pinned_sections: sections })
     }
-  }
-
-  function startEditing() {
-    if (!page) return
-    // Strip pinned sections from content for editing (user edits AI content only)
-    const aiContent = stripPinnedFromContent(page.content, pinnedSections)
-    setEditContent(aiContent)
-    setEditing(true)
   }
 
   async function addPinnedSection() {
@@ -116,6 +211,8 @@ export default function WikiPageClient() {
     const updated = pinnedSections.filter((_, i) => i !== index)
     await savePinnedSections(updated)
   }
+
+  // ── Loading / not found ──
 
   if (loading) {
     return (
@@ -139,6 +236,7 @@ export default function WikiPageClient() {
 
   // Get AI-generated content (without pinned section markdown)
   const aiContent = stripPinnedFromContent(page.content, pinnedSections)
+  const sections = parseSections(aiContent)
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
@@ -156,7 +254,24 @@ export default function WikiPageClient() {
         <div className="ml-auto flex items-center gap-3 text-xs text-[var(--muted)]">
           <span>{page.source_count} sources</span>
           <span>updated {formatAge(page.updated_at)}</span>
-          {!editing && (
+
+          {/* Lock toggle */}
+          <button
+            onClick={toggleLock}
+            disabled={togglingLock}
+            className={`flex items-center gap-1 px-2 py-1 rounded transition-colors border ${
+              locked
+                ? 'text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100'
+                : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] border-transparent hover:border-[var(--border)]'
+            }`}
+            title={locked ? 'Locked — auto-updates paused. Click to unlock.' : 'Click to lock and pause auto-updates'}
+          >
+            {locked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+            {locked ? 'Locked' : 'Lock'}
+          </button>
+
+          {/* Edit full page button */}
+          {!editing && !editingSection && (
             <button
               onClick={startEditing}
               className="flex items-center gap-1 px-2 py-1 rounded text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] border border-transparent hover:border-[var(--border)] transition-colors"
@@ -167,6 +282,14 @@ export default function WikiPageClient() {
           )}
         </div>
       </header>
+
+      {/* Locked indicator */}
+      {locked && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 text-xs text-amber-700">
+          <Lock className="w-3 h-3" />
+          <span>Locked — auto-updates paused. Unlock to re-enable AI regeneration.</span>
+        </div>
+      )}
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Summary */}
@@ -211,7 +334,7 @@ export default function WikiPageClient() {
         )}
 
         {/* Add pinned section */}
-        {!editing && (
+        {!editing && !editingSection && (
           <div className="mb-6">
             {addingPin ? (
               <div className="rounded-lg border border-amber-200/60 bg-amber-50/30 p-4 space-y-3">
@@ -266,13 +389,13 @@ export default function WikiPageClient() {
           </div>
         )}
 
-        {/* Content — edit mode or view mode */}
+        {/* Content — full-page edit mode */}
         {editing ? (
           <div className="space-y-3">
             <textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="w-full min-h-[300px] px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-sm font-mono text-[var(--text)] focus:outline-none focus:border-[var(--accent)] resize-y leading-relaxed"
+              className="w-full min-h-[400px] px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-sm font-mono text-[var(--text)] focus:outline-none focus:border-[var(--accent)] resize-y leading-relaxed"
             />
             <div className="flex gap-2">
               <button
@@ -293,8 +416,71 @@ export default function WikiPageClient() {
             </div>
           </div>
         ) : aiContent.trim() ? (
+          /* Content — section-by-section view with inline edit buttons */
           <div>
-            <WikiContent content={aiContent} />
+            {sections.map((section, i) => {
+              const isPinned = section.header.startsWith('📌')
+
+              // Inline section editing
+              if (editingSection === section.header) {
+                return (
+                  <div key={i} className="mb-6">
+                    <h2 className="text-base font-semibold text-[var(--text)] mb-3">{section.header}</h2>
+                    <textarea
+                      value={sectionEditContent}
+                      onChange={(e) => setSectionEditContent(e.target.value)}
+                      className="w-full min-h-[200px] px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-sm font-mono text-[var(--text)] focus:outline-none focus:border-[var(--accent)] resize-y leading-relaxed"
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={saveSectionEdit}
+                        disabled={savingSection}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-50 transition-colors"
+                      >
+                        <Save className="w-3 h-3" />
+                        {savingSection ? 'Saving...' : 'Save section'}
+                      </button>
+                      <button
+                        onClick={() => setEditingSection(null)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )
+              }
+
+              // Normal view — show section with edit icon on header
+              if (section.header && !isPinned) {
+                return (
+                  <div key={i} className="group mb-2">
+                    <div className="flex items-center gap-2 mt-6 mb-2">
+                      <h2 className="text-base font-semibold text-[var(--text)]">{section.header}</h2>
+                      <button
+                        onClick={() => startSectionEdit(section.header, section.body)}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-all"
+                        title={`Edit "${section.header}" section`}
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <WikiContent content={section.body} />
+                  </div>
+                )
+              }
+
+              // No header (preamble content) or pinned — just render
+              return (
+                <div key={i} className="mb-2">
+                  {section.header && (
+                    <h2 className="text-base font-semibold text-[var(--text)] mt-6 mb-2">{section.header}</h2>
+                  )}
+                  <WikiContent content={section.body} />
+                </div>
+              )
+            })}
           </div>
         ) : !pinnedSections.length ? (
           <div className="text-center py-12">
