@@ -112,7 +112,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
             <Eye size={15} />
-            Tracking
+            Initiatives
           </a>
           <a
             href="/history"

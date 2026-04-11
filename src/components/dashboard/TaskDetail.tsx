@@ -48,6 +48,8 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [resolvingConsolidation, setResolvingConsolidation] = useState<string | null>(null)
   const [showTrackingSetup, setShowTrackingSetup] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [editingDescription, setEditingDescription] = useState(false)
+  const [descriptionDraft, setDescriptionDraft] = useState('')
   const [waitingOnInput, setWaitingOnInput] = useState('')
   const [savingWaitingOn, setSavingWaitingOn] = useState(false)
   const [editingDueDate, setEditingDueDate] = useState(false)
@@ -196,9 +198,52 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
 
       {/* Description */}
       <div>
-        <p className="text-base text-[var(--text)] leading-relaxed">
-          <AutoLinkText text={task.description} />
-        </p>
+        {editingDescription ? (
+          <div className="space-y-2">
+            <textarea
+              autoFocus
+              value={descriptionDraft}
+              onChange={(e) => setDescriptionDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setEditingDescription(false)
+              }}
+              rows={3}
+              className="w-full text-base text-[var(--text)] leading-relaxed bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 focus:outline-none focus:border-[var(--accent)] resize-none"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  if (descriptionDraft.trim() && descriptionDraft.trim() !== task.description) {
+                    await fetch(`/api/tasks/${taskId}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ add_note: `Description updated from: ${task.description}` }),
+                    })
+                    await updateTask({ description: descriptionDraft.trim() })
+                  }
+                  setEditingDescription(false)
+                }}
+                className="px-2.5 py-1 text-xs rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setEditingDescription(false)}
+                className="px-2.5 py-1 text-xs rounded border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p
+            className="text-base text-[var(--text)] leading-relaxed cursor-pointer hover:bg-[var(--surface-hover)] rounded px-1 -mx-1 transition-colors"
+            onClick={() => { setDescriptionDraft(task.description); setEditingDescription(true) }}
+            title="Click to edit"
+          >
+            <AutoLinkText text={task.description} />
+          </p>
+        )}
       </div>
 
       {/* Consolidation Suggestions */}
