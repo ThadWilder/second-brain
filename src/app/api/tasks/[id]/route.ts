@@ -14,8 +14,17 @@ export async function PATCH(
   }
 
   const { id } = await params
-  const { add_note } = await req.json()
+  const { add_note, link_entity_id, link_role } = await req.json()
   const db = getServiceClient()
+
+  if (link_entity_id) {
+    await db.from('task_entities').insert({
+      task_id: id,
+      entity_id: link_entity_id,
+      role: link_role || 'related',
+    })
+    return NextResponse.json({ success: true })
+  }
 
   if (add_note) {
     // Add a note as a task_event

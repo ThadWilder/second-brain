@@ -29,6 +29,8 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null)
+  const [allEntities, setAllEntities] = useState<Array<{ id: string; name: string; type: string }>>([])
+  const [linkingEntity, setLinkingEntity] = useState(false)
 
   async function loadData() {
     const r = await fetch(`/api/tasks/${taskId}`)
@@ -38,7 +40,26 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   useEffect(() => {
     setLoading(true)
     loadData().finally(() => setLoading(false))
+    // Fetch all entities for linking
+    fetch('/api/dashboard').then(r => r.json()).then(d => {
+      setAllEntities(d.allEntities ?? [])
+    }).catch(() => {})
   }, [taskId])
+
+  async function linkEntity(entityId: string) {
+    setLinkingEntity(true)
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ link_entity_id: entityId, link_role: 'related' }),
+      })
+      await loadData()
+      showFeedback('Entity linked ✓')
+    } finally {
+      setLinkingEntity(false)
+    }
+  }
 
   function showFeedback(msg: string) {
     setSavedFeedback(msg)
@@ -142,9 +163,9 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       )}
 
       {/* Linked Entities */}
-      {entities.length > 0 && (
-        <Section label="Linked Entities">
-          <div className="space-y-1.5">
+      <Section label="Linked Entities">
+        {entities.length > 0 && (
+          <div className="space-y-1.5 mb-3">
             {entities.map((e) => (
               <div key={e.id + e.role} className="flex items-center gap-2 text-xs">
                 <Users className="w-3.5 h-3.5 text-[var(--muted)]" />
@@ -153,8 +174,37 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
               </div>
             ))}
           </div>
-        </Section>
-      )}
+        )}
+        {entities.length === 0 && (
+          <p className="text-xs text-[var(--muted)] mb-3">No linked entities yet.</p>
+        )}
+        {linkingEntity ? (
+          <span className="text-xs text-[var(--muted)]">Linking...</span>
+        ) : (
+          <select
+            className="w-full text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:border-[var(--accent)] focus:outline-none"
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) {
+                linkEntity(e.target.value)
+                e.target.value = ''
+              }
+            }}
+          >
+            <option value="" disabled>+ Link entity...</option>
+            {['brand', 'department', 'contact', 'vendor', 'vendor_team', 'freelancer', 'franchisee'].map(type => {
+              const group = allEntities.filter(e => e.type === type && !entities.some(linked => linked.id === e.id))
+              if (!group.length) return null
+              const label = { brand: 'Brands', department: 'Internal Team', contact: 'People', vendor: 'Vendors', vendor_team: 'Vendor Team', freelancer: 'Freelancers', franchisee: 'Franchisees' }[type] ?? type
+              return (
+                <optgroup key={type} label={label}>
+                  {group.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </optgroup>
+              )
+            })}
+          </select>
+        )}
+      </Section>
 
       {/* Source Dumpling */}
       {source_entry && (
