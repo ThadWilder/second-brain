@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { hasValidSession } from '@/lib/auth'
+import { queueWikiUpdatesForTask } from '@/lib/wiki-queue'
 
 export async function PATCH(
   req: NextRequest,
@@ -36,6 +37,9 @@ export async function PATCH(
 
     // Update task's updated_at
     await db.from('tasks').update({ updated_at: new Date().toISOString() }).eq('id', id)
+
+    // Queue wiki updates for linked entities (fire-and-forget)
+    queueWikiUpdatesForTask(db, id)
 
     return NextResponse.json({ success: true })
   }

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { hasValidSession } from '@/lib/auth'
+import { queueWikiUpdatesForPendingResponse } from '@/lib/wiki-queue'
 
 export async function GET(
   _req: NextRequest,
@@ -86,6 +87,9 @@ export async function PATCH(
       .eq('id', id)
       .eq('org_id', ORG_ID)
 
+    // Queue wiki updates for linked entities (fire-and-forget)
+    queueWikiUpdatesForPendingResponse(db, id)
+
     return NextResponse.json({ success: true })
   }
 
@@ -100,6 +104,11 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Queue wiki updates when response status changes (fire-and-forget)
+  if (body.responded !== undefined) {
+    queueWikiUpdatesForPendingResponse(db, id)
   }
 
   return NextResponse.json({ success: true })

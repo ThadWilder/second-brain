@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { hasValidSession } from '@/lib/auth'
+import { queueWikiUpdatesForEntities } from '@/lib/wiki-queue'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const authenticated = await hasValidSession()
@@ -118,6 +119,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       metadata: { from: 'open', to: 'done', source: 'merged', merged_into: newTask.id },
     }))
     await db.from('task_events').insert(statusEvents)
+
+    // Queue wiki updates for all linked entities (fire-and-forget)
+    const allEntityIds = uniqueLinks.map((l) => l.entity_id)
+    queueWikiUpdatesForEntities(db, allEntityIds, newTask.entry_id ?? null)
 
     return NextResponse.json({ task: newTask })
   } catch (err) {

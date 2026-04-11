@@ -203,7 +203,7 @@ export async function updateWikiPageForEntity(
   db: SupabaseClient,
   entity: Entity,
   entry: { raw_text: string; source: string; created_at: string },
-  entryId: string
+  entryId: string | null
 ): Promise<void> {
   // Get or create the wiki page
   const slug = entity.normalized_name.replace(/\s+/g, '-')

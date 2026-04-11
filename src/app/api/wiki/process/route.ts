@@ -55,15 +55,33 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           .eq('id', item.entity_id)
           .single()
 
-        const { data: entry } = await db
-          .from('entries')
-          .select('raw_text, source, created_at')
-          .eq('id', item.entry_id)
-          .single()
-
-        if (entity && entry) {
-          await updateWikiPageForEntity(db, entity as Entity, entry, item.entry_id)
+        if (!entity) {
+          await db
+            .from('wiki_queue')
+            .update({ status: 'failed' })
+            .eq('id', item.id)
+          continue
         }
+
+        // entry_id may be null for wiki updates triggered by task/pending-response changes
+        let entry: { raw_text: string; source: string; created_at: string } | null = null
+        if (item.entry_id) {
+          const { data } = await db
+            .from('entries')
+            .select('raw_text, source, created_at')
+            .eq('id', item.entry_id)
+            .single()
+          entry = data
+        }
+
+        // If no entry, use a synthetic one so the wiki page still refreshes with current structured data
+        const entryForUpdate = entry ?? {
+          raw_text: '(Wiki refresh triggered by task or pending response update — no new email content.)',
+          source: 'system',
+          created_at: new Date().toISOString(),
+        }
+
+        await updateWikiPageForEntity(db, entity as Entity, entryForUpdate, item.entry_id)
 
         await db
           .from('wiki_queue')

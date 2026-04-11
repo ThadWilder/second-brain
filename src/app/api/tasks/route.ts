@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { deEscalateTask } from '@/lib/escalation'
 import { hasValidSession } from '@/lib/auth'
+import { queueWikiUpdatesForTask } from '@/lib/wiki-queue'
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const authenticated = await hasValidSession()
@@ -72,6 +73,11 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (due_date && (!prevDueDate || due_date > prevDueDate)) {
       await deEscalateTask(db, id, 'due_date_pushed')
     }
+  }
+
+  // Queue wiki updates for linked entities (fire-and-forget)
+  if (status !== undefined || due_date !== undefined) {
+    queueWikiUpdatesForTask(db, id)
   }
 
   return NextResponse.json({ success: true })
