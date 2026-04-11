@@ -25,11 +25,12 @@ export async function GET(): Promise<NextResponse> {
   const tenDaysAgo = new Date(estNow.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString()
 
   // Stats
-  const [escalationsRes, needsResponseRes, openTasksRes, closed7dRes] = await Promise.all([
+  const [escalationsRes, needsResponseRes, openTasksRes, closed7dRes, waitingOnRes] = await Promise.all([
     db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('escalation', true).eq('status', 'open'),
     db.from('pending_responses').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('responded', false),
     db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'open'),
     db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'done').gte('resolved_at', sevenDaysAgo),
+    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'open').not('waiting_on', 'is', null),
   ])
 
   const stats = {
@@ -37,6 +38,7 @@ export async function GET(): Promise<NextResponse> {
     needs_response: needsResponseRes.count ?? 0,
     open_tasks: openTasksRes.count ?? 0,
     closed_7d: closed7dRes.count ?? 0,
+    waiting_on: waitingOnRes.count ?? 0,
   }
 
   // All entities

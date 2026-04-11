@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { TaskStatus, EventType } from '@/types'
 
@@ -225,25 +225,29 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         </div>
       </Section>
 
-      {/* Due date & Waiting on */}
-      {(task.due_date || task.waiting_on) && (
-        <Section label="Details">
-          <div className="space-y-1.5">
-            {task.due_date && (
-              <div className="flex items-center gap-2 text-xs text-[var(--text)]">
-                <Clock className="w-3.5 h-3.5 text-[var(--muted)]" />
-                <span>Due {task.due_date}</span>
-              </div>
-            )}
-            {task.waiting_on && (
-              <div className="flex items-center gap-2 text-xs text-amber-700">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Waiting on {task.waiting_on}</span>
-              </div>
-            )}
+      {/* Due date */}
+      {task.due_date && (
+        <Section label="Due Date">
+          <div className="flex items-center gap-2 text-xs text-[var(--text)]">
+            <Clock className="w-3.5 h-3.5 text-[var(--muted)]" />
+            <span>Due {task.due_date}</span>
           </div>
         </Section>
       )}
+
+      {/* Waiting On */}
+      <Section label="Waiting On">
+        <WaitingOnField
+          taskId={taskId}
+          currentValue={task.waiting_on}
+          entities={allEntities}
+          onUpdate={async () => {
+            await loadData()
+            showFeedback('Updated ✓')
+            onUpdate?.()
+          }}
+        />
+      </Section>
 
       {/* Linked Entities */}
       <Section label="Linked Entities">
@@ -372,6 +376,133 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
           </div>
         </div>
       </Section>
+    </div>
+  )
+}
+
+function WaitingOnField({
+  taskId,
+  currentValue,
+  entities,
+  onUpdate,
+}: {
+  taskId: string
+  currentValue: string | null
+  entities: Array<{ id: string; name: string; type: string }>
+  onUpdate: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [inputValue, setInputValue] = useState('')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const suggestions = inputValue.trim().length > 0
+    ? entities
+        .filter((e) =>
+          ['contact', 'vendor', 'franchisee', 'freelancer', 'vendor_team', 'brand', 'department'].includes(e.type) &&
+          e.name.toLowerCase().includes(inputValue.toLowerCase())
+        )
+        .slice(0, 6)
+    : []
+
+  async function save(value: string) {
+    setSaving(true)
+    try {
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, waiting_on: value || null }),
+      })
+      setEditing(false)
+      setInputValue('')
+      onUpdate()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function clear() {
+    await save('')
+  }
+
+  if (currentValue && !editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md">
+          <Hourglass className="w-3 h-3" />
+          {currentValue}
+        </span>
+        <button
+          onClick={() => { setEditing(true); setInputValue(currentValue) }}
+          className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+        >
+          change
+        </button>
+        <button
+          onClick={clear}
+          disabled={saving}
+          className="text-[10px] text-[var(--muted)] hover:text-red-600 transition-colors"
+        >
+          clear
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      {!editing ? (
+        <button
+          onClick={() => { setEditing(true); setTimeout(() => inputRef.current?.focus(), 0) }}
+          className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+        >
+          + Set waiting on...
+        </button>
+      ) : (
+        <div className="relative">
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={inputRef}
+              autoFocus
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputValue.trim()) save(inputValue.trim())
+                if (e.key === 'Escape') { setEditing(false); setInputValue('') }
+              }}
+              placeholder="Type a name..."
+              className="flex-1 text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+            />
+            <button
+              onClick={() => inputValue.trim() && save(inputValue.trim())}
+              disabled={!inputValue.trim() || saving}
+              className="px-2 py-1.5 text-xs rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
+            >
+              {saving ? '...' : 'Set'}
+            </button>
+            <button
+              onClick={() => { setEditing(false); setInputValue('') }}
+              className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+          {suggestions.length > 0 && (
+            <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg max-h-40 overflow-y-auto">
+              {suggestions.map((entity) => (
+                <button
+                  key={entity.id}
+                  onClick={() => save(entity.name)}
+                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--surface-hover)] transition-colors flex items-center justify-between"
+                >
+                  <span className="text-[var(--text)]">{entity.name}</span>
+                  <span className="text-[var(--muted)] capitalize">{entity.type}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -168,6 +168,7 @@ export interface DashboardStats {
   needs_response: number
   open_tasks: number
   closed_7d: number
+  waiting_on: number
 }
 
 export interface HeatmapCell {

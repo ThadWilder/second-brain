@@ -9,6 +9,7 @@ interface Props {
 const STATS: { key: keyof DashboardStats; label: string; icon: string }[] = [
   { key: 'escalations', label: 'On Fire', icon: '🔥' },
   { key: 'needs_response', label: 'Waiting on You', icon: '👀' },
+  { key: 'waiting_on', label: 'Waiting on Them', icon: '⏳' },
   { key: 'open_tasks', label: 'In the Steamer', icon: '🥟' },
   { key: 'closed_7d', label: 'Plated This Week', icon: '✨' },
 ]

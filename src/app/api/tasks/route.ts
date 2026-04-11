@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const body = await req.json()
-  const { id, status, due_date, escalation } = body
+  const { id, status, due_date, escalation, waiting_on } = body
 
   if (!id) {
     return NextResponse.json({ error: 'Task id required' }, { status: 400 })
@@ -32,16 +32,19 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   // Fetch previous values before update (for event log)
   let prevStatus: string | null = null
   let prevDueDate: string | null = null
-  if (status !== undefined || due_date !== undefined) {
-    const { data: prev } = await db.from('tasks').select('status, due_date').eq('id', id).single()
+  let prevWaitingOn: string | null = null
+  if (status !== undefined || due_date !== undefined || waiting_on !== undefined) {
+    const { data: prev } = await db.from('tasks').select('status, due_date, waiting_on').eq('id', id).single()
     prevStatus = prev?.status ?? null
     prevDueDate = prev?.due_date ?? null
+    prevWaitingOn = prev?.waiting_on ?? null
   }
 
   const updates: Record<string, unknown> = {}
   if (status !== undefined) updates.status = status
   if (due_date !== undefined) updates.due_date = due_date
   if (escalation !== undefined) updates.escalation = escalation
+  if (waiting_on !== undefined) updates.waiting_on = waiting_on || null
 
   if (status === 'done') {
     updates.resolved_at = new Date().toISOString()
@@ -75,8 +78,19 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     }
   }
 
+  // Log waiting_on change
+  if (waiting_on !== undefined && (waiting_on || null) !== prevWaitingOn) {
+    await db.from('task_events').insert({
+      task_id: id,
+      event_type: 'note_added',
+      metadata: waiting_on
+        ? { note: `Waiting on set to "${waiting_on}"` }
+        : { note: `No longer waiting on "${prevWaitingOn}"` },
+    })
+  }
+
   // Queue wiki updates for linked entities (fire-and-forget)
-  if (status !== undefined || due_date !== undefined) {
+  if (status !== undefined || due_date !== undefined || waiting_on !== undefined) {
     queueWikiUpdatesForTask(db, id)
   }
 

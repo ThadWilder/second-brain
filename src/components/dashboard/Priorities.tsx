@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
+import { Hourglass, X } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { DetailPanel } from './DetailPanel'
@@ -60,6 +61,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
               hasConsolidation={consolidationTaskIds?.has(task.id)}
               onComplete={handleComplete}
               onClick={() => handleTaskClick(task)}
+              onRefresh={onRefresh}
             />
           ))}
         </Section>
@@ -97,6 +99,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
               hasConsolidation={consolidationTaskIds?.has(task.id)}
               onComplete={handleComplete}
               onClick={() => handleTaskClick(task)}
+              onRefresh={onRefresh}
             />
           ))}
         </Section>
@@ -115,6 +118,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
                 hasConsolidation={consolidationTaskIds?.has(task.id)}
                 onComplete={handleComplete}
                 onClick={() => handleTaskClick(task)}
+                onRefresh={onRefresh}
               />
             ))}
         </Section>
@@ -177,14 +181,36 @@ function TaskRow({
   hasConsolidation,
   onComplete,
   onClick,
+  onRefresh,
 }: {
   task: TaskWithEntities
   variant: 'escalated' | 'normal' | 'stale'
   hasConsolidation?: boolean
   onComplete: (id: string) => void
   onClick: () => void
+  onRefresh?: () => void
 }) {
   const brand = task.entities?.find((e) => e.role === 'brand')
+  const [showWaitingPopover, setShowWaitingPopover] = useState(false)
+  const [waitingInput, setWaitingInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function setWaitingOn(value: string) {
+    setSaving(true)
+    try {
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: task.id, waiting_on: value || null }),
+      })
+      setShowWaitingPopover(false)
+      setWaitingInput('')
+      onRefresh?.()
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const variantStyles = {
     escalated: 'bg-red-50 border-red-200',
@@ -194,15 +220,69 @@ function TaskRow({
 
   return (
     <div
-      className={`flex items-start gap-3 py-2 px-3 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${variantStyles[variant]}`}
+      className={`group flex items-start gap-3 py-2 px-3 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${variantStyles[variant]}`}
       onClick={onClick}
     >
-      <div onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
         <TaskCheckbox
           taskId={task.id}
           checked={task.status === 'done'}
           onComplete={onComplete}
         />
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (task.waiting_on) {
+                setWaitingOn('')
+              } else {
+                setShowWaitingPopover(true)
+                setTimeout(() => inputRef.current?.focus(), 0)
+              }
+            }}
+            title={task.waiting_on ? `Waiting on ${task.waiting_on} — click to clear` : 'Set waiting on'}
+            className={`p-0.5 rounded transition-colors ${
+              task.waiting_on
+                ? 'text-amber-600 hover:text-red-600'
+                : 'text-[var(--muted)] hover:text-amber-600 opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            <Hourglass className="w-3.5 h-3.5" />
+          </button>
+          {showWaitingPopover && (
+            <div
+              className="absolute z-20 top-full left-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg p-2 w-48"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-1">
+                <input
+                  ref={inputRef}
+                  value={waitingInput}
+                  onChange={(e) => setWaitingInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && waitingInput.trim()) setWaitingOn(waitingInput.trim())
+                    if (e.key === 'Escape') { setShowWaitingPopover(false); setWaitingInput('') }
+                  }}
+                  placeholder="Waiting on..."
+                  className="flex-1 text-xs px-2 py-1 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+                />
+                <button
+                  onClick={() => waitingInput.trim() && setWaitingOn(waitingInput.trim())}
+                  disabled={!waitingInput.trim() || saving}
+                  className="px-1.5 py-1 text-[10px] rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
+                >
+                  {saving ? '...' : 'Set'}
+                </button>
+                <button
+                  onClick={() => { setShowWaitingPopover(false); setWaitingInput('') }}
+                  className="p-1 text-[var(--muted)] hover:text-[var(--text)]"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-[var(--text)] leading-snug">{task.description}</p>
@@ -221,8 +301,8 @@ function TaskRow({
             </span>
           )}
           {task.waiting_on && (
-            <span className="text-xs text-amber-700">
-              waiting on {task.waiting_on}
+            <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+              ⏳ {task.waiting_on}
             </span>
           )}
           {task.status !== 'open' && (

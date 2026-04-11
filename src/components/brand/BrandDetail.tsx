@@ -56,9 +56,11 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
     exitCombineMode()
   }
 
-  const openTasks = localTasks.filter((t) => t.status === 'open' || t.status === 'blocked')
+  const allOpen = localTasks.filter((t) => t.status === 'open' || t.status === 'blocked')
+  const openTasks = allOpen.filter((t) => !t.waiting_on)
+  const waitingOnTasks = allOpen.filter((t) => t.waiting_on)
   const doneTasks = localTasks.filter((t) => t.status === 'done')
-  const selectedTasks = openTasks.filter((t) => selectedIds.has(t.id))
+  const selectedTasks = allOpen.filter((t) => selectedIds.has(t.id))
 
   const TABS: { key: Tab; label: string; count: number; icon: React.ReactNode }[] = [
     { key: 'tasks', label: 'Tasks', count: localTasks.length, icon: <ListTodo className="w-3.5 h-3.5" /> },
@@ -76,9 +78,9 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
         </div>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs text-[var(--muted)]">
-            {openTasks.length} open
+            {allOpen.length} open
           </span>
-          {openTasks.some((t) => t.escalation) && (
+          {allOpen.some((t) => t.escalation) && (
             <span className="text-xs bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded">
               escalated
             </span>
@@ -115,7 +117,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
             <div>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-[var(--muted)] uppercase tracking-wide">Open</p>
-                {openTasks.length >= 2 && (
+                {allOpen.length >= 2 && (
                   <button
                     onClick={combineMode ? exitCombineMode : () => setCombineMode(true)}
                     className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-md border transition-colors
@@ -190,6 +192,64 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Waiting On tasks */}
+          {waitingOnTasks.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-xs text-[var(--muted)] uppercase tracking-wide">
+                  Waiting On
+                </p>
+                <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full">
+                  {waitingOnTasks.length}
+                </span>
+              </div>
+              <div className="space-y-1">
+                {waitingOnTasks.map((task) => {
+                  const isSelected = selectedIds.has(task.id)
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={combineMode ? () => toggleSelect(task.id) : undefined}
+                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors
+                        ${combineMode ? 'cursor-pointer' : ''}
+                        ${isSelected
+                          ? 'bg-amber-50 border-[var(--accent)] ring-1 ring-[var(--accent)]'
+                          : 'bg-amber-50/50 border-amber-200'
+                        }`}
+                    >
+                      {combineMode ? (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(task.id)}
+                          className="mt-0.5 accent-[var(--accent)]"
+                        />
+                      ) : (
+                        <TaskCheckbox
+                          taskId={task.id}
+                          checked={false}
+                          onComplete={handleComplete}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[var(--text)]">{task.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                            ⏳ {task.waiting_on}
+                          </span>
+                          {task.due_date && (
+                            <span className="text-xs text-[var(--muted)]">due {task.due_date}</span>
+                          )}
+                          <StatusBadge status={task.status} />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
 
