@@ -104,10 +104,12 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
 
   // Group contacts by relationship target
   const contactGroups = useMemo(() => {
-    if (type !== 'contact' || !entityRelationships || !allEntitiesProp) return null
+    if ((type !== 'contact' && type !== 'franchisee') || !entityRelationships || !allEntitiesProp) return null
 
     const entityMap = new Map(allEntitiesProp.map((e) => [e.id, e]))
-    const groupingRels = ['member_of', 'works_on']
+    const groupingRels = type === 'franchisee'
+      ? ['franchisee_of', 'member_of', 'works_on']
+      : ['member_of', 'works_on']
 
     // Build groups: map of target entity name -> entity cards
     const groups = new Map<string, { targetName: string; items: EntityCardData[] }>()

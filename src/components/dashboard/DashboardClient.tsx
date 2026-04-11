@@ -249,8 +249,8 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               entityRelationships={entityRelationships}
               onRefresh={fetchData}
             />
-            <EntityCards title="Franchisees" entities={franchisees} type="franchisee" allEntities={allEntities} defaultCollapsed />
-            <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} />
+            <EntityCards title="Franchisees" entities={franchisees} type="franchisee" allEntities={allEntities} entityRelationships={entityRelationships} onRefresh={fetchData} defaultCollapsed />
+            <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} defaultCollapsed />
           </div>
         </div>
       </div>
