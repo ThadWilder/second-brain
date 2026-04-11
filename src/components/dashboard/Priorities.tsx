@@ -292,11 +292,8 @@ function InboxGroups({
             >
               <span className="text-xs text-[var(--muted)] font-mono">{isExpanded ? '▼' : '▶'}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-[var(--text)] truncate">{first.description}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {label && <span className="text-xs text-[var(--muted)]">{label}</span>}
-                  <span className="text-xs text-[var(--muted)]">+{groupTasks.length - 1} related</span>
-                </div>
+                <p className="text-sm font-medium text-[var(--text)]">{label}</p>
+                <span className="text-xs text-[var(--muted)]">{groupTasks.length} tasks</span>
               </div>
             </button>
             {isExpanded && (
