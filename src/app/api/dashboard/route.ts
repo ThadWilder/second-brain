@@ -159,7 +159,8 @@ export async function GET(): Promise<NextResponse> {
     heatmapDays.push(new Date(estNow.getTime() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
   }
 
-  const heatmapCells = brandEntities.flatMap((b: Entity) =>
+  const heatmapBrands = brandEntities.filter((b: Entity) => b.name !== 'Riverside')
+  const heatmapCells = heatmapBrands.flatMap((b: Entity) =>
     heatmapDays.map((day) => ({
       brand_id: b.id, brand_name: b.name, date: day,
       count: heatmapMap[`${b.name}::${day}`] ?? 0,
@@ -181,7 +182,7 @@ export async function GET(): Promise<NextResponse> {
     consolidationSuggestions: consolidationSuggestions ?? [],
     consolidationTaskIds: [...consolidationTaskIds],
     heatmapCells, heatmapDays,
-    brandNames: brandEntities.map((b: Entity) => b.name),
+    brandNames: heatmapBrands.map((b: Entity) => b.name),
     allEntities: allEntities ?? [],
     entityRelationships: entityRelationshipsData ?? [],
   }, {
