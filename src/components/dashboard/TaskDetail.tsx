@@ -218,7 +218,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
                   : 'border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)]'
               }`}
             >
-              {s === 'tracking' ? '👁️ tracking' : s}
+              {s === 'tracking' ? '👁️ tracking' : s === 'done' ? 'plate it' : s}
             </button>
           ))}
 
@@ -749,8 +749,10 @@ function formatEvent(event: { event_type: string; metadata: Record<string, unkno
   switch (event.event_type) {
     case 'created':
       return 'Task created'
-    case 'status_change':
-      return `Status changed from ${meta.from ?? '?'} to ${meta.to ?? '?'}`
+    case 'status_change': {
+      const label = (s: unknown) => s === 'done' ? 'plated' : String(s ?? '?')
+      return `Status changed from ${label(meta.from)} to ${label(meta.to)}`
+    }
     case 'escalated':
       return `Escalated${meta.reason ? ` — ${meta.reason}` : ''}`
     case 'de_escalated':

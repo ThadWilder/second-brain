@@ -20,7 +20,7 @@ export function StatusBadge({ status }: { status: Status }) {
         STATUS_STYLES[status] ?? 'bg-gray-50 text-gray-600 border-gray-200'
       )}
     >
-      {status}
+      {status === 'done' ? 'plated' : status}
     </span>
   )
 }

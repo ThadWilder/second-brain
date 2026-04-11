@@ -341,7 +341,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {/* Closed tasks */}
           {doneTasks.length > 0 && (
             <div>
-              <p className="text-sm text-[var(--muted)] uppercase tracking-wide mb-2">Done</p>
+              <p className="text-sm text-[var(--muted)] uppercase tracking-wide mb-2">Plated</p>
               <div className="space-y-1 opacity-50">
                 {doneTasks.map((task) => (
                   <div
