@@ -172,6 +172,13 @@ export function ChatInput({ onSend, disabled, placeholder, autoFocus, large }: P
           )}
         </button>
       </div>
+      {large && (
+        <div className="flex items-center gap-3 mt-1.5 px-1">
+          <span className="text-[10px] text-[var(--muted)]">
+            Prefix with <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">FYI:</span> for context only or <span className="font-mono bg-[var(--surface-hover)] px-1 rounded">TRACK:</span> to monitor without owning
+          </span>
+        </div>
+      )}
     </div>
   )
 }
