@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { BarChart3, Upload, ChevronDown, ArrowUp, ArrowDown, Minus } from 'lucide-react'
+import { BarChart3, Upload, ChevronDown, ArrowUp, ArrowDown, Minus, ClipboardCheck } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 
@@ -198,6 +198,7 @@ export default function KpisPage() {
         <nav className="flex items-center gap-6">
           <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
           <a href="/kpis" className="text-sm text-white font-medium">KPIs</a>
+          <a href="/audits" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={14} />Audits</a>
           <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
           <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
