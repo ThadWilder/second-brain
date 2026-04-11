@@ -85,9 +85,10 @@ interface Props {
   allEntities?: Entity[]
   entityRelationships?: EntityRelationship[]
   onRefresh?: () => void
+  defaultCollapsed?: boolean
 }
 
-export function EntityCards({ title, entities, type, allEntities: allEntitiesProp, entityRelationships, onRefresh }: Props) {
+export function EntityCards({ title, entities, type, allEntities: allEntitiesProp, entityRelationships, onRefresh, defaultCollapsed }: Props) {
   const config = TYPE_CONFIG[type] ?? TYPE_CONFIG.topic
   const router = useRouter()
   const [mergeTarget, setMergeTarget] = useState<Entity | null>(null)
@@ -98,7 +99,8 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
   const [assigningId, setAssigningId] = useState<string | null>(null)
 
   // Default expanded: brands and people always expanded, others expanded only if they have entities
-  const defaultExpanded = type === 'brand' || type === 'contact' || entities.length > 0
+  // defaultCollapsed prop overrides this to force sections to start collapsed
+  const defaultExpanded = defaultCollapsed ? false : (type === 'brand' || type === 'contact' || entities.length > 0)
 
   // Group contacts by relationship target
   const contactGroups = useMemo(() => {
