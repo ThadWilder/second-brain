@@ -17,6 +17,7 @@ import {
   XCircle,
   TrendingDown,
   Activity,
+  Link2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 import { useToast } from '@/components/ui/Toast'
@@ -252,6 +253,7 @@ export default function ReviewsPage() {
             Reviews
           </a>
           <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
+          <a href="/links" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={14} />Links</a>
           <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>

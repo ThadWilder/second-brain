@@ -13,7 +13,7 @@ import { ChatInput } from '@/components/chat/ChatInput'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 import { useChat } from '@/hooks/useChat'
-import { BarChart3, Clock, ClipboardCheck, Star } from 'lucide-react'
+import { BarChart3, Clock, ClipboardCheck, Star, Link2 } from 'lucide-react'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 const POLL_INTERVAL = 10_000
@@ -126,6 +126,13 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           >
             <Clock size={14} />
             History
+          </a>
+          <a
+            href="/links"
+            className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
+          >
+            <Link2 size={14} />
+            Links
           </a>
           <button
             onClick={handleSignOut}

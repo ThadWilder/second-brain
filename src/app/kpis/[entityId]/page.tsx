@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, use } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { BarChart3, ArrowLeft, ArrowUp, ArrowDown, Minus, ClipboardCheck, Star } from 'lucide-react'
+import { BarChart3, ArrowLeft, ArrowUp, ArrowDown, Minus, ClipboardCheck, Star, Link2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 import dynamic from 'next/dynamic'
 
@@ -248,6 +248,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
           <a href="/audits" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={14} />Audits</a>
           <a href="/reviews" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={14} />Reviews</a>
           <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
+          <a href="/links" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={14} />Links</a>
           <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>

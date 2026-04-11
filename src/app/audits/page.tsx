@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ClipboardCheck, RefreshCw, BarChart3, Clock, Users, CheckCircle, AlertTriangle, Star } from 'lucide-react'
+import { ClipboardCheck, RefreshCw, BarChart3, Clock, Users, CheckCircle, AlertTriangle, Star, Link2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 import { useToast } from '@/components/ui/Toast'
 
@@ -152,6 +152,7 @@ export default function AuditsPage() {
           <a href="/audits" className="text-sm text-white font-medium">Audits</a>
           <a href="/reviews" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={14} />Reviews</a>
           <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
+          <a href="/links" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={14} />Links</a>
           <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
