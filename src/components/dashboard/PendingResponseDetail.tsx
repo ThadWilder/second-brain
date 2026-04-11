@@ -130,7 +130,7 @@ export function PendingResponseDetail({
                 {formatDate(source_entry.created_at)}
               </span>
             </div>
-            <p className="text-xs text-[var(--text)] leading-relaxed line-clamp-6 whitespace-pre-wrap">
+            <p className="text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap">
               {source_entry.raw_text}
             </p>
           </div>

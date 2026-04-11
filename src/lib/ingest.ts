@@ -232,13 +232,25 @@ export async function processEntry(
       }
     }
 
+    // Load existing open tasks for dedup context
+    const { data: openTasks } = await db
+      .from('tasks')
+      .select('id, description, status')
+      .eq('org_id', ORG_ID)
+      .in('status', ['open', 'blocked'])
+      .order('created_at', { ascending: false })
+      .limit(50)
+    const taskContext = (openTasks ?? []).length > 0
+      ? `\n\nEXISTING OPEN TASKS (do NOT create duplicates):\n${(openTasks ?? []).map((t: { id: string; description: string }) => `- [${t.id}] ${t.description}`).join('\n')}\n\nIf the content mentions a task that matches an existing one above, DO NOT create a new task. Only create tasks that are genuinely new and not already tracked.`
+      : ''
+
     const today = new Date().toISOString().slice(0, 10)
     const systemPrompt = `You are an AI assistant processing operational notes for a marketing agency.
 Today's date is ${today}.${senderContext}
 
 The organization manages these brands and contacts:
 
-${entityContext}
+${entityContext}${taskContext}
 
 When classifying entities, prefer matching to existing ones by returning their ID.
 

@@ -32,7 +32,7 @@ export async function GET(
     pr.entry_id
       ? db
           .from('entries')
-          .select('id, raw_text, source, created_at')
+          .select('id, raw_text, source, source_meta, created_at')
           .eq('id', pr.entry_id)
           .single()
       : Promise.resolve({ data: null }),

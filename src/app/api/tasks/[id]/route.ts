@@ -72,7 +72,7 @@ export async function GET(
     task.entry_id
       ? db
           .from('entries')
-          .select('id, raw_text, source, created_at')
+          .select('id, raw_text, source, source_meta, created_at')
           .eq('id', task.entry_id)
           .single()
       : Promise.resolve({ data: null }),
