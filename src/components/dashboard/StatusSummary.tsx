@@ -12,11 +12,12 @@ const STATS: { key: keyof DashboardStats; label: string; icon: string }[] = [
   { key: 'waiting_on', label: 'Waiting on Them', icon: '⏳' },
   { key: 'open_tasks', label: 'In the Steamer', icon: '🥟' },
   { key: 'closed_7d', label: 'Plated This Week', icon: '✨' },
+  { key: 'dumplings_this_week', label: 'Fresh Dumplings', icon: '📥' },
 ]
 
 export function StatusSummary({ stats }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       {STATS.map(({ key, label, icon }) => (
         <div
           key={key}
