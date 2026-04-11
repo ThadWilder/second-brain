@@ -109,7 +109,7 @@ export async function GET(): Promise<NextResponse> {
     .eq('org_id', ORG_ID).in('status', ['open', 'blocked'])
     .order('escalation', { ascending: false })
     .order('due_date', { ascending: true, nullsFirst: false })
-    .limit(50)
+    .limit(500)
 
   // Tracking tasks — for follow-up escalation
   const { data: allTrackingTasks } = await db.from('tasks')
@@ -117,7 +117,7 @@ export async function GET(): Promise<NextResponse> {
     .eq('org_id', ORG_ID).eq('status', 'tracking')
     .order('follow_up_date', { ascending: true, nullsFirst: false })
     .order('updated_at', { ascending: true })
-    .limit(50)
+    .limit(500)
 
   const normalizedTasks = (allOpenTasks ?? []).map((t: any) => ({
     ...t,
