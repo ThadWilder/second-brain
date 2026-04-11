@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, BookOpen, Lock, Pencil, Pin, PinOff, Plus, Save, Unlock, X } from 'lucide-react'
+import { ArrowLeft, BookOpen, Lock, Loader2, Pencil, Pin, PinOff, Plus, Save, Send, Unlock, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 
 interface PinnedSection {
@@ -83,6 +83,10 @@ export default function WikiPageClient() {
   const [addingPin, setAddingPin] = useState(false)
   const [newPinTitle, setNewPinTitle] = useState('')
   const [newPinContent, setNewPinContent] = useState('')
+
+  // "Tell Claude" instruct state
+  const [instruction, setInstruction] = useState('')
+  const [instructing, setInstructing] = useState(false)
 
   useEffect(() => {
     if (!slug) return
@@ -210,6 +214,27 @@ export default function WikiPageClient() {
   async function removePinnedSection(index: number) {
     const updated = pinnedSections.filter((_, i) => i !== index)
     await savePinnedSections(updated)
+  }
+
+  // ── Tell Claude ──
+
+  async function submitInstruction() {
+    if (!page || !instruction.trim()) return
+    setInstructing(true)
+    try {
+      const res = await fetch(`/api/wiki/${page.slug}/instruct`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instruction: instruction.trim() }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPage({ ...page, content: data.content })
+        setInstruction('')
+      }
+    } finally {
+      setInstructing(false)
+    }
   }
 
   // ── Loading / not found ──
@@ -490,6 +515,40 @@ export default function WikiPageClient() {
             </p>
           </div>
         ) : null}
+
+        {/* Tell Claude */}
+        {!editing && !editingSection && (
+          <div className="mt-8 pt-6 border-t border-[var(--border)]">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={instruction}
+                onChange={(e) => setInstruction(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !instructing) submitInstruction() }}
+                placeholder="Tell Claude what to change..."
+                disabled={instructing}
+                className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)] disabled:opacity-50"
+              />
+              <button
+                onClick={submitInstruction}
+                disabled={instructing || !instruction.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
+              >
+                {instructing ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    Update
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Links */}
         {(outLinks.length > 0 || inLinks.length > 0) && (
