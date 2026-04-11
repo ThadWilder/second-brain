@@ -407,7 +407,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
 
                 {/* Segment breakdown if available */}
                 {(() => {
-                  const segments = [...new Set(metrics.filter(m => m.segment !== 'total' && m.month === latestMonth).map(m => m.segment))]
+                  const segments = [...new Set(metrics.filter(m => m.segment && m.segment !== 'total' && m.month === latestMonth).map(m => m.segment))]
                   if (segments.length === 0) return null
                   return (
                     <div className="mt-4">

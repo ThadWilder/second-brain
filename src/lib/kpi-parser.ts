@@ -8,7 +8,7 @@ export interface KpiMetric {
   cy_value: number | null
   py_value: number | null
   growth_pct: number | null
-  segment: string | null
+  segment: string
 }
 
 export interface TabResult {
@@ -162,7 +162,7 @@ function parseSheet(sheet: XLSX.WorkSheet, tabName: string): TabResult {
             cy_value: cy,
             py_value: py,
             growth_pct: grw,
-            segment: null,
+            segment: '',
           })
         }
       }
