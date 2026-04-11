@@ -56,7 +56,13 @@ export const INGEST_TOOLS: any[] = [
   },
   {
     name: 'create_tasks',
-    description: 'Extract action items from the text. Include due dates and assignments when mentioned.',
+    description:
+      'Extract action items from the text. Include due dates and assignments when mentioned. ' +
+      'IMPORTANT: Create ONE task per initiative or outcome, not one per micro-step. ' +
+      'If an email lists 5 documents needed from someone, that is ONE task ("Obtain onboarding documents from X: certificate of insurance, office lease, business license"). ' +
+      'If an email asks you to set up 3 GBP listings for the same brand, that is ONE task ("Set up GBP listings for X: location A, B, C"). ' +
+      'Include the sub-items in the description so nothing is lost, but keep the task count low. ' +
+      'A typical email should produce 1-3 tasks, not 10.',
     input_schema: {
       type: 'object',
       properties: {

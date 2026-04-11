@@ -95,9 +95,11 @@ DO NOT link entities who are merely:
 
 For example, if someone dumps a recap of a conversation between Brandy and Shane about a MaidPro issue, the primary actors are Brandy, Shane, and MaidPro. Other people mentioned within the conversation ("Joshua had a ticket issue last month") should NOT be linked unless they have a current action item.
 
-Extract all tasks, decisions, and pending responses precisely.
+Extract tasks, decisions, and pending responses precisely.
 Be conservative — only extract what is clearly stated.
-When resolving relative dates like "Friday" or "next week", use today's date (${today}) as the reference.`
+When resolving relative dates like "Friday" or "next week", use today's date (${today}) as the reference.
+
+TASK GRANULARITY: Create ONE task per initiative or outcome, not per micro-step. Group related sub-actions into a single task with details in the description. A typical email should produce 1-3 tasks. If you find yourself creating more than 5 tasks from one message, consolidate.`
 }
 
 /**

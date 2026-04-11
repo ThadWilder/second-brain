@@ -134,23 +134,17 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
         </Section>
       )}
 
-      {/* Inbox */}
+      {/* Inbox — grouped by source entry */}
       {inboxTasks.filter((t) => !completedIds.has(t.id)).length > 0 && (
         <Section id="section-inbox" title="Inbox" icon="📥" count={inboxTasks.filter((t) => !completedIds.has(t.id)).length}>
-          {inboxTasks
-            .filter((t) => !completedIds.has(t.id))
-            .map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                variant="normal"
-                hasConsolidation={consolidationTaskIds?.has(task.id)}
-                needsReply={needsReplyTaskIds?.has(task.id)}
-                onComplete={handleComplete}
-                onClick={() => handleTaskClick(task)}
-                onRefresh={onRefresh}
-              />
-            ))}
+          <InboxGroups
+            tasks={inboxTasks.filter((t) => !completedIds.has(t.id))}
+            consolidationTaskIds={consolidationTaskIds}
+            needsReplyTaskIds={needsReplyTaskIds}
+            onComplete={handleComplete}
+            onTaskClick={handleTaskClick}
+            onRefresh={onRefresh}
+          />
         </Section>
       )}
 
@@ -217,6 +211,119 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
           <PendingResponseDetail pendingResponseId={panel.id} onUpdate={handlePanelUpdate} />
         )}
       </DetailPanel>
+    </div>
+  )
+}
+
+function InboxGroups({
+  tasks,
+  consolidationTaskIds,
+  needsReplyTaskIds,
+  onComplete,
+  onTaskClick,
+  onRefresh,
+}: {
+  tasks: TaskWithEntities[]
+  consolidationTaskIds?: Set<string>
+  needsReplyTaskIds?: Set<string>
+  onComplete: (id: string) => void
+  onTaskClick: (task: TaskWithEntities) => void
+  onRefresh?: () => void
+}) {
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+
+  // Group by entry_id (tasks from same source email)
+  const groups: Array<{ key: string; label: string; tasks: TaskWithEntities[] }> = []
+  const byEntry = new Map<string, TaskWithEntities[]>()
+  const noEntry: TaskWithEntities[] = []
+
+  for (const task of tasks) {
+    if (task.entry_id) {
+      const existing = byEntry.get(task.entry_id) ?? []
+      existing.push(task)
+      byEntry.set(task.entry_id, existing)
+    } else {
+      noEntry.push(task)
+    }
+  }
+
+  for (const [entryId, entryTasks] of byEntry) {
+    groups.push({ key: entryId, label: getBrandLabel(entryTasks), tasks: entryTasks })
+  }
+  for (const task of noEntry) {
+    groups.push({ key: task.id, label: '', tasks: [task] })
+  }
+
+  function getBrandLabel(tasks: TaskWithEntities[]): string {
+    const brands = new Set(tasks.flatMap((t) => t.entities?.filter((e) => e.role === 'brand').map((e) => e.name) ?? []))
+    return brands.size > 0 ? Array.from(brands).join(', ') : ''
+  }
+
+  function toggleGroup(key: string) {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  return (
+    <div className="space-y-1">
+      {groups.map(({ key, label, tasks: groupTasks }) => {
+        if (groupTasks.length === 1) {
+          // Single task — render normally
+          return (
+            <TaskRow
+              key={groupTasks[0].id}
+              task={groupTasks[0]}
+              variant="normal"
+              hasConsolidation={consolidationTaskIds?.has(groupTasks[0].id)}
+              needsReply={needsReplyTaskIds?.has(groupTasks[0].id)}
+              onComplete={onComplete}
+              onClick={() => onTaskClick(groupTasks[0])}
+              onRefresh={onRefresh}
+            />
+          )
+        }
+
+        // Multi-task group — collapsible
+        const isExpanded = expandedGroups.has(key)
+        const first = groupTasks[0]
+        return (
+          <div key={key} className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+            <button
+              onClick={() => toggleGroup(key)}
+              className="w-full flex items-center gap-3 py-3 px-4 text-left hover:bg-[var(--surface-hover)] transition-colors rounded-lg"
+            >
+              <span className="text-xs text-[var(--muted)] font-mono">{isExpanded ? '▼' : '▶'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-[var(--text)] truncate">{first.description}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {label && <span className="text-xs text-[var(--muted)]">{label}</span>}
+                  <span className="text-xs text-[var(--muted)]">+{groupTasks.length - 1} related</span>
+                </div>
+              </div>
+            </button>
+            {isExpanded && (
+              <div className="border-t border-[var(--border)] px-2 py-1 space-y-0.5">
+                {groupTasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    variant="normal"
+                    hasConsolidation={consolidationTaskIds?.has(task.id)}
+                    needsReply={needsReplyTaskIds?.has(task.id)}
+                    onComplete={onComplete}
+                    onClick={() => onTaskClick(task)}
+                    onRefresh={onRefresh}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
