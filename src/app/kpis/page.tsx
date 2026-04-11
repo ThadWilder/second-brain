@@ -331,28 +331,40 @@ export default function KpisPage() {
                           <span className="text-xs text-[var(--muted)]">SWS Revenue</span>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold tabular-nums text-[var(--text)]">{formatCurrency(sws.cy)}</span>
-                            <GrowthArrow value={sws.growth} />
+                            <div className="flex items-center gap-1">
+                              <GrowthArrow value={sws.growth} />
+                              {sws.growth != null && <span className="text-[9px] text-[var(--muted)]">YoY</span>}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-[var(--muted)]">Leads</span>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold tabular-nums text-[var(--text)]">{formatNumber(leads.cy)}</span>
-                            <GrowthArrow value={leads.growth} />
+                            <div className="flex items-center gap-1">
+                              <GrowthArrow value={leads.growth} />
+                              {leads.growth != null && <span className="text-[9px] text-[var(--muted)]">YoY</span>}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-[var(--muted)]">Close Rate</span>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold tabular-nums text-[var(--text)]">{formatPct(closeRate.cy != null ? closeRate.cy * 100 : null)}</span>
-                            <GrowthArrow value={closeRate.growth} />
+                            <div className="flex items-center gap-1">
+                              <GrowthArrow value={closeRate.growth} />
+                              {closeRate.growth != null && <span className="text-[9px] text-[var(--muted)]">YoY</span>}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-[var(--muted)]">Avg Job Ticket</span>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold tabular-nums text-[var(--text)]">{formatCurrency(avgTicket.cy)}</span>
-                            <GrowthArrow value={avgTicket.growth} />
+                            <div className="flex items-center gap-1">
+                              <GrowthArrow value={avgTicket.growth} />
+                              {avgTicket.growth != null && <span className="text-[9px] text-[var(--muted)]">YoY</span>}
+                            </div>
                           </div>
                         </div>
                       </div>

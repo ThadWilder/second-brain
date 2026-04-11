@@ -5,6 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { BarChart3, ArrowLeft, ArrowUp, ArrowDown, Minus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
+import dynamic from 'next/dynamic'
+
+const TrendChart = dynamic(() => import('@/components/kpi/TrendChart'), { ssr: false })
 
 interface KpiMetric {
   month: number
@@ -85,48 +88,6 @@ function GrowthBadge({ value }: { value: number | null | undefined }) {
   )
 }
 
-// Simple sparkline SVG — CY line with PY as faded background
-function Sparkline({ data, height = 48 }: { data: { month: number; cy: number | null; py: number | null }[]; height?: number }) {
-  const width = 200
-  const padding = 4
-  const filtered = data.filter(d => d.cy != null || d.py != null)
-  if (filtered.length < 2) return <div className="h-12 flex items-center justify-center text-xs text-[var(--muted)]">Not enough data</div>
-
-  const allVals = filtered.flatMap(d => [d.cy, d.py].filter((v): v is number => v != null))
-  const min = Math.min(...allVals)
-  const max = Math.max(...allVals)
-  const range = max - min || 1
-
-  const toX = (i: number) => padding + (i / (filtered.length - 1)) * (width - 2 * padding)
-  const toY = (v: number) => padding + (1 - (v - min) / range) * (height - 2 * padding)
-
-  const cyPoints = filtered
-    .map((d, i) => d.cy != null ? `${toX(i)},${toY(d.cy)}` : null)
-    .filter(Boolean)
-    .join(' ')
-
-  const pyPoints = filtered
-    .map((d, i) => d.py != null ? `${toX(i)},${toY(d.py)}` : null)
-    .filter(Boolean)
-    .join(' ')
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height }}>
-      {pyPoints && <polyline points={pyPoints} fill="none" stroke="var(--border)" strokeWidth="1.5" strokeDasharray="4 3" />}
-      {cyPoints && <polyline points={cyPoints} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
-      {/* Dot on last CY value */}
-      {filtered.length > 0 && filtered[filtered.length - 1].cy != null && (
-        <circle
-          cx={toX(filtered.length - 1)}
-          cy={toY(filtered[filtered.length - 1].cy!)}
-          r="3"
-          fill="var(--accent)"
-        />
-      )}
-    </svg>
-  )
-}
-
 // Metric grouping for the table
 const METRIC_SECTIONS: { label: string; metrics: { key: string; label: string; segment?: string }[] }[] = [
   {
@@ -200,14 +161,6 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
   const metrics = data?.metrics ?? []
   const monthsWithData = [...new Set(metrics.filter(m => m.cy_value != null && m.cy_value !== 0).map(m => m.month))].sort((a, b) => a - b)
 
-  // Build sparkline data for a metric
-  function getSparklineData(metricKey: string, segment = ''): { month: number; cy: number | null; py: number | null }[] {
-    return monthsWithData.map(month => {
-      const match = metrics.find(m => m.month === month && m.metric === metricKey && m.segment === segment)
-      return { month, cy: match?.cy_value ?? null, py: match?.py_value ?? null }
-    })
-  }
-
   // Get metric for table
   function getMetric(month: number, metricKey: string, segment = '') {
     const match = metrics.find(m => m.month === month && m.metric === metricKey && m.segment === segment)
@@ -221,6 +174,50 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
   function hasMetricData(metricKey: string, segment = ''): boolean {
     return metrics.some(m => m.metric === metricKey && m.segment === segment && m.cy_value != null && m.cy_value !== 0)
   }
+
+  // Build chart data: 12 months (Jan-Dec), CY from current year, PY from prior year
+  // CY line stops after the latest reported month (nulls beyond that)
+  function getChartData(metricKey: string, segment = ''): { month: string; cy: number | null; py: number | null }[] {
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthNum = i + 1
+      const match = metrics.find(m => m.month === monthNum && m.metric === metricKey && m.segment === segment)
+      const cyVal = match?.cy_value ?? null
+      const pyVal = match?.py_value ?? null
+      // Don't plot CY zeros or values beyond the latest reported month
+      const cy = (monthNum <= latestMonth && cyVal != null && cyVal !== 0) ? cyVal : null
+      const py = pyVal
+      return { month: MONTH_NAMES[monthNum], cy, py }
+    })
+  }
+
+  // Get YoY growth % for a metric at the latest month
+  function getLatestGrowth(metricKey: string, segment = ''): number | null {
+    const match = metrics.find(m => m.month === latestMonth && m.metric === metricKey && m.segment === segment)
+    return match?.growth_pct ?? null
+  }
+
+  // Chart format helpers
+  function chartFormatCurrency(value: number): string {
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`
+    if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`
+    return `$${value.toFixed(0)}`
+  }
+  function chartFormatNumber(value: number): string {
+    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`
+    return value.toLocaleString()
+  }
+  function chartFormatPct(value: number): string {
+    return `${(value * 100).toFixed(1)}%`
+  }
+
+  const CHART_CONFIGS = [
+    { key: 'sws_revenue', label: 'SWS Revenue', segment: 'total', format: chartFormatCurrency },
+    { key: 'leads', label: 'Leads', segment: '', format: chartFormatNumber },
+    { key: 'lead_to_sold_pct', label: 'Close Rate (Lead to Sold %)', segment: '', format: chartFormatPct },
+    { key: 'avg_job_ticket', label: 'Avg Job Ticket', segment: '', format: chartFormatCurrency },
+    { key: 'sold_jobs', label: 'Sold Jobs', segment: '', format: chartFormatNumber },
+    { key: 'jobs_completed', label: 'Jobs Completed', segment: '', format: chartFormatNumber },
+  ]
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -277,8 +274,8 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
             </div>
           ) : (
             <>
-              {/* Trend sparklines */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Summary metric cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                   { key: 'sws_revenue', label: 'SWS Revenue', segment: 'total', format: formatCurrency },
                   { key: 'leads', label: 'Leads', segment: '', format: formatNumber },
@@ -292,23 +289,29 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
                         <span className="text-xs text-[var(--muted)]">{label}</span>
                         <GrowthArrow value={latest.growth} />
                       </div>
-                      <div className="text-xl font-bold tabular-nums text-[var(--text)] mb-2">
+                      <div className="text-xl font-bold tabular-nums text-[var(--text)]">
                         {format(latest.cy)}
-                      </div>
-                      <Sparkline data={getSparklineData(key, segment)} />
-                      <div className="flex justify-between mt-1">
-                        <span className="text-[10px] text-[var(--muted)]">
-                          <span className="inline-block w-3 h-0.5 bg-[var(--accent)] mr-1 align-middle" />
-                          {year}
-                        </span>
-                        <span className="text-[10px] text-[var(--muted)]">
-                          <span className="inline-block w-3 h-0.5 border-b border-dashed border-[var(--border)] mr-1 align-middle" />
-                          {year - 1}
-                        </span>
                       </div>
                     </div>
                   )
                 })}
+              </div>
+
+              {/* Trend charts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {CHART_CONFIGS
+                  .filter(({ key, segment }) => hasMetricData(key, segment))
+                  .map(({ key, label, segment, format }) => (
+                    <TrendChart
+                      key={key}
+                      data={getChartData(key, segment)}
+                      title={label}
+                      yoyGrowth={getLatestGrowth(key, segment)}
+                      cyYear={year}
+                      pyYear={year - 1}
+                      formatValue={format}
+                    />
+                  ))}
               </div>
 
               {/* Data table */}
