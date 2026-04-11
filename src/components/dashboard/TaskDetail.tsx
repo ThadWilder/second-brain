@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { AutoLinkText } from '@/components/ui/AutoLinkText'
 import type { TaskStatus, EventType } from '@/types'
 
 interface ConsolidationSuggestion {
@@ -134,7 +135,9 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
 
       {/* Description */}
       <div>
-        <p className="text-sm text-[var(--text)] leading-relaxed">{task.description}</p>
+        <p className="text-sm text-[var(--text)] leading-relaxed">
+          <AutoLinkText text={task.description} />
+        </p>
       </div>
 
       {/* Consolidation Suggestions */}
@@ -305,7 +308,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
               </span>
             </div>
             <p className="text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap">
-              {source_entry.raw_text}
+              <AutoLinkText text={source_entry.raw_text} />
             </p>
           </div>
         </Section>

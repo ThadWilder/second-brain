@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Clock, Search, ChevronDown, ChevronUp, Mail, MessageSquare, ClipboardPaste, Mic, ClipboardCheck, Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
+import { AutoLinkText } from '@/components/ui/AutoLinkText'
+import { LinkChips } from '@/components/ui/LinkChips'
 
 interface HistoryEntity {
   id: string
@@ -19,6 +21,7 @@ interface HistoryEntry {
   sender: string | null
   source: string
   snippet: string
+  links: string[]
   created_at: string
   entities: HistoryEntity[]
   task_count: number
@@ -275,7 +278,7 @@ export default function HistoryPage() {
                           {/* Snippet */}
                           {!isExpanded && (
                             <p className="text-xs text-[var(--muted)] line-clamp-2 leading-relaxed">
-                              {entry.snippet}
+                              <AutoLinkText text={entry.snippet} />
                             </p>
                           )}
 
@@ -328,8 +331,9 @@ export default function HistoryPage() {
                             </p>
                           )}
                           <div className="text-sm text-[var(--text)] whitespace-pre-wrap break-words leading-relaxed max-h-96 overflow-y-auto">
-                            {expandedContent[entry.id] ?? entry.snippet}
+                            <AutoLinkText text={expandedContent[entry.id] ?? entry.snippet} />
                           </div>
+                          <LinkChips links={entry.links} />
                         </div>
                       </div>
                     )}

@@ -15,6 +15,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { ORG_ID } from '../supabase'
 import { callClaude, buildUserContent } from './extract'
+import { extractUrls } from './urls'
 import {
   ensureArray,
   loadAllEntities,
@@ -67,6 +68,15 @@ export async function processEntry(
       .single()
 
     if (entryError || !entry) throw new Error('Entry not found')
+
+    // Extract and store URLs from raw text
+    const links = extractUrls(entry.raw_text ?? '')
+    if (links.length > 0) {
+      await db
+        .from('entries')
+        .update({ links })
+        .eq('id', entryId)
+    }
 
     // Load existing entities for Claude context
     const existingEntities = await loadAllEntities(db)

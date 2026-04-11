@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, FileText } from 'lucide-react'
+import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 interface Clarification {
   id: string
@@ -223,7 +224,7 @@ function SourcePanel({ entryId, entityId, question, onClose }: { entryId: string
               <div>
                 <p className="text-xs text-[var(--muted)] mb-1">Full Content</p>
                 <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-3 text-xs text-[var(--text)] whitespace-pre-wrap max-h-[60vh] overflow-y-auto leading-relaxed">
-                  {entry.raw_text}
+                  <AutoLinkText text={entry.raw_text} />
                 </div>
               </div>
               <div>

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react'
 import { Hourglass, X } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { AutoLinkText } from '@/components/ui/AutoLinkText'
 import { DetailPanel } from './DetailPanel'
 import { TaskDetail } from './TaskDetail'
 import { PendingResponseDetail } from './PendingResponseDetail'
@@ -78,7 +79,9 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
             >
               <span className="text-amber-700 shrink-0 mt-0.5">›</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-[var(--text)]">{pr.summary}</p>
+                <p className="text-sm text-[var(--text)]">
+                  <AutoLinkText text={pr.summary} />
+                </p>
                 <p className="text-xs text-[var(--muted)] mt-0.5">
                   {formatAge(pr.created_at)}
                 </p>
@@ -285,7 +288,9 @@ function TaskRow({
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-[var(--text)] leading-snug">{task.description}</p>
+        <p className="text-sm text-[var(--text)] leading-snug">
+          <AutoLinkText text={task.description} />
+        </p>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           {hasConsolidation && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-50 text-violet-700 border border-violet-200">

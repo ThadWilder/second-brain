@@ -18,7 +18,7 @@ export async function GET(
 
   const { data: entry, error } = await db
     .from('entries')
-    .select('id, raw_text, source, source_meta, created_at')
+    .select('id, raw_text, source, source_meta, links, created_at')
     .eq('id', id)
     .eq('org_id', ORG_ID)
     .single()

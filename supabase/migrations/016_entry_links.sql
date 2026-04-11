@@ -1,0 +1,1 @@
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS links text[] DEFAULT '{}';

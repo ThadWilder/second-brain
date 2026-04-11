@@ -6,6 +6,8 @@ import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EntityList } from './EntityList'
 import { CombineTasksModal } from './CombineTasksModal'
+import { AutoLinkText } from '@/components/ui/AutoLinkText'
+import { LinkChips } from '@/components/ui/LinkChips'
 import type { Entity, Task, Decision, Entry } from '@/types'
 
 interface Props {
@@ -163,7 +165,9 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[var(--text)]">{task.description}</p>
+                        <p className="text-sm text-[var(--text)]">
+                          <AutoLinkText text={task.description} />
+                        </p>
                         <div className="flex items-center gap-2 mt-1">
                           {task.due_date && (
                             <span className="text-xs text-[var(--muted)]">due {task.due_date}</span>
@@ -235,7 +239,9 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[var(--text)]">{task.description}</p>
+                        <p className="text-sm text-[var(--text)]">
+                          <AutoLinkText text={task.description} />
+                        </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
                             ⏳ {task.waiting_on}
@@ -264,7 +270,9 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                     className="flex items-center gap-3 p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
                   >
                     <span className="text-green-700 text-sm">✓</span>
-                    <p className="text-sm text-[var(--muted)] line-through">{task.description}</p>
+                    <p className="text-sm text-[var(--muted)] line-through">
+                      <AutoLinkText text={task.description} />
+                    </p>
                   </div>
                 ))}
               </div>
@@ -291,8 +299,9 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                 </span>
               </div>
               <p className="text-sm text-[var(--text)] line-clamp-3 leading-relaxed">
-                {entry.raw_text}
+                <AutoLinkText text={entry.raw_text} />
               </p>
+              <LinkChips links={entry.links ?? []} />
             </div>
           ))}
           {entries.length === 0 && (

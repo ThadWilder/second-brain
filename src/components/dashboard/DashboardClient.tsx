@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 import { useChat } from '@/hooks/useChat'
 import { BarChart3, Clock, ClipboardCheck, Star } from 'lucide-react'
+import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 const POLL_INTERVAL = 10_000
 
@@ -163,7 +164,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                   <div key={globalIndex} className="group relative">
                     <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3">
                       <p className="text-sm text-[var(--text)] whitespace-pre-wrap break-words line-clamp-4">
-                        {msg.content}
+                        <AutoLinkText text={msg.content} />
                       </p>
                       {msg.created_at && (
                         <p className="text-[10px] text-[var(--muted)] mt-1.5">
@@ -189,7 +190,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               {streamingMessage && (
                 <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3">
                   <p className="text-sm text-[var(--text)] whitespace-pre-wrap break-words streaming-cursor">
-                    {streamingMessage.content}
+                    <AutoLinkText text={streamingMessage.content} />
                   </p>
                 </div>
               )}

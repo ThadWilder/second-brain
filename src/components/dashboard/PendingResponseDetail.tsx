@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Clock, FileText, Users, CheckCircle, Loader2 } from 'lucide-react'
+import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 interface PendingResponseData {
   pending_response: {
@@ -83,7 +84,9 @@ export function PendingResponseDetail({
 
       {/* Summary */}
       <div>
-        <p className="text-sm text-[var(--text)] leading-relaxed">{pr.summary}</p>
+        <p className="text-sm text-[var(--text)] leading-relaxed">
+          <AutoLinkText text={pr.summary} />
+        </p>
       </div>
 
       {/* Waiting duration */}
@@ -145,7 +148,7 @@ export function PendingResponseDetail({
               </span>
             </div>
             <p className="text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap">
-              {source_entry.raw_text}
+              <AutoLinkText text={source_entry.raw_text} />
             </p>
           </div>
         </Section>

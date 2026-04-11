@@ -31,6 +31,7 @@ export interface Entry {
   processing_error: string | null
   attempt_count: number
   attachments: Attachment[]
+  links: string[]
   created_at: string
   processed_at: string | null
 }

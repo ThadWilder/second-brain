@@ -27,7 +27,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Build query
   let query = db
     .from('entries')
-    .select('id, raw_text, source, source_meta, created_at, processing_status', { count: 'exact' })
+    .select('id, raw_text, source, source_meta, links, created_at, processing_status', { count: 'exact' })
     .eq('org_id', ORG_ID)
     .eq('processing_status', 'done')
     .order('created_at', { ascending: false })
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   // Enrich entries
-  const enriched = entries.map((entry: { id: string; raw_text: string; source: string; source_meta: Record<string, unknown> | null; created_at: string; processing_status: string }) => {
+  const enriched = entries.map((entry: { id: string; raw_text: string; source: string; source_meta: Record<string, unknown> | null; links: string[] | null; created_at: string; processing_status: string }) => {
     const meta = (entry.source_meta ?? {}) as Record<string, string>
     return {
       id: entry.id,
@@ -94,6 +94,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       sender: meta.from ?? null,
       source: entry.source,
       snippet: entry.raw_text?.slice(0, 200) ?? '',
+      links: entry.links ?? [],
       created_at: entry.created_at,
       entities: entityMap[entry.id] ?? [],
       task_count: taskCountMap[entry.id] ?? 0,
