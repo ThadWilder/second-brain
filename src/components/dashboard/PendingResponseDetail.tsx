@@ -99,18 +99,27 @@ export function PendingResponseDetail({
         </div>
 
         {!pr.responded && (
-          <button
-            onClick={markResponded}
-            disabled={marking}
-            className="mt-3 flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-          >
-            {marking ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <CheckCircle className="w-3.5 h-3.5" />
-            )}
-            Mark as responded
-          </button>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={markResponded}
+              disabled={marking}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
+            >
+              {marking ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <CheckCircle className="w-3.5 h-3.5" />
+              )}
+              Mark as responded
+            </button>
+            <button
+              onClick={markResponded}
+              disabled={marking}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition-colors disabled:opacity-50"
+            >
+              Dismiss
+            </button>
+          </div>
         )}
 
         {pr.responded && (
