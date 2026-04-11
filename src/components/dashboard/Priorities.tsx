@@ -237,7 +237,10 @@ function InboxGroups({
   const byBrand = new Map<string, TaskWithEntities[]>()
 
   for (const task of tasks) {
-    const brand = task.entities?.find((e) => e.role === 'brand')?.name ?? '_none'
+    // Group by brand role first, then fall back to any brand/department entity type
+    const brandEntity = task.entities?.find((e) => e.role === 'brand')
+      ?? task.entities?.find((e) => e.type === 'brand' || e.type === 'department')
+    const brand = brandEntity?.name ?? '_none'
     const existing = byBrand.get(brand) ?? []
     existing.push(task)
     byBrand.set(brand, existing)
