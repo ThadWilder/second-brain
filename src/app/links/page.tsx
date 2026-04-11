@@ -18,6 +18,7 @@ import {
   Clock,
   Star,
   ClipboardCheck,
+  Pencil,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 
@@ -168,6 +169,17 @@ export default function LinksPage() {
 
   const handleDeleteSavedLink = async (id: string) => {
     const res = await fetch(`/api/links?id=${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      fetchLinks(search, activeFilter)
+    }
+  }
+
+  const handleUpdateLabel = async (url: string, label: string) => {
+    const res = await fetch('/api/links', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, label }),
+    })
     if (res.ok) {
       fetchLinks(search, activeFilter)
     }
@@ -374,7 +386,7 @@ export default function LinksPage() {
                     </div>
                     <div className="space-y-2">
                       {group.items.map(link => (
-                        <LinkCard key={link.url} link={link} onDelete={handleDeleteSavedLink} />
+                        <LinkCard key={link.url} link={link} onDelete={handleDeleteSavedLink} onUpdateLabel={handleUpdateLabel} />
                       ))}
                     </div>
                   </div>
@@ -387,7 +399,7 @@ export default function LinksPage() {
           {!loading && !groupByCategory && links.length > 0 && (
             <div className="space-y-2">
               {links.map(link => (
-                <LinkCard key={link.url} link={link} onDelete={handleDeleteSavedLink} />
+                <LinkCard key={link.url} link={link} onDelete={handleDeleteSavedLink} onUpdateLabel={handleUpdateLabel} />
               ))}
             </div>
           )}
@@ -397,13 +409,47 @@ export default function LinksPage() {
   )
 }
 
-function LinkCard({ link, onDelete }: { link: LinkItem; onDelete: (id: string) => void }) {
+function LinkCard({ link, onDelete, onUpdateLabel }: { link: LinkItem; onDelete: (id: string) => void; onUpdateLabel: (url: string, label: string) => Promise<void> }) {
   const config = CATEGORY_CONFIG[link.category] ?? CATEGORY_CONFIG.other
   const TypeIcon = config.icon
   const primarySource = link.sources[0]
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState(link.display_name)
+  const [saving, setSaving] = useState(false)
+
+  const handleStartEdit = () => {
+    setEditValue(link.display_name)
+    setEditing(true)
+  }
+
+  const handleCancel = () => {
+    setEditing(false)
+    setEditValue(link.display_name)
+  }
+
+  const handleSave = async () => {
+    const trimmed = editValue.trim()
+    if (!trimmed || trimmed === link.display_name) {
+      handleCancel()
+      return
+    }
+    setSaving(true)
+    await onUpdateLabel(link.url, trimmed)
+    setEditing(false)
+    setSaving(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSave()
+    } else if (e.key === 'Escape') {
+      handleCancel()
+    }
+  }
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-5 py-4
+    <div className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl px-5 py-4
                     hover:border-[var(--accent)]/30 transition-colors">
       <div className="flex items-start gap-3">
         {/* Type icon */}
@@ -415,14 +461,38 @@ function LinkCard({ link, onDelete }: { link: LinkItem; onDelete: (id: string) =
         <div className="flex-1 min-w-0">
           {/* Title row */}
           <div className="flex items-center gap-2 mb-1">
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-semibold text-[var(--text)] hover:text-[var(--accent)] transition-colors truncate"
-            >
-              {link.display_name}
-            </a>
+            {editing ? (
+              <input
+                type="text"
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleSave}
+                disabled={saving}
+                autoFocus
+                className="text-sm font-semibold text-[var(--text)] bg-white border border-[var(--accent)] rounded px-2 py-0.5
+                           focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent
+                           min-w-0 flex-1"
+              />
+            ) : (
+              <>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-[var(--text)] hover:text-[var(--accent)] transition-colors truncate"
+                >
+                  {link.display_name}
+                </a>
+                <button
+                  onClick={handleStartEdit}
+                  className="text-[var(--muted)] opacity-0 group-hover:opacity-100 hover:text-[var(--accent)] transition-all shrink-0"
+                  title="Edit label"
+                >
+                  <Pencil size={12} />
+                </button>
+              </>
+            )}
             <a
               href={link.url}
               target="_blank"

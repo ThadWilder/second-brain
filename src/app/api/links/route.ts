@@ -298,6 +298,42 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ link: data })
 }
 
+export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { url, label } = body as { url?: string; label?: string }
+
+  if (!url || typeof url !== 'string') {
+    return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+  }
+  if (typeof label !== 'string') {
+    return NextResponse.json({ error: 'label is required' }, { status: 400 })
+  }
+
+  const db = getServiceClient()
+  const category = categorizeUrl(url)
+
+  // Upsert into saved_links so both extracted and manual links can be labeled
+  const { data, error } = await db
+    .from('saved_links')
+    .upsert(
+      { org_id: ORG_ID, url, label: label || null, category },
+      { onConflict: 'org_id,url' }
+    )
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ link: data })
+}
+
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
   const authenticated = await hasValidSession()
   if (!authenticated) {
