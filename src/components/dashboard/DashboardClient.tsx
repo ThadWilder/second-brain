@@ -13,6 +13,7 @@ import { ChatInput } from '@/components/chat/ChatInput'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 import { useChat } from '@/hooks/useChat'
+import { BarChart3 } from 'lucide-react'
 
 const POLL_INTERVAL = 10_000
 
@@ -96,6 +97,13 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             className="text-sm text-white/70 font-medium hover:text-white transition-colors"
           >
             Wiki
+          </a>
+          <a
+            href="/kpis"
+            className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
+          >
+            <BarChart3 size={14} />
+            KPIs
           </a>
           <button
             onClick={handleSignOut}
