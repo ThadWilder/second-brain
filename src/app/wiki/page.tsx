@@ -100,7 +100,7 @@ export default function WikiIndex() {
         <span className="text-xs text-[var(--muted)] ml-auto">{pages.length} pages</span>
       </header>
 
-      <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-5xl mx-auto px-4 py-6">
         {loading ? (
           <p className="text-sm text-[var(--muted)]">Loading...</p>
         ) : pages.length === 0 ? (

@@ -168,7 +168,7 @@ export default function WikiPageClient() {
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Summary */}
         {page.summary && (
           <div className="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200">

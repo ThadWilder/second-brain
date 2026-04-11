@@ -237,7 +237,7 @@ export default function BrandAuditPage({ params }: { params: Promise<{ brandEnti
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[90rem] mx-auto px-6 py-8 space-y-6">
+        <div className="max-w-[90rem] mx-auto px-4 py-8 space-y-6">
           {/* Back + title */}
           <div className="flex items-center gap-3">
             <Link href="/audits" className="text-[var(--muted)] hover:text-[var(--text)] transition-colors">
