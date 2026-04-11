@@ -4,8 +4,8 @@ export const maxDuration = 300
 /**
  * POST /api/cron/wiki
  *
- * Cron wrapper that kicks off wiki queue processing.
- * Called 3x/day by external cron to process any pending wiki queue items.
+ * Cron endpoint that processes pending wiki queue items directly in batches of 3
+ * with a 240s time guard. Called 3x/day by external cron.
  * Protected by CRON_SECRET in Authorization header.
  */
 
@@ -14,7 +14,8 @@ import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { updateWikiPageForEntity } from '@/lib/wiki'
 import type { Entity } from '@/types'
 
-const BATCH_SIZE = 5
+const BATCH_SIZE = 3
+const TIME_LIMIT_MS = 240_000 // 240s of 300s max — leave room for cleanup
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const auth = req.headers.get('authorization')
@@ -23,11 +24,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    const START = Date.now()
     const db = getServiceClient()
     let totalProcessed = 0
+    let timedOut = false
 
-    // Loop through all pending items in batches
-    while (true) {
+    // Loop through pending items in batches, stopping before timeout
+    while (Date.now() - START < TIME_LIMIT_MS) {
       const { data: items, error: fetchErr } = await db
         .from('wiki_queue')
         .select('id, org_id, entry_id, entity_id')
@@ -76,6 +79,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             .eq('id', item.id)
         }
       }
+
+      // Check time after each batch completes
+      if (Date.now() - START >= TIME_LIMIT_MS) {
+        timedOut = true
+        break
+      }
+    }
+
+    if (!timedOut && Date.now() - START >= TIME_LIMIT_MS) {
+      timedOut = true
     }
 
     const { count } = await db
@@ -84,7 +97,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       .eq('status', 'pending')
       .eq('org_id', ORG_ID)
 
-    return NextResponse.json({ processed: totalProcessed, remaining: count ?? 0 })
+    return NextResponse.json({ processed: totalProcessed, remaining: count ?? 0, timedOut })
   } catch (err) {
     console.error('Wiki cron failed:', err)
     return NextResponse.json(

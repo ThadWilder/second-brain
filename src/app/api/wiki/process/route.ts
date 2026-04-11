@@ -4,7 +4,7 @@ export const maxDuration = 300 // 5 minutes on Pro plan
 /**
  * POST /api/wiki/process
  *
- * Processes ALL pending wiki queue items in batches of 5.
+ * Processes pending wiki queue items in batches of 3 with a 240s time guard.
  * Called fire-and-forget from ingest pipeline, or via /api/cron/wiki.
  * Protected by CRON_SECRET via Authorization: Bearer header.
  */
@@ -14,7 +14,8 @@ import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { updateWikiPageForEntity } from '@/lib/wiki'
 import type { Entity } from '@/types'
 
-const BATCH_SIZE = 5
+const BATCH_SIZE = 3
+const TIME_LIMIT_MS = 240_000 // 240s of 300s max — leave room for cleanup
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const auth = req.headers.get('authorization')
@@ -22,11 +23,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const START = Date.now()
   const db = getServiceClient()
   let totalProcessed = 0
+  let timedOut = false
 
-  // Loop through all pending items in batches
-  while (true) {
+  // Loop through pending items in batches, stopping before timeout
+  while (Date.now() - START < TIME_LIMIT_MS) {
     const { data: items, error: fetchErr } = await db
       .from('wiki_queue')
       .select('id, org_id, entry_id, entity_id')
@@ -76,14 +79,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           .eq('id', item.id)
       }
     }
+
+    // Check time after each batch completes
+    if (Date.now() - START >= TIME_LIMIT_MS) {
+      timedOut = true
+      break
+    }
   }
 
-  // Count any remaining pending items (e.g. newly added during processing)
+  if (!timedOut && Date.now() - START >= TIME_LIMIT_MS) {
+    timedOut = true
+  }
+
+  // Count any remaining pending items
   const { count } = await db
     .from('wiki_queue')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'pending')
     .eq('org_id', ORG_ID)
 
-  return NextResponse.json({ processed: totalProcessed, remaining: count ?? 0 })
+  return NextResponse.json({ processed: totalProcessed, remaining: count ?? 0, timedOut })
 }
