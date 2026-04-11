@@ -67,7 +67,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
   const {
     stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
-    escalatedTasks, regularTasks, staleFromYesterday,
+    escalatedTasks, overdueTasks, regularTasks, inboxTasks,
     overdueFollowUps, staleTracking,
     pendingResponses, needsReplyTaskIds, clarifications,
     consolidationTaskIds,
@@ -227,8 +227,9 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               escalated={escalatedTasks}
               needsResponse={pendingResponses}
               needsReplyTaskIds={new Set(needsReplyTaskIds ?? [])}
+              overdueTasks={overdueTasks}
               tasks={regularTasks}
-              staleFromYesterday={staleFromYesterday}
+              inboxTasks={inboxTasks}
               overdueFollowUps={overdueFollowUps ?? []}
               staleTracking={staleTracking ?? []}
               consolidationTaskIds={new Set(consolidationTaskIds ?? [])}
@@ -268,8 +269,9 @@ interface DashboardData {
   vendorTeam: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   freelancers: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   escalatedTasks: any[]
+  overdueTasks: any[]
   regularTasks: any[]
-  staleFromYesterday: any[]
+  inboxTasks: any[]
   overdueFollowUps: any[]
   staleTracking: any[]
   pendingResponses: Array<{ id: string; summary: string; created_at: string }>

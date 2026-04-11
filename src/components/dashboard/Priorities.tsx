@@ -14,8 +14,9 @@ interface Props {
   escalated: TaskWithEntities[]
   needsResponse: Array<{ id: string; summary: string; created_at: string }>
   needsReplyTaskIds?: Set<string>
+  overdueTasks: TaskWithEntities[]
   tasks: TaskWithEntities[]
-  staleFromYesterday: TaskWithEntities[]
+  inboxTasks: TaskWithEntities[]
   overdueFollowUps: TaskWithEntities[]
   staleTracking: TaskWithEntities[]
   consolidationTaskIds?: Set<string>
@@ -27,7 +28,7 @@ type PanelState =
   | { type: 'pending'; id: string; title: string }
   | null
 
-export function Priorities({ escalated, needsResponse, needsReplyTaskIds, tasks, staleFromYesterday, overdueFollowUps, staleTracking, consolidationTaskIds, onRefresh }: Props) {
+export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, overdueFollowUps, staleTracking, consolidationTaskIds, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
 
@@ -113,17 +114,38 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, tasks,
         </Section>
       )}
 
-      {/* Still open from yesterday */}
-      {staleFromYesterday.length > 0 && (
-        <Section title="Still open from yesterday" icon="⏳" count={staleFromYesterday.length}>
-          {staleFromYesterday
+      {/* Overdue */}
+      {overdueTasks.filter((t) => !completedIds.has(t.id)).length > 0 && (
+        <Section title="Overdue" icon="⚠️" count={overdueTasks.filter((t) => !completedIds.has(t.id)).length}>
+          {overdueTasks
             .filter((t) => !completedIds.has(t.id))
             .map((task) => (
               <TaskRow
                 key={task.id}
                 task={task}
-                variant="stale"
+                variant="escalated"
                 hasConsolidation={consolidationTaskIds?.has(task.id)}
+                needsReply={needsReplyTaskIds?.has(task.id)}
+                onComplete={handleComplete}
+                onClick={() => handleTaskClick(task)}
+                onRefresh={onRefresh}
+              />
+            ))}
+        </Section>
+      )}
+
+      {/* Inbox */}
+      {inboxTasks.filter((t) => !completedIds.has(t.id)).length > 0 && (
+        <Section title="Inbox" icon="📥" count={inboxTasks.filter((t) => !completedIds.has(t.id)).length}>
+          {inboxTasks
+            .filter((t) => !completedIds.has(t.id))
+            .map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                variant="normal"
+                hasConsolidation={consolidationTaskIds?.has(task.id)}
+                needsReply={needsReplyTaskIds?.has(task.id)}
                 onComplete={handleComplete}
                 onClick={() => handleTaskClick(task)}
                 onRefresh={onRefresh}
@@ -172,8 +194,9 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, tasks,
 
       {visibleEscalated.length === 0 &&
         needsResponse.length === 0 &&
+        overdueTasks.length === 0 &&
         visibleTasks.length === 0 &&
-        staleFromYesterday.length === 0 &&
+        inboxTasks.length === 0 &&
         overdueFollowUps.length === 0 &&
         staleTracking.length === 0 && (
           <div className="text-center py-8 text-[var(--muted)] text-sm">
