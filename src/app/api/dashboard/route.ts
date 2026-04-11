@@ -18,9 +18,11 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const db = getServiceClient()
-  const today = new Date().toISOString().slice(0, 10)
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+  // Use Eastern time for date grouping
+  const estNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const today = estNow.toISOString().slice(0, 10)
+  const sevenDaysAgo = new Date(estNow.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const tenDaysAgo = new Date(estNow.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString()
 
   // Stats
   const [escalationsRes, needsResponseRes, openTasksRes, closed7dRes] = await Promise.all([
@@ -140,13 +142,15 @@ export async function GET(): Promise<NextResponse> {
   for (const row of entryEntityData ?? []) {
     const r = row as unknown as { entries: { created_at: string } | null; entities: { name: string } | null }
     if (!r.entries?.created_at || !r.entities?.name) continue
-    const date = r.entries.created_at.slice(0, 10)
+    // Convert UTC timestamp to EST date
+    const entryDate = new Date(new Date(r.entries.created_at).toLocaleString('en-US', { timeZone: 'America/New_York' }))
+    const date = entryDate.toISOString().slice(0, 10)
     heatmapMap[`${r.entities.name}::${date}`] = (heatmapMap[`${r.entities.name}::${date}`] ?? 0) + 1
   }
 
   const heatmapDays: string[] = []
   for (let i = 9; i >= 0; i--) {
-    heatmapDays.push(new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
+    heatmapDays.push(new Date(estNow.getTime() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
   }
 
   const heatmapCells = brandEntities.flatMap((b: Entity) =>
