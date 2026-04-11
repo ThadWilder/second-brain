@@ -18,13 +18,14 @@ interface KpiMetric {
 
 interface BrandKpi {
   entity_id: string
-  name: string
+  entity_name: string
   metrics: KpiMetric[]
 }
 
 interface KpiResponse {
   brands: BrandKpi[]
   year: number
+  latest_month: number | null
 }
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -71,7 +72,9 @@ function GrowthArrow({ value }: { value: number | null | undefined }) {
 
 function getLatestMonth(metrics: KpiMetric[]): number {
   if (!metrics.length) return 0
-  return Math.max(...metrics.filter(m => m.cy_value != null).map(m => m.month))
+  const withCy = metrics.filter(m => m.cy_value != null && m.cy_value !== 0)
+  if (!withCy.length) return 0
+  return Math.max(...withCy.map(m => m.month))
 }
 
 function getMetricValue(metrics: KpiMetric[], month: number, metricName: string, segment = 'total'): { cy: number | null; py: number | null; growth: number | null } {
@@ -166,13 +169,12 @@ export default function KpisPage() {
   }
 
   const brands = data?.brands ?? []
-  const latestMonth = brands.length > 0
-    ? Math.max(...brands.map(b => getLatestMonth(b.metrics)))
-    : 0
+  const latestMonth = data?.latest_month
+    ?? (brands.length > 0 ? Math.max(...brands.map(b => getLatestMonth(b.metrics))) : 0)
 
-  const totalSws = sumMetric(brands, latestMonth, 'sws_revenue')
-  const totalLeads = sumMetric(brands, latestMonth, 'leads')
-  const avgClose = avgMetric(brands, latestMonth, 'close_rate')
+  const totalSws = sumMetric(brands, latestMonth, 'sws_revenue', 'total')
+  const totalLeads = sumMetric(brands, latestMonth, 'leads', '')
+  const avgClose = avgMetric(brands, latestMonth, 'lead_to_sold_pct', '')
 
   const years = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i)
 
@@ -289,7 +291,7 @@ export default function KpisPage() {
                   </div>
                   <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
                     <span className="text-xs text-[var(--muted)]">Avg Close Rate</span>
-                    <div className="text-xl font-bold tabular-nums text-[var(--text)] mt-1">{formatPct(avgClose.cy)}</div>
+                    <div className="text-xl font-bold tabular-nums text-[var(--text)] mt-1">{formatPct(avgClose.cy != null ? avgClose.cy * 100 : null)}</div>
                     <GrowthArrow value={avgClose.growth} />
                   </div>
                   <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
@@ -303,11 +305,11 @@ export default function KpisPage() {
               {/* Brand cards grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {brands.map(brand => {
-                  const bMonth = getLatestMonth(brand.metrics)
-                  const sws = getMetricValue(brand.metrics, bMonth, 'sws_revenue')
-                  const leads = getMetricValue(brand.metrics, bMonth, 'leads')
-                  const closeRate = getMetricValue(brand.metrics, bMonth, 'close_rate')
-                  const avgTicket = getMetricValue(brand.metrics, bMonth, 'avg_job_ticket')
+                  const bMonth = getLatestMonth(brand.metrics) || latestMonth
+                  const sws = getMetricValue(brand.metrics, bMonth, 'sws_revenue', 'total')
+                  const leads = getMetricValue(brand.metrics, bMonth, 'leads', '')
+                  const closeRate = getMetricValue(brand.metrics, bMonth, 'lead_to_sold_pct', '')
+                  const avgTicket = getMetricValue(brand.metrics, bMonth, 'avg_job_ticket', '')
 
                   return (
                     <Link
@@ -316,7 +318,7 @@ export default function KpisPage() {
                       className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 shadow-sm hover:bg-[var(--surface-hover)] hover:border-[var(--accent)] transition-all"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-[var(--text)] truncate">{brand.name}</h3>
+                        <h3 className="font-semibold text-[var(--text)] truncate">{brand.entity_name}</h3>
                         {bMonth > 0 && (
                           <span className="text-[10px] text-[var(--muted)] shrink-0 ml-2">
                             {MONTH_NAMES[bMonth].slice(0, 3)} {year}
@@ -341,7 +343,7 @@ export default function KpisPage() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-[var(--muted)]">Close Rate</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold tabular-nums text-[var(--text)]">{formatPct(closeRate.cy)}</span>
+                            <span className="text-sm font-semibold tabular-nums text-[var(--text)]">{formatPct(closeRate.cy != null ? closeRate.cy * 100 : null)}</span>
                             <GrowthArrow value={closeRate.growth} />
                           </div>
                         </div>

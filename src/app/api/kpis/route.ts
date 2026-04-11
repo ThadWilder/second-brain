@@ -35,6 +35,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (entityId) {
     // ── Single brand detail ──────────────────────────────────────────────
+
+    // Determine the latest reporting month for this brand
+    const { data: latestMonthRow } = await db
+      .from('brand_kpis')
+      .select('month')
+      .eq('org_id', ORG_ID)
+      .eq('entity_id', entityId)
+      .eq('year', year)
+      .gt('cy_value', 0)
+      .in('metric', ['leads', 'sold_jobs', 'sws_revenue'])
+      .in('segment', ['', 'total'])
+      .order('month', { ascending: false })
+      .limit(1)
+
+    const latestMonth = latestMonthRow?.[0]?.month ?? null
+
     let query = db
       .from('brand_kpis')
       .select('*')
@@ -65,11 +81,28 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       entity: entity ?? { id: entityId, name: 'Unknown' },
       year,
       month,
+      latest_month: latestMonth,
       metrics: metrics ?? [],
     })
   }
 
   // ── Summary for all brands ───────────────────────────────────────────
+
+  // Determine the latest reporting month: the most recent month where
+  // at least one brand has a non-null, non-zero CY value for a core metric.
+  const { data: latestMonthRow } = await db
+    .from('brand_kpis')
+    .select('month')
+    .eq('org_id', ORG_ID)
+    .eq('year', year)
+    .gt('cy_value', 0)
+    .in('metric', ['leads', 'sold_jobs', 'sws_revenue'])
+    .in('segment', ['', 'total'])
+    .order('month', { ascending: false })
+    .limit(1)
+
+  const latestMonth = latestMonthRow?.[0]?.month ?? null
+
   let query = db
     .from('brand_kpis')
     .select('entity_id, year, month, metric, cy_value, py_value, growth_pct, segment')
@@ -118,6 +151,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({
     year,
     month,
+    latest_month: latestMonth,
     brands: Object.values(byEntity),
   })
 }

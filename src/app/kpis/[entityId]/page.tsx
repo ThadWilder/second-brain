@@ -16,10 +16,10 @@ interface KpiMetric {
 }
 
 interface BrandDetailResponse {
-  entity_id: string
-  name: string
+  entity: { id: string; name: string }
   metrics: KpiMetric[]
   year: number
+  latest_month: number | null
 }
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -53,8 +53,8 @@ function formatPct(value: number | null | undefined): string {
 
 function formatMetricValue(metric: string, value: number | null | undefined): string {
   if (value == null) return '—'
-  if (metric.includes('revenue') || metric.includes('ticket') || metric.includes('aov') || metric.includes('auv')) return formatCurrency(value)
-  if (metric.includes('rate') || metric.includes('ratio') || metric.includes('pct')) return formatPct(value)
+  if (metric.includes('revenue') || metric.includes('ticket') || metric.includes('volume')) return formatCurrency(value)
+  if (metric.includes('pct')) return formatPct(value * 100)
   return formatNumber(value)
 }
 
@@ -128,27 +128,28 @@ function Sparkline({ data, height = 48 }: { data: { month: number; cy: number | 
 }
 
 // Metric grouping for the table
-const METRIC_SECTIONS: { label: string; metrics: { key: string; label: string }[] }[] = [
+const METRIC_SECTIONS: { label: string; metrics: { key: string; label: string; segment?: string }[] }[] = [
   {
     label: 'Sales',
     metrics: [
-      { key: 'sws_revenue', label: 'SWS Revenue' },
-      { key: 'total_revenue', label: 'Total Revenue' },
-      { key: 'royalty_revenue', label: 'Royalty Revenue' },
+      { key: 'sws_revenue', label: 'SWS Revenue', segment: 'total' },
+      { key: 'sold_jobs_revenue', label: 'Sold Jobs Revenue' },
     ],
   },
   {
     label: 'Close Ratios',
     metrics: [
-      { key: 'close_rate', label: 'Close Rate (Lead to Sold %)' },
-      { key: 'close_rate_issued', label: 'Close Rate (Issued to Sold %)' },
+      { key: 'lead_to_sold_pct', label: 'Lead to Sold %' },
+      { key: 'lead_to_est_pct', label: 'Lead to Est %' },
+      { key: 'est_to_sold_pct', label: 'Est to Sold %' },
     ],
   },
   {
     label: 'Job Metrics',
     metrics: [
       { key: 'avg_job_ticket', label: 'Avg Job Ticket' },
-      { key: 'jobs_sold', label: 'Jobs Sold' },
+      { key: 'avg_daily_job_count', label: 'Avg Daily Job Count' },
+      { key: 'sold_jobs', label: 'Jobs Sold' },
       { key: 'jobs_completed', label: 'Jobs Completed' },
     ],
   },
@@ -156,13 +157,11 @@ const METRIC_SECTIONS: { label: string; metrics: { key: string; label: string }[
     label: 'Performance',
     metrics: [
       { key: 'leads', label: 'Leads' },
-      { key: 'estimates_issued', label: 'Estimates Issued' },
-      { key: 'active_owners', label: 'Active Owners' },
-      { key: 'new_owners', label: 'New Owners' },
-      { key: 'existing_owners', label: 'Existing Owners' },
-      { key: 'open_territories', label: 'Open Territories' },
-      { key: 'aov', label: 'AOV' },
-      { key: 'auv', label: 'AUV' },
+      { key: 'estimates', label: 'Estimates' },
+      { key: 'active_owners', label: 'Active Owners', segment: 'total' },
+      { key: 'open_territories', label: 'Open Territories', segment: 'total' },
+      { key: 'avg_owner_volume', label: 'AOV', segment: 'total' },
+      { key: 'avg_territory_volume', label: 'AUV', segment: 'total' },
     ],
   },
 ]
@@ -199,28 +198,28 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
   }
 
   const metrics = data?.metrics ?? []
-  const monthsWithData = [...new Set(metrics.filter(m => m.cy_value != null).map(m => m.month))].sort((a, b) => a - b)
+  const monthsWithData = [...new Set(metrics.filter(m => m.cy_value != null && m.cy_value !== 0).map(m => m.month))].sort((a, b) => a - b)
 
   // Build sparkline data for a metric
-  function getSparklineData(metricKey: string): { month: number; cy: number | null; py: number | null }[] {
+  function getSparklineData(metricKey: string, segment = ''): { month: number; cy: number | null; py: number | null }[] {
     return monthsWithData.map(month => {
-      const match = metrics.find(m => m.month === month && m.metric === metricKey && m.segment === 'total')
+      const match = metrics.find(m => m.month === month && m.metric === metricKey && m.segment === segment)
       return { month, cy: match?.cy_value ?? null, py: match?.py_value ?? null }
     })
   }
 
   // Get metric for table
-  function getMetric(month: number, metricKey: string, segment = 'total') {
+  function getMetric(month: number, metricKey: string, segment = '') {
     const match = metrics.find(m => m.month === month && m.metric === metricKey && m.segment === segment)
     return { cy: match?.cy_value ?? null, py: match?.py_value ?? null, growth: match?.growth_pct ?? null }
   }
 
-  // Latest month for performance cards
-  const latestMonth = monthsWithData.length > 0 ? monthsWithData[monthsWithData.length - 1] : 0
+  // Latest month for performance cards — prefer API-detected latest_month
+  const latestMonth = data?.latest_month ?? (monthsWithData.length > 0 ? monthsWithData[monthsWithData.length - 1] : 0)
 
   // Check which metrics actually have data
-  function hasMetricData(metricKey: string): boolean {
-    return metrics.some(m => m.metric === metricKey && m.cy_value != null)
+  function hasMetricData(metricKey: string, segment = ''): boolean {
+    return metrics.some(m => m.metric === metricKey && m.segment === segment && m.cy_value != null && m.cy_value !== 0)
   }
 
   return (
@@ -242,7 +241,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
           {data && (
             <>
               <span className="text-white/20 select-none">/</span>
-              <span className="text-sm text-white/70">{data.name}</span>
+              <span className="text-sm text-white/70">{data.entity.name}</span>
             </>
           )}
         </div>
@@ -261,7 +260,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
             <Link href="/kpis" className="text-[var(--muted)] hover:text-[var(--text)] transition-colors">
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-2xl font-bold text-[var(--text)]">{data?.name ?? 'Loading…'}</h1>
+            <h1 className="text-2xl font-bold text-[var(--text)]">{data?.entity?.name ?? 'Loading…'}</h1>
             <span className="text-sm text-[var(--muted)]">{year}</span>
           </div>
 
@@ -280,12 +279,12 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
               {/* Trend sparklines */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { key: 'sws_revenue', label: 'SWS Revenue', format: formatCurrency },
-                  { key: 'leads', label: 'Leads', format: formatNumber },
-                  { key: 'close_rate', label: 'Close Rate', format: formatPct },
-                  { key: 'avg_job_ticket', label: 'Avg Job Ticket', format: formatCurrency },
-                ].map(({ key, label, format }) => {
-                  const latest = getMetric(latestMonth, key)
+                  { key: 'sws_revenue', label: 'SWS Revenue', segment: 'total', format: formatCurrency },
+                  { key: 'leads', label: 'Leads', segment: '', format: formatNumber },
+                  { key: 'lead_to_sold_pct', label: 'Close Rate', segment: '', format: (v: number | null | undefined) => formatPct(v != null ? v * 100 : null) },
+                  { key: 'avg_job_ticket', label: 'Avg Job Ticket', segment: '', format: formatCurrency },
+                ].map(({ key, label, segment, format }) => {
+                  const latest = getMetric(latestMonth, key, segment)
                   return (
                     <div key={key} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-1">
@@ -295,7 +294,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
                       <div className="text-xl font-bold tabular-nums text-[var(--text)] mb-2">
                         {format(latest.cy)}
                       </div>
-                      <Sparkline data={getSparklineData(key)} />
+                      <Sparkline data={getSparklineData(key, segment)} />
                       <div className="flex justify-between mt-1">
                         <span className="text-[10px] text-[var(--muted)]">
                           <span className="inline-block w-3 h-0.5 bg-[var(--accent)] mr-1 align-middle" />
@@ -342,15 +341,15 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
                     </thead>
                     <tbody>
                       {METRIC_SECTIONS.map(section => {
-                        const visibleMetrics = section.metrics.filter(m => hasMetricData(m.key))
+                        const visibleMetrics = section.metrics.filter(m => hasMetricData(m.key, m.segment ?? ''))
                         if (visibleMetrics.length === 0) return null
                         return (
                           <SectionRows key={section.label} label={section.label} monthsWithData={monthsWithData}>
-                            {visibleMetrics.map(({ key, label }) => (
+                            {visibleMetrics.map(({ key, label, segment }) => (
                               <tr key={key} className="border-b border-[var(--border)] hover:bg-[var(--surface-hover)] transition-colors">
                                 <td className="px-4 py-1.5 text-[var(--text)] font-medium sticky left-0 bg-[var(--surface)] z-10">{label}</td>
                                 {monthsWithData.map(m => {
-                                  const v = getMetric(m, key)
+                                  const v = getMetric(m, key, segment ?? '')
                                   return (
                                     <td key={m} className="border-l border-[var(--border)]">
                                       <div className="grid grid-cols-3">
@@ -378,16 +377,14 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {[
-                    { key: 'active_owners', label: 'Active Owners' },
-                    { key: 'new_owners', label: 'New Owners' },
-                    { key: 'existing_owners', label: 'Existing Owners' },
-                    { key: 'open_territories', label: 'Open Territories' },
-                    { key: 'aov', label: 'AOV' },
-                    { key: 'auv', label: 'AUV' },
-                    { key: 'jobs_sold', label: 'Jobs Sold' },
-                    { key: 'jobs_completed', label: 'Jobs Completed' },
-                  ].filter(({ key }) => hasMetricData(key)).map(({ key, label }) => {
-                    const v = getMetric(latestMonth, key)
+                    { key: 'active_owners', label: 'Active Owners', segment: 'total' },
+                    { key: 'open_territories', label: 'Open Territories', segment: 'total' },
+                    { key: 'avg_owner_volume', label: 'AOV', segment: 'total' },
+                    { key: 'avg_territory_volume', label: 'AUV', segment: 'total' },
+                    { key: 'sold_jobs', label: 'Jobs Sold', segment: '' },
+                    { key: 'jobs_completed', label: 'Jobs Completed', segment: '' },
+                  ].filter(({ key, segment }) => hasMetricData(key, segment)).map(({ key, label, segment }) => {
+                    const v = getMetric(latestMonth, key, segment)
                     return (
                       <div key={key} className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3">
                         <span className="text-xs text-[var(--muted)]">{label}</span>
