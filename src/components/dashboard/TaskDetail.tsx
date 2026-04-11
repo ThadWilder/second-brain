@@ -375,6 +375,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
                 status: 'tracking',
                 tracked_owner: owner || null,
                 follow_up_date: followUp || null,
+                waiting_on: null,
               })
               setShowTrackingSetup(false)
             }}
