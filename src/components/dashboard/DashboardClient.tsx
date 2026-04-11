@@ -90,54 +90,54 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
         </div>
         <nav className="flex items-center gap-6">
           {stats.escalations > 0 && (
-            <span className="text-sm text-orange-300 font-medium">
+            <span className="text-base text-orange-300 font-medium">
               {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
             </span>
           )}
           <a
             href="/wiki"
-            className="text-sm text-white/70 font-medium hover:text-white transition-colors"
+            className="text-base text-white/70 font-medium hover:text-white transition-colors"
           >
             Wiki
           </a>
           <a
             href="/kpis"
-            className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
+            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
-            <BarChart3 size={14} />
+            <BarChart3 size={15} />
             KPIs
           </a>
           <a
             href="/audits"
-            className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
+            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
-            <ClipboardCheck size={14} />
+            <ClipboardCheck size={15} />
             Audits
           </a>
           <a
             href="/reviews"
-            className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
+            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
-            <Star size={14} />
+            <Star size={15} />
             Reviews
           </a>
           <a
             href="/history"
-            className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
+            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
-            <Clock size={14} />
+            <Clock size={15} />
             History
           </a>
           <a
             href="/links"
-            className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
+            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
-            <Link2 size={14} />
+            <Link2 size={15} />
             Links
           </a>
           <button
             onClick={handleSignOut}
-            className="text-sm text-white/70 font-medium hover:text-white transition-colors"
+            className="text-base text-white/70 font-medium hover:text-white transition-colors"
           >
             Sign out
           </button>
@@ -210,11 +210,11 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <h2 className="text-sm font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Status</h2>
+                <h2 className="text-base font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Status</h2>
                 <StatusSummary stats={stats} />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Activity (10 days)</h2>
+                <h2 className="text-base font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Activity (10 days)</h2>
                 <Heatmap data={heatmapCells} brands={brandNames} days={heatmapDays} />
               </div>
             </div>
@@ -227,7 +227,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
           {/* ── Priorities ── */}
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm" id="priorities-section">
-            <h2 className="text-sm font-bold text-[var(--text)] mb-4 pb-2 border-b-2 border-[var(--accent)] inline-block">
+            <h2 className="text-base font-bold text-[var(--text)] mb-4 pb-2 border-b-2 border-[var(--accent)] inline-block">
               Today&apos;s Priorities
             </h2>
             <Priorities
@@ -243,7 +243,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           </div>
 
           {/* ── Entity Cards ── */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-6" id="entity-cards-section">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-7" id="entity-cards-section">
             <BrandCards brands={brands} />
             <EntityCards title="Internal Team" entities={departments} type="department" allEntities={allEntities} />
             <PeopleSection

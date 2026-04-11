@@ -243,13 +243,13 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
           )}
         </div>
         <nav className="flex items-center gap-6">
-          <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-sm text-white font-medium">KPIs</a>
-          <a href="/audits" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={14} />Audits</a>
-          <a href="/reviews" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={14} />Reviews</a>
-          <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
-          <a href="/links" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={14} />Links</a>
-          <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
+          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
+          <a href="/kpis" className="text-base text-white font-medium">KPIs</a>
+          <a href="/audits" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={15} />Audits</a>
+          <a href="/reviews" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={15} />Reviews</a>
+          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors">History</a>
+          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
+          <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
 
@@ -287,12 +287,12 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
                 ].map(({ key, label, segment, format }) => {
                   const latest = getMetric(latestMonth, key, segment)
                   return (
-                    <div key={key} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
+                    <div key={key} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 shadow-sm">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-[var(--muted)]">{label}</span>
+                        <span className="text-sm text-[var(--muted)]">{label}</span>
                         <GrowthArrow value={latest.growth} />
                       </div>
-                      <div className="text-xl font-bold tabular-nums text-[var(--text)]">
+                      <div className="text-2xl font-bold tabular-nums text-[var(--text)]">
                         {format(latest.cy)}
                       </div>
                     </div>
@@ -319,11 +319,11 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
 
               {/* Data table */}
               <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-[var(--border)]">
-                  <h2 className="text-sm font-bold text-[var(--text)]">Monthly Detail — {year}</h2>
+                <div className="px-5 py-4 border-b border-[var(--border)]">
+                  <h2 className="text-base font-bold text-[var(--text)]">Monthly Detail — {year}</h2>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-[var(--border)]">
                         <th className="text-left px-4 py-2 text-[var(--muted)] font-medium sticky left-0 bg-[var(--surface)] z-10 min-w-[160px]">Metric</th>
@@ -379,10 +379,10 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
 
               {/* Performance summary cards */}
               <div>
-                <h2 className="text-sm font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">
+                <h2 className="text-base font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">
                   Performance Summary — {MONTH_FULL[latestMonth]} {year}
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {[
                     { key: 'active_owners', label: 'Active Owners', segment: 'total' },
                     { key: 'open_territories', label: 'Open Territories', segment: 'total' },
@@ -393,9 +393,9 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
                   ].filter(({ key, segment }) => hasMetricData(key, segment)).map(({ key, label, segment }) => {
                     const v = getMetric(latestMonth, key, segment)
                     return (
-                      <div key={key} className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3">
-                        <span className="text-xs text-[var(--muted)]">{label}</span>
-                        <div className="text-lg font-bold tabular-nums text-[var(--text)] mt-1">
+                      <div key={key} className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-5 py-4">
+                        <span className="text-sm text-[var(--muted)]">{label}</span>
+                        <div className="text-xl font-bold tabular-nums text-[var(--text)] mt-1">
                           {formatMetricValue(key, v.cy)}
                         </div>
                         <GrowthArrow value={v.growth} />
@@ -416,12 +416,12 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
                   return (
                     <div className="mt-4">
                       <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wide mb-2">By Segment</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {segments.map(seg => {
                           const segRevenue = metrics.find(m => m.month === latestMonth && m.metric === 'sws_revenue' && m.segment === seg)
                           const segLeads = metrics.find(m => m.month === latestMonth && m.metric === 'leads' && m.segment === seg)
                           return (
-                            <div key={seg} className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-lg px-4 py-3">
+                            <div key={seg} className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-lg px-5 py-4">
                               <h4 className="text-xs font-semibold text-[var(--text)] mb-2 capitalize">{seg}</h4>
                               <div className="space-y-1.5">
                                 {segRevenue && (

@@ -242,19 +242,19 @@ export default function ReviewsPage() {
           </span>
         </div>
         <nav className="flex items-center gap-6">
-          <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-sm text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/audits" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">
-            <ClipboardCheck size={14} />
+          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
+          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
+          <a href="/audits" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">
+            <ClipboardCheck size={15} />
             Audits
           </a>
-          <a href="/reviews" className="text-sm text-white font-medium flex items-center gap-1.5">
-            <Star size={14} />
+          <a href="/reviews" className="text-base text-white font-medium flex items-center gap-1.5">
+            <Star size={15} />
             Reviews
           </a>
-          <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
-          <a href="/links" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={14} />Links</a>
-          <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
+          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors">History</a>
+          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
+          <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
 
@@ -316,33 +316,33 @@ export default function ReviewsPage() {
                   <span className="text-xs font-medium text-[var(--muted)] uppercase tracking-wide">Overview</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Users size={12} className="text-[var(--muted)]" />
-                      <span className="text-xs text-[var(--muted)]">Total Locations</span>
+                      <Users size={14} className="text-[var(--muted)]" />
+                      <span className="text-sm text-[var(--muted)]">Total Locations</span>
                     </div>
-                    <div className="text-xl font-bold tabular-nums text-[var(--text)]">{totalLocations}</div>
+                    <div className="text-2xl font-bold tabular-nums text-[var(--text)]">{totalLocations}</div>
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <CheckCircle size={12} className="text-[#437A22]" />
-                      <span className="text-xs text-[var(--muted)]">Active in NiceJob</span>
+                      <CheckCircle size={14} className="text-[#437A22]" />
+                      <span className="text-sm text-[var(--muted)]">Active in NiceJob</span>
                     </div>
-                    <div className="text-xl font-bold tabular-nums text-[#437A22]">{activeCount}</div>
+                    <div className="text-2xl font-bold tabular-nums text-[#437A22]">{activeCount}</div>
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <AlertTriangle size={12} className="text-[#A12C7B]" />
-                      <span className="text-xs text-[var(--muted)]">With Anomalies</span>
+                      <AlertTriangle size={14} className="text-[#A12C7B]" />
+                      <span className="text-sm text-[var(--muted)]">With Anomalies</span>
                     </div>
-                    <div className="text-xl font-bold tabular-nums text-[#A12C7B]">{anomalyCount}</div>
+                    <div className="text-2xl font-bold tabular-nums text-[#A12C7B]">{anomalyCount}</div>
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <BarChart3 size={12} className="text-[var(--muted)]" />
-                      <span className="text-xs text-[var(--muted)]">Avg Monthly Enrollments</span>
+                      <BarChart3 size={14} className="text-[var(--muted)]" />
+                      <span className="text-sm text-[var(--muted)]">Avg Monthly Enrollments</span>
                     </div>
-                    <div className="text-xl font-bold tabular-nums text-[var(--text)]">{avgMonthlyEnrollments}</div>
+                    <div className="text-2xl font-bold tabular-nums text-[var(--text)]">{avgMonthlyEnrollments}</div>
                   </div>
                 </div>
               </div>
@@ -388,7 +388,7 @@ export default function ReviewsPage() {
                           {expanded && (
                             <div className="px-4 pb-3">
                               <div className="overflow-x-auto">
-                                <table className="w-full text-xs">
+                                <table className="w-full text-sm">
                                   <thead>
                                     <tr className="border-b border-gray-200">
                                       <th className="text-left py-2 pr-3 font-medium text-gray-600">Company</th>

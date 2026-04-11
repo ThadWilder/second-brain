@@ -77,11 +77,11 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
             <div
               key={pr.id}
               onClick={() => handlePendingClick(pr)}
-              className="flex items-start gap-3 py-2 px-3 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors"
+              className="flex items-start gap-3 py-3 px-4 rounded-lg bg-amber-50 border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors"
             >
               <span className="text-amber-700 shrink-0 mt-0.5">›</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-[var(--text)]">
+                <p className="text-base text-[var(--text)]">
                   <AutoLinkText text={pr.summary} />
                 </p>
                 <p className="text-xs text-[var(--muted)] mt-0.5">
@@ -209,13 +209,13 @@ function Section({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm">{icon}</span>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+        <span className="text-base">{icon}</span>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
           {title}
         </h3>
-        <span className="text-xs text-[var(--muted)] ml-1">({count})</span>
+        <span className="text-sm text-[var(--muted)] ml-1">({count})</span>
       </div>
-      <div className="space-y-1">{children}</div>
+      <div className="space-y-1.5">{children}</div>
     </div>
   )
 }
@@ -291,7 +291,7 @@ function TaskRow({
 
   return (
     <div
-      className={`group flex items-start gap-3 py-2 px-3 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${variantStyles[variant]}`}
+      className={`group flex items-start gap-3 py-3 px-4 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow ${variantStyles[variant]}`}
       onClick={onClick}
     >
       <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -424,7 +424,7 @@ function TaskRow({
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-[var(--text)] leading-snug">
+        <p className="text-base text-[var(--text)] leading-snug">
           <AutoLinkText text={task.description} />
         </p>
         <div className="flex items-center gap-2 mt-1 flex-wrap">

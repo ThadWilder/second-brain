@@ -37,14 +37,14 @@ export function BrandCards({ brands }: Props) {
       count={brands.length}
       defaultExpanded={true}
     >
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       {brands.map((b) => {
         const styles = HEALTH_STYLES[b.health]
         return (
           <Link
             key={b.entity.id}
             href={`/brand/${b.entity.id}`}
-            className={`group block rounded-lg border bg-[var(--surface)] p-3 hover:bg-[var(--surface-hover)]
+            className={`group block rounded-lg border bg-[var(--surface)] p-4 hover:bg-[var(--surface-hover)]
                         transition-colors cursor-pointer ${styles.border}`}
           >
             <div className="flex items-start justify-between mb-2">

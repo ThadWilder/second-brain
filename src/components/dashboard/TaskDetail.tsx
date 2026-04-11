@@ -138,7 +138,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
 
       {/* Description */}
       <div>
-        <p className="text-sm text-[var(--text)] leading-relaxed">
+        <p className="text-base text-[var(--text)] leading-relaxed">
           <AutoLinkText text={task.description} />
         </p>
       </div>
@@ -422,7 +422,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       {/* Source Dumpling */}
       {source_entry && (
         <Section label="Source Dumpling">
-          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-3">
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-4">
             <div className="flex items-center gap-2 mb-1.5">
               <FileText className="w-3.5 h-3.5 text-[var(--muted)]" />
               <span className="text-xs text-[var(--muted)] capitalize">{source_entry.source}</span>
@@ -730,8 +730,8 @@ function TrackingSetupForm({
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-t border-[var(--border)] pt-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-2">
+    <div className="border-t border-[var(--border)] pt-4">
+      <h4 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)] mb-2.5">
         {label}
       </h4>
       {children}

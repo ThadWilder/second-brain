@@ -218,13 +218,13 @@ export default function LinksPage() {
           </span>
         </div>
         <nav className="flex items-center gap-6">
-          <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-sm text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/audits" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={14} />Audits</a>
-          <a href="/reviews" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={14} />Reviews</a>
-          <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={14} />History</a>
-          <a href="/links" className="text-sm text-white font-medium flex items-center gap-1.5"><Link2 size={14} />Links</a>
-          <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
+          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
+          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
+          <a href="/audits" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={15} />Audits</a>
+          <a href="/reviews" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={15} />Reviews</a>
+          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
+          <a href="/links" className="text-base text-white font-medium flex items-center gap-1.5"><Link2 size={15} />Links</a>
+          <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
 
@@ -449,7 +449,7 @@ function LinkCard({ link, onDelete, onUpdateLabel }: { link: LinkItem; onDelete:
   }
 
   return (
-    <div className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl px-5 py-4
+    <div className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl px-5 py-5
                     hover:border-[var(--accent)]/30 transition-colors">
       <div className="flex items-start gap-3">
         {/* Type icon */}
@@ -516,7 +516,7 @@ function LinkCard({ link, onDelete, onUpdateLabel }: { link: LinkItem; onDelete:
           {/* Meta row */}
           <div className="flex items-center flex-wrap gap-2">
             {/* Category badge */}
-            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${config.bgColor} ${config.color} ${config.borderColor}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full border ${config.bgColor} ${config.color} ${config.borderColor}`}>
               {config.label}
             </span>
 
@@ -548,7 +548,7 @@ function LinkCard({ link, onDelete, onUpdateLabel }: { link: LinkItem; onDelete:
               {link.entities.map(e => (
                 <span
                   key={e.id}
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full border ${TYPE_PILL_STYLES[e.type] ?? TYPE_PILL_STYLES.topic}`}
+                  className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_PILL_STYLES[e.type] ?? TYPE_PILL_STYLES.topic}`}
                 >
                   {e.name}
                 </span>

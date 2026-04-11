@@ -73,12 +73,12 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
   ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Brand header */}
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-xl font-bold text-[var(--text)]">{brand.name}</h1>
-          <p className="text-sm text-[var(--muted)] capitalize">{brand.type}</p>
+          <h1 className="text-2xl font-bold text-[var(--text)]">{brand.name}</h1>
+          <p className="text-base text-[var(--muted)] capitalize">{brand.type}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs text-[var(--muted)]">
@@ -98,7 +98,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors
+            className={`px-4 py-2.5 text-base font-medium border-b-2 transition-colors
               ${activeTab === tab.key
                 ? 'border-[var(--accent)] text-[var(--accent)]'
                 : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
@@ -115,12 +115,12 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
 
       {/* Tab content */}
       {activeTab === 'tasks' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Open tasks */}
           {openTasks.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-[var(--muted)] uppercase tracking-wide">Open</p>
+                <p className="text-sm text-[var(--muted)] uppercase tracking-wide">Open</p>
                 {allOpen.length >= 2 && (
                   <button
                     onClick={combineMode ? exitCombineMode : () => setCombineMode(true)}
@@ -143,7 +143,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                     <div
                       key={task.id}
                       onClick={combineMode ? () => toggleSelect(task.id) : undefined}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors
+                      className={`flex items-start gap-3 p-4 rounded-lg border transition-colors
                         ${combineMode ? 'cursor-pointer' : ''}
                         ${isSelected
                           ? 'bg-amber-50 border-[var(--accent)] ring-1 ring-[var(--accent)]'
@@ -167,7 +167,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[var(--text)]">
+                        <p className="text-base text-[var(--text)]">
                           <AutoLinkText text={task.description} />
                         </p>
                         <div className="flex items-center gap-2 mt-1">
@@ -205,7 +205,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {waitingOnTasks.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <p className="text-xs text-[var(--muted)] uppercase tracking-wide">
+                <p className="text-sm text-[var(--muted)] uppercase tracking-wide">
                   Waiting On
                 </p>
                 <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full">
@@ -219,7 +219,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                     <div
                       key={task.id}
                       onClick={combineMode ? () => toggleSelect(task.id) : undefined}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors
+                      className={`flex items-start gap-3 p-4 rounded-lg border transition-colors
                         ${combineMode ? 'cursor-pointer' : ''}
                         ${isSelected
                           ? 'bg-amber-50 border-[var(--accent)] ring-1 ring-[var(--accent)]'
@@ -241,7 +241,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[var(--text)]">
+                        <p className="text-base text-[var(--text)]">
                           <AutoLinkText text={task.description} />
                         </p>
                         <div className="flex items-center gap-2 mt-1">
@@ -268,7 +268,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                 onClick={() => setTrackingExpanded(!trackingExpanded)}
                 className="flex items-center gap-2 mb-2 w-full text-left"
               >
-                <p className="text-xs text-[var(--muted)] uppercase tracking-wide">
+                <p className="text-sm text-[var(--muted)] uppercase tracking-wide">
                   On Your Radar 👁️
                 </p>
                 <span className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded-full">
@@ -297,7 +297,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                       return (
                         <div
                           key={task.id}
-                          className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                          className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
                             isOverdue
                               ? 'bg-red-50/50 border-l-[3px] border-l-red-400 border-red-200'
                               : 'bg-purple-50/50 border-purple-200'
@@ -341,12 +341,12 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {/* Closed tasks */}
           {doneTasks.length > 0 && (
             <div>
-              <p className="text-xs text-[var(--muted)] uppercase tracking-wide mb-2">Done</p>
+              <p className="text-sm text-[var(--muted)] uppercase tracking-wide mb-2">Done</p>
               <div className="space-y-1 opacity-50">
                 {doneTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
+                    className="flex items-center gap-3 p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
                   >
                     <span className="text-green-700 text-sm">✓</span>
                     <p className="text-sm text-[var(--muted)] line-through">
@@ -369,7 +369,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
+              className="p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs text-[var(--muted)] uppercase">{entry.source}</span>
@@ -394,7 +394,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {decisions.map((decision) => (
             <div
               key={decision.id}
-              className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
+              className="p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)]"
             >
               <p className="text-sm text-[var(--text)]">{decision.summary}</p>
               <div className="flex items-center gap-2 mt-1">

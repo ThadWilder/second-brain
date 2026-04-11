@@ -196,13 +196,13 @@ export default function KpisPage() {
           </span>
         </div>
         <nav className="flex items-center gap-6">
-          <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-sm text-white font-medium">KPIs</a>
-          <a href="/audits" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={14} />Audits</a>
-          <a href="/reviews" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={14} />Reviews</a>
-          <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
-          <a href="/links" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={14} />Links</a>
-          <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
+          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
+          <a href="/kpis" className="text-base text-white font-medium">KPIs</a>
+          <a href="/audits" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={15} />Audits</a>
+          <a href="/reviews" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={15} />Reviews</a>
+          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors">History</a>
+          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
+          <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
 
@@ -283,25 +283,25 @@ export default function KpisPage() {
                   </span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
-                    <span className="text-xs text-[var(--muted)]">Total SWS Revenue</span>
-                    <div className="text-xl font-bold tabular-nums text-[var(--text)] mt-1">{formatCurrency(totalSws.cy)}</div>
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
+                    <span className="text-sm text-[var(--muted)]">Total SWS Revenue</span>
+                    <div className="text-2xl font-bold tabular-nums text-[var(--text)] mt-1">{formatCurrency(totalSws.cy)}</div>
                     <GrowthArrow value={totalSws.growth} />
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
-                    <span className="text-xs text-[var(--muted)]">Total Leads</span>
-                    <div className="text-xl font-bold tabular-nums text-[var(--text)] mt-1">{formatNumber(totalLeads.cy)}</div>
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
+                    <span className="text-sm text-[var(--muted)]">Total Leads</span>
+                    <div className="text-2xl font-bold tabular-nums text-[var(--text)] mt-1">{formatNumber(totalLeads.cy)}</div>
                     <GrowthArrow value={totalLeads.growth} />
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
-                    <span className="text-xs text-[var(--muted)]">Avg Close Rate</span>
-                    <div className="text-xl font-bold tabular-nums text-[var(--text)] mt-1">{formatPct(avgClose.cy != null ? avgClose.cy * 100 : null)}</div>
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
+                    <span className="text-sm text-[var(--muted)]">Avg Close Rate</span>
+                    <div className="text-2xl font-bold tabular-nums text-[var(--text)] mt-1">{formatPct(avgClose.cy != null ? avgClose.cy * 100 : null)}</div>
                     <GrowthArrow value={avgClose.growth} />
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
-                    <span className="text-xs text-[var(--muted)]">Brands Reporting</span>
-                    <div className="text-xl font-bold tabular-nums text-[var(--text)] mt-1">{brands.length}</div>
-                    <span className="text-xs text-[var(--muted)]">{latestMonth > 0 ? MONTH_NAMES[latestMonth] : '—'}</span>
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
+                    <span className="text-sm text-[var(--muted)]">Brands Reporting</span>
+                    <div className="text-2xl font-bold tabular-nums text-[var(--text)] mt-1">{brands.length}</div>
+                    <span className="text-sm text-[var(--muted)]">{latestMonth > 0 ? MONTH_NAMES[latestMonth] : '—'}</span>
                   </div>
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function KpisPage() {
                     <Link
                       key={brand.entity_id}
                       href={`/kpis/${brand.entity_id}`}
-                      className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 shadow-sm hover:bg-[var(--surface-hover)] hover:border-[var(--accent)] transition-all"
+                      className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 shadow-sm hover:bg-[var(--surface-hover)] hover:border-[var(--accent)] transition-all"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold text-[var(--text)] truncate">{brand.entity_name}</h3>
@@ -329,7 +329,7 @@ export default function KpisPage() {
                           </span>
                         )}
                       </div>
-                      <div className="space-y-2.5">
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-[var(--muted)]">SWS Revenue</span>
                           <div className="flex items-center gap-2">

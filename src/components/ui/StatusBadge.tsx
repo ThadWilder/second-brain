@@ -16,7 +16,7 @@ export function StatusBadge({ status }: { status: Status }) {
   return (
     <span
       className={clsx(
-        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border',
+        'inline-flex items-center px-2.5 py-1 rounded text-sm font-medium border',
         STATUS_STYLES[status] ?? 'bg-gray-50 text-gray-600 border-gray-200'
       )}
     >

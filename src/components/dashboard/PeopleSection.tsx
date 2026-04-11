@@ -26,7 +26,7 @@ export function PeopleSection({ contacts, vendorTeam, freelancers, allEntities, 
       count={totalCount}
       defaultExpanded={false}
     >
-      <div className="space-y-6">
+      <div className="space-y-7">
         {contacts.length > 0 && (
           <EntityCards
             title="Team Members"

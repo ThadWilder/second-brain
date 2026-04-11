@@ -161,13 +161,13 @@ export default function HistoryPage() {
           </span>
         </div>
         <nav className="flex items-center gap-6">
-          <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-sm text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/audits" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={14} />Audits</a>
-          <a href="/reviews" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={14} />Reviews</a>
-          <a href="/history" className="text-sm text-white font-medium">History</a>
-          <a href="/links" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={14} />Links</a>
-          <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
+          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
+          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
+          <a href="/audits" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={15} />Audits</a>
+          <a href="/reviews" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={15} />Reviews</a>
+          <a href="/history" className="text-base text-white font-medium">History</a>
+          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
+          <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
 
@@ -243,14 +243,14 @@ export default function HistoryPage() {
                   >
                     <button
                       onClick={() => toggleExpand(entry.id)}
-                      className="w-full text-left px-5 py-4 focus:outline-none"
+                      className="w-full text-left px-5 py-5 focus:outline-none"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           {/* Subject line */}
                           <div className="flex items-center gap-2 mb-1">
-                            <SourceIcon size={14} className="text-[var(--muted)] shrink-0" />
-                            <h3 className="text-sm font-semibold text-[var(--text)] truncate">
+                            <SourceIcon size={15} className="text-[var(--muted)] shrink-0" />
+                            <h3 className="text-base font-semibold text-[var(--text)] truncate">
                               {entry.subject || 'No subject'}
                             </h3>
                           </div>
@@ -289,7 +289,7 @@ export default function HistoryPage() {
                               {brands.map(e => (
                                 <span
                                   key={e.id}
-                                  className={`text-[10px] px-1.5 py-0.5 rounded-full border ${TYPE_PILL_STYLES[e.type] ?? TYPE_PILL_STYLES.topic}`}
+                                  className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_PILL_STYLES[e.type] ?? TYPE_PILL_STYLES.topic}`}
                                 >
                                   {e.name}
                                 </span>
@@ -297,13 +297,13 @@ export default function HistoryPage() {
                               {otherEntities.slice(0, 5).map(e => (
                                 <span
                                   key={e.id}
-                                  className={`text-[10px] px-1.5 py-0.5 rounded-full border ${TYPE_PILL_STYLES[e.type] ?? TYPE_PILL_STYLES.topic}`}
+                                  className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_PILL_STYLES[e.type] ?? TYPE_PILL_STYLES.topic}`}
                                 >
                                   {e.name}
                                 </span>
                               ))}
                               {otherEntities.length > 5 && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-[var(--border)] text-[var(--muted)]">
+                                <span className="text-xs px-2 py-0.5 rounded-full border border-[var(--border)] text-[var(--muted)]">
                                   +{otherEntities.length - 5}
                                 </span>
                               )}

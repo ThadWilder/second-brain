@@ -147,13 +147,13 @@ export default function AuditsPage() {
           </span>
         </div>
         <nav className="flex items-center gap-6">
-          <a href="/wiki" className="text-sm text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-sm text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/audits" className="text-sm text-white font-medium">Audits</a>
-          <a href="/reviews" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={14} />Reviews</a>
-          <a href="/history" className="text-sm text-white/70 font-medium hover:text-white transition-colors">History</a>
-          <a href="/links" className="text-sm text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={14} />Links</a>
-          <button onClick={handleSignOut} className="text-sm text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
+          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
+          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
+          <a href="/audits" className="text-base text-white font-medium">Audits</a>
+          <a href="/reviews" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={15} />Reviews</a>
+          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors">History</a>
+          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
+          <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
 
@@ -209,35 +209,35 @@ export default function AuditsPage() {
                   <span className="text-xs font-medium text-[var(--muted)] uppercase tracking-wide">Overview</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Users size={12} className="text-[var(--muted)]" />
-                      <span className="text-xs text-[var(--muted)]">Total Franchisees</span>
+                      <Users size={14} className="text-[var(--muted)]" />
+                      <span className="text-sm text-[var(--muted)]">Total Franchisees</span>
                     </div>
-                    <div className="text-xl font-bold tabular-nums text-[var(--text)]">{totalFranchisees}</div>
+                    <div className="text-2xl font-bold tabular-nums text-[var(--text)]">{totalFranchisees}</div>
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <BarChart3 size={12} className="text-[var(--muted)]" />
-                      <span className="text-xs text-[var(--muted)]">Average Score</span>
+                      <BarChart3 size={14} className="text-[var(--muted)]" />
+                      <span className="text-sm text-[var(--muted)]">Average Score</span>
                     </div>
-                    <div className="text-xl font-bold tabular-nums" style={{ color: scoreColor(overallAvgScore) }}>
+                    <div className="text-2xl font-bold tabular-nums" style={{ color: scoreColor(overallAvgScore) }}>
                       {Math.round(overallAvgScore)}%
                     </div>
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <CheckCircle size={12} className="text-[#437A22]" />
-                      <span className="text-xs text-[var(--muted)]">Fully Compliant</span>
+                      <CheckCircle size={14} className="text-[#437A22]" />
+                      <span className="text-sm text-[var(--muted)]">Fully Compliant</span>
                     </div>
-                    <div className="text-xl font-bold tabular-nums text-[#437A22]">{fullyCompliant}</div>
+                    <div className="text-2xl font-bold tabular-nums text-[#437A22]">{fullyCompliant}</div>
                   </div>
-                  <div className="bg-[var(--surface-hover)] rounded-lg px-4 py-3">
+                  <div className="bg-[var(--surface-hover)] rounded-lg px-5 py-4">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <AlertTriangle size={12} className="text-[#A12C7B]" />
-                      <span className="text-xs text-[var(--muted)]">Needs Attention</span>
+                      <AlertTriangle size={14} className="text-[#A12C7B]" />
+                      <span className="text-sm text-[var(--muted)]">Needs Attention</span>
                     </div>
-                    <div className="text-xl font-bold tabular-nums text-[#A12C7B]">{needsAttention}</div>
+                    <div className="text-2xl font-bold tabular-nums text-[#A12C7B]">{needsAttention}</div>
                   </div>
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function AuditsPage() {
                   <Link
                     key={brand.entity_id}
                     href={`/audits/${brand.entity_id}`}
-                    className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 shadow-sm hover:bg-[var(--surface-hover)] hover:border-[var(--accent)] transition-all"
+                    className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm hover:bg-[var(--surface-hover)] hover:border-[var(--accent)] transition-all"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div>

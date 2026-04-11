@@ -181,7 +181,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
     return (
       <div
         key={item.entity.id}
-        className={`group relative rounded-lg border bg-[var(--surface)] p-3
+        className={`group relative rounded-lg border bg-[var(--surface)] p-4
                     transition-colors ${borderColor} ${config.bg}`}
       >
         {/* Action buttons */}
@@ -303,7 +303,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
 
   function renderGrid(items: EntityCardData[], showAssign = false) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((item) => renderCard(item, showAssign))}
       </div>
     )

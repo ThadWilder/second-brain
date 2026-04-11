@@ -48,7 +48,7 @@ export function CollapsibleSection({ title, icon, count, defaultExpanded, childr
           ? <ChevronDown className="w-4 h-4 text-[var(--muted)] transition-transform" />
           : <ChevronRight className="w-4 h-4 text-[var(--muted)] transition-transform" />
         }
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1.5">
           {icon && <span>{icon}</span>}
           {title}
           <span className="font-normal">({count})</span>
