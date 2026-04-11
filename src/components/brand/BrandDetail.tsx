@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { ListTodo, FileText, Scale } from 'lucide-react'
+import { ListTodo, FileText, Scale, GitMerge } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EntityList } from './EntityList'
+import { CombineTasksModal } from './CombineTasksModal'
 import type { Entity, Task, Decision, Entry } from '@/types'
 
 interface Props {
@@ -20,6 +21,9 @@ type Tab = 'tasks' | 'entries' | 'decisions'
 export function BrandDetail({ brand, tasks, decisions, entries, entities }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('tasks')
   const [localTasks, setLocalTasks] = useState(tasks)
+  const [combineMode, setCombineMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showCombineModal, setShowCombineModal] = useState(false)
 
   const handleComplete = (id: string) => {
     setLocalTasks((prev) =>
@@ -27,8 +31,34 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
     )
   }
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const exitCombineMode = () => {
+    setCombineMode(false)
+    setSelectedIds(new Set())
+  }
+
+  const handleCombined = (newTask: Task) => {
+    setLocalTasks((prev) => [
+      newTask,
+      ...prev.map((t) =>
+        selectedIds.has(t.id) ? { ...t, status: 'done' as const, resolved_at: new Date().toISOString() } : t
+      ),
+    ])
+    setShowCombineModal(false)
+    exitCombineMode()
+  }
+
   const openTasks = localTasks.filter((t) => t.status === 'open' || t.status === 'blocked')
   const doneTasks = localTasks.filter((t) => t.status === 'done')
+  const selectedTasks = openTasks.filter((t) => selectedIds.has(t.id))
 
   const TABS: { key: Tab; label: string; count: number; icon: React.ReactNode }[] = [
     { key: 'tasks', label: 'Tasks', count: localTasks.length, icon: <ListTodo className="w-3.5 h-3.5" /> },
@@ -83,37 +113,83 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
           {/* Open tasks */}
           {openTasks.length > 0 && (
             <div>
-              <p className="text-xs text-[var(--muted)] uppercase tracking-wide mb-2">Open</p>
-              <div className="space-y-1">
-                {openTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border
-                      ${task.escalation
-                        ? 'bg-red-50 border-red-200'
-                        : 'bg-[var(--surface)] border-[var(--border)]'
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-[var(--muted)] uppercase tracking-wide">Open</p>
+                {openTasks.length >= 2 && (
+                  <button
+                    onClick={combineMode ? exitCombineMode : () => setCombineMode(true)}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-md border transition-colors
+                      ${combineMode
+                        ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                        : 'text-[var(--muted)] border-[var(--border)] hover:text-[var(--text)] hover:border-[var(--accent)]'
                       }`}
+                    title={combineMode ? 'Exit combine mode' : 'Combine tasks'}
                   >
-                    <TaskCheckbox
-                      taskId={task.id}
-                      checked={false}
-                      onComplete={handleComplete}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[var(--text)]">{task.description}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {task.due_date && (
-                          <span className="text-xs text-[var(--muted)]">due {task.due_date}</span>
-                        )}
-                        {task.waiting_on && (
-                          <span className="text-xs text-amber-700">waiting on {task.waiting_on}</span>
-                        )}
-                        <StatusBadge status={task.status} />
+                    <GitMerge className="w-3 h-3" />
+                    {combineMode ? 'Cancel' : 'Combine'}
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1">
+                {openTasks.map((task) => {
+                  const isSelected = selectedIds.has(task.id)
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={combineMode ? () => toggleSelect(task.id) : undefined}
+                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors
+                        ${combineMode ? 'cursor-pointer' : ''}
+                        ${isSelected
+                          ? 'bg-amber-50 border-[var(--accent)] ring-1 ring-[var(--accent)]'
+                          : task.escalation
+                            ? 'bg-red-50 border-red-200'
+                            : 'bg-[var(--surface)] border-[var(--border)]'
+                        }`}
+                    >
+                      {combineMode ? (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(task.id)}
+                          className="mt-0.5 accent-[var(--accent)]"
+                        />
+                      ) : (
+                        <TaskCheckbox
+                          taskId={task.id}
+                          checked={false}
+                          onComplete={handleComplete}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[var(--text)]">{task.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {task.due_date && (
+                            <span className="text-xs text-[var(--muted)]">due {task.due_date}</span>
+                          )}
+                          {task.waiting_on && (
+                            <span className="text-xs text-amber-700">waiting on {task.waiting_on}</span>
+                          )}
+                          <StatusBadge status={task.status} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
+
+              {/* Combine action bar */}
+              {combineMode && selectedIds.size >= 2 && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() => setShowCombineModal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
+                               bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+                  >
+                    <GitMerge className="w-3.5 h-3.5" />
+                    Combine {selectedIds.size} tasks
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -192,6 +268,16 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
         <div className="pt-4 border-t border-[var(--border)]">
           <EntityList entities={entities} title="Linked Entities" />
         </div>
+      )}
+
+      {/* Combine tasks modal */}
+      {showCombineModal && selectedTasks.length >= 2 && (
+        <CombineTasksModal
+          tasks={selectedTasks}
+          brandId={brand.id}
+          onClose={() => setShowCombineModal(false)}
+          onCombined={handleCombined}
+        />
       )}
     </div>
   )
