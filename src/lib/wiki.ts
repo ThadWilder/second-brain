@@ -35,11 +35,6 @@ export interface WikiPage {
   updated_at: string
 }
 
-export interface WikiPageWithLinks extends WikiPage {
-  outbound_links: Array<{ slug: string; title: string; context: string | null }>
-  inbound_links: Array<{ slug: string; title: string }>
-}
-
 // ─────────────────────────────────────────
 // Read — used by chat agent before querying rows
 // ─────────────────────────────────────────

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServiceClient } from '@/lib/supabase'
+import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { hasValidSession } from '@/lib/auth'
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
@@ -28,6 +28,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     .from('entities')
     .select('*')
     .eq('id', entity_id)
+    .eq('org_id', ORG_ID)
     .single()
 
   if (fetchError || !entity) {
@@ -66,6 +67,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     .from('entities')
     .update(updates)
     .eq('id', entity_id)
+    .eq('org_id', ORG_ID)
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })

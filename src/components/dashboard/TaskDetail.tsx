@@ -50,6 +50,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [editing, setEditing] = useState(false)
   const [waitingOnInput, setWaitingOnInput] = useState('')
   const [savingWaitingOn, setSavingWaitingOn] = useState(false)
+  const [editingDueDate, setEditingDueDate] = useState(false)
   const waitingInputRef = useRef<HTMLInputElement>(null)
 
   async function loadData() {
@@ -418,14 +419,73 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       )}
 
       {/* Due date */}
-      {task.due_date && (
-        <Section label="Due Date">
+      <Section label="Due Date">
+        {editingDueDate ? (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="date"
+              autoFocus
+              defaultValue={task.due_date ?? ''}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setEditingDueDate(false)
+                if (e.key === 'Enter') {
+                  const val = (e.target as HTMLInputElement).value
+                  updateTask({ due_date: val || null })
+                  setEditingDueDate(false)
+                }
+              }}
+              className="flex-1 text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+              ref={(el) => el?.focus()}
+            />
+            <button
+              onClick={(e) => {
+                const input = (e.currentTarget.previousElementSibling as HTMLInputElement)
+                updateTask({ due_date: input.value || null })
+                setEditingDueDate(false)
+              }}
+              className="px-2 py-1.5 text-xs rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+            >
+              Save
+            </button>
+            {task.due_date && (
+              <button
+                onClick={() => {
+                  updateTask({ due_date: null })
+                  setEditingDueDate(false)
+                }}
+                className="px-2 py-1.5 text-xs rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+            <button
+              onClick={() => setEditingDueDate(false)}
+              className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
           <div className="flex items-center gap-2 text-xs text-[var(--text)]">
             <Clock className="w-3.5 h-3.5 text-[var(--muted)]" />
-            <span>Due {task.due_date}</span>
+            {task.due_date ? (
+              <button
+                onClick={() => setEditingDueDate(true)}
+                className="hover:text-[var(--accent)] transition-colors"
+              >
+                Due {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </button>
+            ) : (
+              <button
+                onClick={() => setEditingDueDate(true)}
+                className="text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
+              >
+                + Add due date
+              </button>
+            )}
           </div>
-        </Section>
-      )}
+        )}
+      </Section>
 
       {/* Waiting On Inline Form */}
       {editing && (

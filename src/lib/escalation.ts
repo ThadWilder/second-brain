@@ -58,32 +58,23 @@ export async function runEscalationPass(db: SupabaseClient): Promise<{
   }
 
   // ── 3. Escalate: nudged 3+ times, no response ────────
-  // Get all task IDs that have been nudged, then count client-side
-  const { data: nudgeEvents } = await db
-    .from('task_events')
-    .select('task_id')
-    .eq('event_type', 'nudged')
+  // Only check open, non-escalated tasks to avoid unbounded scan
+  const { data: openNonEscalated } = await db
+    .from('tasks')
+    .select('id')
+    .eq('org_id', ORG_ID)
+    .eq('status', 'open')
+    .eq('escalation', false)
 
-  // Count nudges per task
-  const nudgeCounts: Record<string, number> = {}
-  for (const row of nudgeEvents ?? []) {
-    nudgeCounts[row.task_id] = (nudgeCounts[row.task_id] ?? 0) + 1
-  }
+  for (const task of openNonEscalated ?? []) {
+    const { count } = await db
+      .from('task_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('task_id', task.id)
+      .eq('event_type', 'nudged')
 
-  const frequentlyNudgedIds = Object.entries(nudgeCounts)
-    .filter(([, count]) => count >= 3)
-    .map(([taskId]) => taskId)
-
-  for (const taskId of frequentlyNudgedIds) {
-    // Only escalate open tasks that aren't already escalated
-    const { data: task } = await db
-      .from('tasks')
-      .select('id, escalation, status')
-      .eq('id', taskId)
-      .single()
-
-    if (task && !task.escalation && task.status === 'open') {
-      await escalateTask(db, taskId, 'nudged_no_response')
+    if ((count ?? 0) >= 3) {
+      await escalateTask(db, task.id, 'nudged_no_response')
       escalated++
     }
   }

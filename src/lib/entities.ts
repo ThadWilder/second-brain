@@ -219,8 +219,8 @@ async function findByFuzzy(
     }
   }
 
-  // Threshold: 0.25 for short names (3-4 chars), 0.3 for longer
-  const threshold = normalized.length <= 4 ? 0.25 : 0.3
+  // Threshold: require higher similarity for short names to avoid false matches (Moe≠Joe)
+  const threshold = normalized.length <= 4 ? 0.6 : 0.4
   return bestScore >= threshold ? bestMatch : null
 }
 

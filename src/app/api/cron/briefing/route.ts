@@ -18,10 +18,11 @@ import { sendBriefingEmail } from '@/lib/postmark'
 import { runEscalationPass, getEscalationContext } from '@/lib/escalation'
 import { format } from 'date-fns'
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  // Auth check
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  // Auth check — also reject if CRON_SECRET is not configured
+  const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!secret || auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

@@ -35,8 +35,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Search filter: search subject (in source_meta), sender (in source_meta), and raw_text
   if (q) {
-    // Use ilike on raw_text and cast source_meta to text for broad search
-    query = query.or(`raw_text.ilike.%${q}%,source_meta::text.ilike.%${q}%`)
+    // Sanitize search input: escape PostgREST filter special chars
+    const safeQ = q.replace(/[%_\\(),.*]/g, (c) => `\\${c}`)
+    query = query.or(`raw_text.ilike.%${safeQ}%,source_meta::text.ilike.%${safeQ}%`)
   }
 
   const { data: entries, count, error } = await query

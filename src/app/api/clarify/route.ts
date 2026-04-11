@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServiceClient } from '@/lib/supabase'
+import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { hasValidSession } from '@/lib/auth'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       resolved_at: new Date().toISOString(),
     })
     .eq('id', clarification_id)
+    .eq('org_id', ORG_ID)
 
   // Update entity metadata with the resolved category
   if (entity_id) {
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       .from('entities')
       .select('metadata')
       .eq('id', entity_id)
+      .eq('org_id', ORG_ID)
       .single()
 
     const currentMeta = (entity?.metadata as Record<string, unknown>) ?? {}
@@ -48,6 +50,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       .from('entities')
       .update({ metadata: updatedMeta })
       .eq('id', entity_id)
+      .eq('org_id', ORG_ID)
   }
 
   return NextResponse.json({ success: true })

@@ -17,9 +17,10 @@ import type { Entity } from '@/types'
 const BATCH_SIZE = 3
 const TIME_LIMIT_MS = 240_000 // 240s of 300s max — leave room for cleanup
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!secret || auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

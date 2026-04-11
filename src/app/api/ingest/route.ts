@@ -15,10 +15,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { processEntry, detectSource, linkReplyToNudge } from '@/lib/ingest'
-import {
-  verifyPostmarkWebhook,
-  parsePostmarkInbound,
-} from '@/lib/postmark'
+import { parsePostmarkInbound } from '@/lib/postmark'
 import type { PostmarkAttachment } from '@/lib/postmark'
 import type { Attachment } from '@/types'
 import { hasValidSession } from '@/lib/auth'

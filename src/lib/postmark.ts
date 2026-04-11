@@ -1,5 +1,4 @@
 import * as postmark from 'postmark'
-import crypto from 'crypto'
 
 let _postmarkClient: postmark.ServerClient | null = null
 
@@ -18,31 +17,6 @@ export const postmarkClient = new Proxy({} as postmark.ServerClient, {
 
 export const FROM_EMAIL = process.env.POSTMARK_FROM_EMAIL ?? ''
 export const TO_EMAIL = process.env.POSTMARK_TO_EMAIL ?? ''
-
-// ─────────────────────────────────────────
-// Webhook signature verification
-// Postmark sends X-Postmark-Signature header
-// ─────────────────────────────────────────
-export function verifyPostmarkWebhook(
-  body: string,
-  signature: string | null
-): boolean {
-  const secret = process.env.POSTMARK_WEBHOOK_SECRET
-  if (!secret || secret === 'your-postmark-webhook-secret') return false // fail closed if not configured
-  if (!signature) return false
-
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(body)
-    .digest('base64')
-
-  const sigBuf = Buffer.from(signature)
-  const expBuf = Buffer.from(expected)
-
-  if (sigBuf.length !== expBuf.length) return false
-
-  return crypto.timingSafeEqual(sigBuf, expBuf)
-}
 
 // ─────────────────────────────────────────
 // Send a nudge email, return Postmark MessageID
