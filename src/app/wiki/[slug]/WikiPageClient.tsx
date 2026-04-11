@@ -641,6 +641,10 @@ function WikiContent({ content }: { content: string }) {
         if (trimmed.startsWith('---')) {
           return <hr key={i} className="border-[var(--border)] my-4" />
         }
+        // Skip raw JSON blocks that leaked through wiki synthesis
+        if (trimmed.startsWith('```json') || trimmed.startsWith('{"summary"')) {
+          return null
+        }
 
         return <p key={i}>{renderInlineLinks(trimmed)}</p>
       })}

@@ -287,8 +287,10 @@ Write the full updated wiki page markdown (do NOT include pinned sections — th
 
   const rawOutput = response.content[0].type === 'text' ? response.content[0].text : ''
 
-  // Parse out the JSON metadata block
-  const jsonMatch = rawOutput.match(/```json\n([\s\S]*?)\n```/)
+  // Parse out the JSON metadata block — handle both fenced and unfenced
+  const fencedMatch = rawOutput.match(/```json\s*\n([\s\S]*?)\n\s*```/)
+  const unfencedMatch = !fencedMatch && rawOutput.match(/\n(\{"summary"[\s\S]*\})\s*$/)
+  const jsonMatch = fencedMatch || unfencedMatch
   let summary = ''
   let links: Array<{ slug: string; context: string }> = []
 
@@ -302,8 +304,9 @@ Write the full updated wiki page markdown (do NOT include pinned sections — th
     }
   }
 
-  // Strip the JSON block from the content
-  const generatedContent = rawOutput.replace(/```json\n[\s\S]*?\n```/g, '').trim()
+  // Strip the JSON block from the content (fenced and unfenced)
+  let generatedContent = rawOutput.replace(/```json\s*\n[\s\S]*?\n\s*```/g, '').trim()
+  generatedContent = generatedContent.replace(/\n\{"summary"[\s\S]*\}\s*$/, '').trim()
 
   // Prepend pinned sections before AI-generated content
   let content = generatedContent
