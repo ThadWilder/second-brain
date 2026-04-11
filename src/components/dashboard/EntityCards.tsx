@@ -154,13 +154,14 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
   async function handleAssign(personId: string, targetId: string) {
     setAssigningId(personId)
     try {
+      const relationship = type === 'franchisee' ? 'franchisee_of' : 'member_of'
       const res = await fetch('/api/entities/link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           from_entity_id: personId,
           to_entity_id: targetId,
-          relationship: 'member_of',
+          relationship,
         }),
       })
       if (res.ok) {
@@ -221,8 +222,8 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
               <span className="text-sm font-medium text-[var(--text)] truncate block">
                 {item.entity.name}
               </span>
-              {(type === 'contact' || type === 'vendor_team' || type === 'freelancer') && (
-                <div className="flex items-center gap-1.5">
+              {(type === 'contact' || type === 'vendor_team' || type === 'freelancer' || type === 'franchisee') && (
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${getCategoryStyle(item.entity.type)}`}>
                     {formatCategory(item.entity.type)}
                   </span>
@@ -231,6 +232,20 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                       {(item.entity.metadata as Record<string, string>).role}
                     </span>
                   )}
+                  {entityRelationships && allEntitiesProp && (() => {
+                    const teamRels = entityRelationships.filter(
+                      (r) => r.from_entity_id === item.entity.id &&
+                      ['works_for', 'works_on', 'member_of', 'works_at', 'franchisee_of'].includes(r.relationship)
+                    )
+                    const entityMap = new Map(allEntitiesProp.map((e) => [e.id, e]))
+                    const teams = teamRels.map((r) => entityMap.get(r.to_entity_id)).filter(Boolean)
+                    if (!teams.length) return null
+                    return teams.map((t) => (
+                      <span key={t!.id} className="text-[10px] px-1.5 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700">
+                        {t!.name}
+                      </span>
+                    ))
+                  })()}
                 </div>
               )}
               {type === 'vendor' && item.entity.metadata && (
@@ -265,7 +280,7 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
         </Link>
 
         {/* Inline assign dropdown for contacts */}
-        {type === 'contact' && (assignOptions.brands.length > 0 || assignOptions.teams.length > 0) && (
+        {(type === 'contact' || type === 'franchisee') && (assignOptions.brands.length > 0 || assignOptions.teams.length > 0) && (
           <div className="mt-2 pt-2 border-t border-[var(--border)]">
             {assigningId === item.entity.id ? (
               <span className="text-[11px] text-[var(--muted)]">Assigning...</span>
