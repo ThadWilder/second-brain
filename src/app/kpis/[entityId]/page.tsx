@@ -254,7 +254,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ entityId
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[1200px] mx-auto px-4 py-8 space-y-6">
+        <div className="max-w-[1100px] mx-auto px-4 py-8 space-y-6">
           {/* Back + title */}
           <div className="flex items-center gap-3">
             <Link href="/kpis" className="text-[var(--muted)] hover:text-[var(--text)] transition-colors">

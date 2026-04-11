@@ -139,7 +139,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
       {/* Main content — single scrollable column */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[1200px] mx-auto px-4 py-8 space-y-8">
+        <div className="max-w-[1100px] mx-auto px-4 py-8 space-y-8">
           {/* ── Hero dump box ── */}
           <div className="bg-[var(--surface)] border border-[var(--border)] border-l-[4px] border-l-[var(--accent)] rounded-xl px-3 py-3 shadow-sm">
             <ChatInput
