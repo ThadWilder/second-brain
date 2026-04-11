@@ -591,18 +591,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       {/* Source Dumpling */}
       {source_entry && (
         <Section label="Source Dumpling">
-          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <FileText className="w-3.5 h-3.5 text-[var(--muted)]" />
-              <span className="text-xs text-[var(--muted)] capitalize">{source_entry.source}</span>
-              <span className="text-xs text-[var(--muted)]">
-                {formatDate(source_entry.created_at)}
-              </span>
-            </div>
-            <p className="text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap">
-              <AutoLinkText text={source_entry.raw_text} />
-            </p>
-          </div>
+          <ExpandableSource entry={source_entry} />
         </Section>
       )}
 
@@ -778,6 +767,32 @@ function Section({ label, children }: { label: string; children: React.ReactNode
         {label}
       </h4>
       {children}
+    </div>
+  )
+}
+
+function ExpandableSource({ entry }: { entry: { source: string; created_at: string; raw_text: string } }) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = entry.raw_text.length > 300
+
+  return (
+    <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-1.5">
+        <FileText className="w-3.5 h-3.5 text-[var(--muted)]" />
+        <span className="text-xs text-[var(--muted)] capitalize">{entry.source}</span>
+        <span className="text-xs text-[var(--muted)]">{formatDate(entry.created_at)}</span>
+      </div>
+      <p className={`text-xs text-[var(--text)] leading-relaxed whitespace-pre-wrap ${!expanded && isLong ? 'line-clamp-4' : ''}`}>
+        <AutoLinkText text={entry.raw_text} />
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] mt-1.5"
+        >
+          {expanded ? 'show less' : 'show more'}
+        </button>
+      )}
     </div>
   )
 }
