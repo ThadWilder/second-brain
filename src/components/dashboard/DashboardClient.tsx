@@ -262,7 +262,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
 // Type for all dashboard data
 interface DashboardData {
-  stats: { escalations: number; needs_response: number; open_tasks: number; closed_7d: number; waiting_on: number }
+  stats: { escalations: number; needs_response: number; open_tasks: number; closed_7d: number; waiting_on: number; dumplings_this_week: number }
   brands: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null; health: 'green' | 'amber' | 'red' }>
   people: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   vendors: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
