@@ -13,6 +13,7 @@ interface Props {
   needsResponse: Array<{ id: string; summary: string; created_at: string }>
   tasks: TaskWithEntities[]
   staleFromYesterday: TaskWithEntities[]
+  consolidationTaskIds?: Set<string>
   onRefresh?: () => void
 }
 
@@ -21,7 +22,7 @@ type PanelState =
   | { type: 'pending'; id: string; title: string }
   | null
 
-export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday, onRefresh }: Props) {
+export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday, consolidationTaskIds, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
 
@@ -56,6 +57,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
               key={task.id}
               task={task}
               variant="escalated"
+              hasConsolidation={consolidationTaskIds?.has(task.id)}
               onComplete={handleComplete}
               onClick={() => handleTaskClick(task)}
             />
@@ -92,6 +94,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
               key={task.id}
               task={task}
               variant="normal"
+              hasConsolidation={consolidationTaskIds?.has(task.id)}
               onComplete={handleComplete}
               onClick={() => handleTaskClick(task)}
             />
@@ -109,6 +112,7 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
                 key={task.id}
                 task={task}
                 variant="stale"
+                hasConsolidation={consolidationTaskIds?.has(task.id)}
                 onComplete={handleComplete}
                 onClick={() => handleTaskClick(task)}
               />
@@ -170,11 +174,13 @@ function Section({
 function TaskRow({
   task,
   variant,
+  hasConsolidation,
   onComplete,
   onClick,
 }: {
   task: TaskWithEntities
   variant: 'escalated' | 'normal' | 'stale'
+  hasConsolidation?: boolean
   onComplete: (id: string) => void
   onClick: () => void
 }) {
@@ -200,7 +206,12 @@ function TaskRow({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-[var(--text)] leading-snug">{task.description}</p>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {hasConsolidation && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-50 text-violet-700 border border-violet-200">
+              Related task found
+            </span>
+          )}
           {brand && (
             <span className="text-xs text-[var(--muted)]">{brand.name}</span>
           )}

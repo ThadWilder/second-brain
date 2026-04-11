@@ -67,8 +67,8 @@ export async function GET(
     return NextResponse.json({ error: 'Task not found' }, { status: 404 })
   }
 
-  // Fetch entities, events, and source entry in parallel
-  const [entitiesResult, eventsResult, sourceResult] = await Promise.all([
+  // Fetch entities, events, source entry, and consolidation suggestions in parallel
+  const [entitiesResult, eventsResult, sourceResult, consolidationAsNew, consolidationAsExisting] = await Promise.all([
     db
       .from('task_entities')
       .select('role, entities(id, name, type)')
@@ -85,6 +85,16 @@ export async function GET(
           .eq('id', task.entry_id)
           .single()
       : Promise.resolve({ data: null }),
+    db
+      .from('consolidation_suggestions')
+      .select('id, new_task_id, existing_task_id, merged_description, reason, created_at')
+      .eq('new_task_id', id)
+      .eq('status', 'pending'),
+    db
+      .from('consolidation_suggestions')
+      .select('id, new_task_id, existing_task_id, merged_description, reason, created_at')
+      .eq('existing_task_id', id)
+      .eq('status', 'pending'),
   ])
 
   const entities = (entitiesResult.data ?? []).map((te: Record<string, unknown>) => ({
@@ -92,10 +102,49 @@ export async function GET(
     role: te.role,
   }))
 
+  // Combine consolidation suggestions from both directions and fetch other task descriptions
+  const rawSuggestions = [
+    ...(consolidationAsNew.data ?? []).map((cs: any) => ({
+      id: cs.id,
+      direction: 'new' as const,
+      other_task_id: cs.existing_task_id,
+      merged_description: cs.merged_description,
+      reason: cs.reason,
+      created_at: cs.created_at,
+    })),
+    ...(consolidationAsExisting.data ?? []).map((cs: any) => ({
+      id: cs.id,
+      direction: 'existing' as const,
+      other_task_id: cs.new_task_id,
+      merged_description: cs.merged_description,
+      reason: cs.reason,
+      created_at: cs.created_at,
+    })),
+  ]
+
+  // Fetch descriptions for related tasks
+  const otherTaskIds = rawSuggestions.map((s) => s.other_task_id)
+  let otherTaskMap: Record<string, string> = {}
+  if (otherTaskIds.length > 0) {
+    const { data: otherTasks } = await db
+      .from('tasks')
+      .select('id, description')
+      .in('id', otherTaskIds)
+    for (const t of otherTasks ?? []) {
+      otherTaskMap[t.id] = t.description
+    }
+  }
+
+  const consolidationSuggestions = rawSuggestions.map((s) => ({
+    ...s,
+    other_task_description: otherTaskMap[s.other_task_id] ?? null,
+  }))
+
   return NextResponse.json({
     task,
     entities,
     events: eventsResult.data ?? [],
     source_entry: sourceResult.data ?? null,
+    consolidation_suggestions: consolidationSuggestions,
   })
 }

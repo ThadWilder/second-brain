@@ -127,6 +127,12 @@ export async function GET(): Promise<NextResponse> {
     .eq('org_id', ORG_ID).eq('resolved', false)
     .order('created_at', { ascending: true }).limit(10)
 
+  // Consolidation suggestions — task IDs that have pending suggestions
+  const { data: consolidationSuggestions } = await db.from('consolidation_suggestions')
+    .select('id, new_task_id, existing_task_id, merged_description, reason, created_at')
+    .eq('org_id', ORG_ID).eq('status', 'pending')
+    .order('created_at', { ascending: true }).limit(20)
+
   // Entity relationships (for grouping people by their org)
   const { data: entityRelationshipsData } = await db
     .from('entity_relationships')
@@ -160,11 +166,20 @@ export async function GET(): Promise<NextResponse> {
     }))
   )
 
+  // Build a set of task IDs that have pending consolidation suggestions
+  const consolidationTaskIds = new Set<string>()
+  for (const cs of consolidationSuggestions ?? []) {
+    consolidationTaskIds.add(cs.new_task_id)
+    consolidationTaskIds.add(cs.existing_task_id)
+  }
+
   return NextResponse.json({
     stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, regularTasks, staleFromYesterday,
     pendingResponses: pendingResponses ?? [],
     clarifications: clarifications ?? [],
+    consolidationSuggestions: consolidationSuggestions ?? [],
+    consolidationTaskIds: [...consolidationTaskIds],
     heatmapCells, heatmapDays,
     brandNames: brandEntities.map((b: Entity) => b.name),
     allEntities: allEntities ?? [],

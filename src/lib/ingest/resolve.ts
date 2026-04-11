@@ -57,7 +57,7 @@ export async function loadTaskDedupContext(db: SupabaseClient): Promise<string> 
     .order('created_at', { ascending: false })
     .limit(50)
   if ((openTasks ?? []).length > 0) {
-    return `\n\nEXISTING OPEN TASKS (do NOT create duplicates):\n${(openTasks ?? []).map((t: { id: string; description: string }) => `- [${t.id}] ${t.description}`).join('\n')}\n\nIf the content mentions a task that matches an existing one above, DO NOT create a new task. Only create tasks that are genuinely new and not already tracked.`
+    return `\n\nEXISTING OPEN TASKS (do NOT create duplicates):\n${(openTasks ?? []).map((t: { id: string; description: string }) => `- [${t.id}] ${t.description}`).join('\n')}\n\nIf the content mentions a task that matches an existing one above, DO NOT create a new task. Only create tasks that are genuinely new and not already tracked.\n\nHowever, if a new task is RELATED to but not identical to an existing task (e.g. overlapping scope, same deliverable from a different angle, or one is a subset of the other), you should BOTH create the new task via create_tasks AND call suggest_consolidation to flag the overlap. This lets the user decide whether to merge them.`
   }
   return ''
 }

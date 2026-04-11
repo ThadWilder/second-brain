@@ -143,6 +143,36 @@ export const INGEST_TOOLS: any[] = [
       required: ['name', 'question', 'field'],
     },
   },
+  {
+    name: 'suggest_consolidation',
+    description:
+      'Suggest merging a new task with an existing open task when they are closely related or overlapping ' +
+      '(but not exact duplicates). Use this when a new task covers similar ground as an existing one — ' +
+      'e.g. both are about the same deliverable, same request from different angles, or one is a subset of the other. ' +
+      'Still create the new task via create_tasks AND call this tool to flag the overlap.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        new_task_description: {
+          type: 'string',
+          description: 'The description of the new task being created (must match what you passed to create_tasks).',
+        },
+        existing_task_id: {
+          type: 'string',
+          description: 'UUID of the existing open task this overlaps with.',
+        },
+        merged_description: {
+          type: 'string',
+          description: 'A suggested combined description if the two tasks were merged into one.',
+        },
+        reason: {
+          type: 'string',
+          description: 'Brief explanation of why these tasks overlap (e.g. "Both tasks involve updating the MaidPro social media calendar").',
+        },
+      },
+      required: ['new_task_description', 'existing_task_id', 'merged_description', 'reason'],
+    },
+  },
 ]
 
 /**

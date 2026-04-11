@@ -67,6 +67,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
     stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, regularTasks, staleFromYesterday,
     pendingResponses, clarifications,
+    consolidationTaskIds,
     heatmapCells, heatmapDays, brandNames,
     allEntities,
     entityRelationships,
@@ -196,6 +197,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               needsResponse={pendingResponses}
               tasks={regularTasks}
               staleFromYesterday={staleFromYesterday}
+              consolidationTaskIds={new Set(consolidationTaskIds ?? [])}
               onRefresh={fetchData}
             />
           </div>
@@ -236,6 +238,8 @@ interface DashboardData {
   staleFromYesterday: any[]
   pendingResponses: Array<{ id: string; summary: string; created_at: string }>
   clarifications: Array<{ id: string; entity_id: string | null; entry_id: string | null; question: string; context: string | null; field: string; suggestions: string[] | null }>
+  consolidationSuggestions: Array<{ id: string; new_task_id: string; existing_task_id: string; merged_description: string; reason: string; created_at: string }>
+  consolidationTaskIds: string[]
   heatmapCells: Array<{ brand_id: string; brand_name: string; date: string; count: number }>
   heatmapDays: string[]
   brandNames: string[]

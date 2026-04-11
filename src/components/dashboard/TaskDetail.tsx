@@ -1,9 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Clock, Users, FileText, AlertTriangle, Loader2 } from 'lucide-react'
+import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import type { TaskStatus, EventType } from '@/types'
+
+interface ConsolidationSuggestion {
+  id: string
+  direction: 'new' | 'existing'
+  other_task_id: string
+  other_task_description: string | null
+  merged_description: string
+  reason: string
+  created_at: string
+}
 
 interface TaskData {
   task: {
@@ -20,6 +30,7 @@ interface TaskData {
   entities: Array<{ id: string; name: string; type: string; role: string }>
   events: Array<{ id: string; event_type: EventType; metadata: Record<string, unknown> | null; created_at: string }>
   source_entry: { id: string; raw_text: string; source: string; created_at: string } | null
+  consolidation_suggestions: ConsolidationSuggestion[]
 }
 
 export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: () => void }) {
@@ -31,6 +42,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null)
   const [allEntities, setAllEntities] = useState<Array<{ id: string; name: string; type: string }>>([])
   const [linkingEntity, setLinkingEntity] = useState(false)
+  const [resolvingConsolidation, setResolvingConsolidation] = useState<string | null>(null)
 
   async function loadData() {
     const r = await fetch(`/api/tasks/${taskId}`)
@@ -58,6 +70,24 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       showFeedback('Entity linked ✓')
     } finally {
       setLinkingEntity(false)
+    }
+  }
+
+  async function resolveConsolidation(suggestionId: string, action: 'accept' | 'dismiss') {
+    setResolvingConsolidation(suggestionId)
+    try {
+      const res = await fetch('/api/consolidation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestion_id: suggestionId, action }),
+      })
+      if (res.ok) {
+        await loadData()
+        showFeedback(action === 'accept' ? 'Tasks merged ✓' : 'Suggestion dismissed ✓')
+        onUpdate?.()
+      }
+    } finally {
+      setResolvingConsolidation(null)
     }
   }
 
@@ -91,7 +121,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     return <p className="text-sm text-[var(--muted)] py-8 text-center">Task not found.</p>
   }
 
-  const { task, entities, events, source_entry } = data
+  const { task, entities, events, source_entry, consolidation_suggestions } = data
 
   return (
     <div className="space-y-5">
@@ -106,6 +136,59 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       <div>
         <p className="text-sm text-[var(--text)] leading-relaxed">{task.description}</p>
       </div>
+
+      {/* Consolidation Suggestions */}
+      {(consolidation_suggestions ?? []).length > 0 && (
+        <div className="space-y-2">
+          {consolidation_suggestions.map((cs) => (
+            <div
+              key={cs.id}
+              className="rounded-lg border border-violet-200 bg-violet-50 p-3 space-y-2"
+            >
+              <div className="flex items-start gap-2">
+                <GitMerge className="w-3.5 h-3.5 text-violet-600 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-violet-800">Related task found</p>
+                  <p className="text-xs text-violet-700 mt-0.5">{cs.reason}</p>
+                </div>
+              </div>
+
+              {cs.other_task_description && (
+                <div className="bg-violet-100/50 rounded px-2.5 py-1.5">
+                  <p className="text-[10px] text-violet-600 uppercase tracking-wider font-medium mb-0.5">
+                    {cs.direction === 'new' ? 'Existing task' : 'New task'}
+                  </p>
+                  <p className="text-xs text-violet-800">{cs.other_task_description}</p>
+                </div>
+              )}
+
+              <div className="bg-violet-100/50 rounded px-2.5 py-1.5">
+                <p className="text-[10px] text-violet-600 uppercase tracking-wider font-medium mb-0.5">
+                  Suggested merged description
+                </p>
+                <p className="text-xs text-violet-800">{cs.merged_description}</p>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => resolveConsolidation(cs.id, 'accept')}
+                  disabled={resolvingConsolidation === cs.id}
+                  className="px-2.5 py-1 text-xs rounded-md border border-violet-300 bg-violet-100 text-violet-800 hover:bg-violet-200 transition-colors disabled:opacity-50"
+                >
+                  {resolvingConsolidation === cs.id ? 'Merging...' : 'Merge tasks'}
+                </button>
+                <button
+                  onClick={() => resolveConsolidation(cs.id, 'dismiss')}
+                  disabled={resolvingConsolidation === cs.id}
+                  className="px-2.5 py-1 text-xs rounded-md border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)] transition-colors disabled:opacity-50"
+                >
+                  Keep separate
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Status + Escalation */}
       <Section label="Status">

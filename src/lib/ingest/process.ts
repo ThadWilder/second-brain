@@ -32,6 +32,7 @@ import type {
   CreateTaskInput,
   LogDecisionInput,
   FlagPendingResponseInput,
+  SuggestConsolidationInput,
   IngestResult,
 } from '@/types'
 
@@ -108,6 +109,7 @@ export async function processEntry(
       pending_responses_created: 0,
       entities_resolved: 0,
       entities_created: 0,
+      consolidation_suggestions_created: 0,
     }
 
     // Track touched entities for wiki update step
@@ -150,6 +152,9 @@ export async function processEntry(
 
     // Helper: resolve entity name to ID using our map + entity list
     const resolveEntityName = createEntityResolver(entityMap, existingEntities)
+
+    // Track new tasks by description for consolidation matching
+    const newTasksByDescription: Map<string, string> = new Map()
 
     // Process create_tasks
     for (const call of toolCalls) {
@@ -210,6 +215,7 @@ export async function processEntry(
             }
           }
 
+          newTasksByDescription.set(taskInput.description, newTask.id)
           result.tasks_created++
         }
       }
@@ -308,6 +314,42 @@ export async function processEntry(
           field: input.field,
           suggestions: input.suggestions ?? null,
         })
+      }
+    }
+
+    // Process suggest_consolidation
+    for (const call of toolCalls) {
+      if (call.name === 'suggest_consolidation') {
+        try {
+          const input = call.input as SuggestConsolidationInput
+
+          // Find the new task ID by matching description
+          const newTaskId = newTasksByDescription.get(input.new_task_description)
+          if (!newTaskId) continue
+
+          // Verify the existing task actually exists and is open
+          const { data: existingTask } = await db
+            .from('tasks')
+            .select('id')
+            .eq('id', input.existing_task_id)
+            .eq('org_id', ORG_ID)
+            .in('status', ['open', 'blocked'])
+            .single()
+
+          if (!existingTask) continue
+
+          await db.from('consolidation_suggestions').insert({
+            org_id: ORG_ID,
+            new_task_id: newTaskId,
+            existing_task_id: input.existing_task_id,
+            merged_description: input.merged_description,
+            reason: input.reason,
+          })
+
+          result.consolidation_suggestions_created++
+        } catch {
+          // Non-critical — don't fail the ingest if consolidation suggestion fails
+        }
       }
     }
 

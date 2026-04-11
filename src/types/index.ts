@@ -207,6 +207,13 @@ export interface FlagPendingResponseInput {
   entity_names?: string[]
 }
 
+export interface SuggestConsolidationInput {
+  new_task_description: string
+  existing_task_id: string
+  merged_description: string
+  reason: string
+}
+
 export interface IngestResult {
   entry_id: string
   tasks_created: number
@@ -214,6 +221,7 @@ export interface IngestResult {
   pending_responses_created: number
   entities_resolved: number
   entities_created: number
+  consolidation_suggestions_created: number
 }
 
 // ─────────────────────────────────────────
