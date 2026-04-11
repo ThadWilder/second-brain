@@ -57,7 +57,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
     <div className="space-y-5">
       {/* Escalations */}
       {visibleEscalated.length > 0 && (
-        <Section title="Escalations" icon="🔥" count={visibleEscalated.length}>
+        <Section id="section-escalations" title="Escalations" icon="🔥" count={visibleEscalated.length}>
           {visibleEscalated.map((task) => (
             <TaskRow
               key={task.id}
@@ -75,7 +75,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
 
       {/* Needs Response */}
       {needsResponse.length > 0 && (
-        <Section title="Needs Response" icon="📬" count={needsResponse.length}>
+        <Section id="section-needs-response" title="Needs Response" icon="📬" count={needsResponse.length}>
           {needsResponse.map((pr) => (
             <div
               key={pr.id}
@@ -136,7 +136,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
 
       {/* Inbox */}
       {inboxTasks.filter((t) => !completedIds.has(t.id)).length > 0 && (
-        <Section title="Inbox" icon="📥" count={inboxTasks.filter((t) => !completedIds.has(t.id)).length}>
+        <Section id="section-inbox" title="Inbox" icon="📥" count={inboxTasks.filter((t) => !completedIds.has(t.id)).length}>
           {inboxTasks
             .filter((t) => !completedIds.has(t.id))
             .map((task) => (
@@ -222,18 +222,20 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
 }
 
 function Section({
+  id,
   title,
   icon,
   count,
   children,
 }: {
+  id?: string
   title: string
   icon: string
   count: number
   children: React.ReactNode
 }) {
   return (
-    <div>
+    <div id={id}>
       <div className="flex items-center gap-2 mb-2">
         <span className="text-base">{icon}</span>
         <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">
