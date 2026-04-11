@@ -178,7 +178,7 @@ export const AGENT_TOOL_DEFINITIONS = [
       type: 'object',
       properties: {
         brand_name: { type: 'string' },
-        status: { type: 'string', enum: ['open', 'done', 'blocked'] },
+        status: { type: 'string', enum: ['open', 'done', 'blocked', 'tracking'] },
         escalation: { type: 'boolean' },
         due_before: { type: 'string', description: 'ISO date' },
         limit: { type: 'number' },
@@ -220,10 +220,12 @@ export const AGENT_TOOL_DEFINITIONS = [
       type: 'object',
       properties: {
         task_id: { type: 'string', description: 'Task UUID' },
-        status: { type: 'string', enum: ['open', 'blocked', 'closed'] },
+        status: { type: 'string', enum: ['open', 'blocked', 'closed', 'tracking'] },
         escalation: { type: 'boolean', description: 'Escalation flag' },
         due_date: { type: ['string', 'null'], description: 'ISO date or null to clear' },
         waiting_on: { type: ['string', 'null'], description: 'Who/what the task is waiting on, or null to clear' },
+        tracked_owner: { type: ['string', 'null'], description: 'Who is responsible for this tracked task, or null to clear' },
+        follow_up_date: { type: ['string', 'null'], description: 'ISO date for follow-up, or null to clear' },
       },
       required: ['task_id'],
     },

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Hourglass, X } from 'lucide-react'
+import { Hourglass, X, Eye } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
@@ -15,6 +15,8 @@ interface Props {
   needsResponse: Array<{ id: string; summary: string; created_at: string }>
   tasks: TaskWithEntities[]
   staleFromYesterday: TaskWithEntities[]
+  overdueFollowUps: TaskWithEntities[]
+  staleTracking: TaskWithEntities[]
   consolidationTaskIds?: Set<string>
   onRefresh?: () => void
 }
@@ -24,7 +26,7 @@ type PanelState =
   | { type: 'pending'; id: string; title: string }
   | null
 
-export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday, consolidationTaskIds, onRefresh }: Props) {
+export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday, overdueFollowUps, staleTracking, consolidationTaskIds, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
 
@@ -127,10 +129,50 @@ export function Priorities({ escalated, needsResponse, tasks, staleFromYesterday
         </Section>
       )}
 
+      {/* Overdue Follow-ups */}
+      {overdueFollowUps.length > 0 && (
+        <Section title="Overdue Follow-ups" icon="👁️" count={overdueFollowUps.length}>
+          {overdueFollowUps
+            .filter((t) => !completedIds.has(t.id))
+            .map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                variant="escalated"
+                hasConsolidation={consolidationTaskIds?.has(task.id)}
+                onComplete={handleComplete}
+                onClick={() => handleTaskClick(task)}
+                onRefresh={onRefresh}
+              />
+            ))}
+        </Section>
+      )}
+
+      {/* Stale Tracking Items */}
+      {staleTracking.length > 0 && (
+        <Section title="Stale tracking items" icon="👁️" count={staleTracking.length}>
+          {staleTracking
+            .filter((t) => !completedIds.has(t.id))
+            .map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                variant="stale"
+                hasConsolidation={consolidationTaskIds?.has(task.id)}
+                onComplete={handleComplete}
+                onClick={() => handleTaskClick(task)}
+                onRefresh={onRefresh}
+              />
+            ))}
+        </Section>
+      )}
+
       {visibleEscalated.length === 0 &&
         needsResponse.length === 0 &&
         visibleTasks.length === 0 &&
-        staleFromYesterday.length === 0 && (
+        staleFromYesterday.length === 0 &&
+        overdueFollowUps.length === 0 &&
+        staleTracking.length === 0 && (
           <div className="text-center py-8 text-[var(--muted)] text-sm">
             All clear. No open dumplings.
           </div>
@@ -196,8 +238,12 @@ function TaskRow({
   const brand = task.entities?.find((e) => e.role === 'brand')
   const [showWaitingPopover, setShowWaitingPopover] = useState(false)
   const [waitingInput, setWaitingInput] = useState('')
+  const [showTrackingPopover, setShowTrackingPopover] = useState(false)
+  const [trackingOwner, setTrackingOwner] = useState('')
+  const [trackingFollowUp, setTrackingFollowUp] = useState('')
   const [saving, setSaving] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const trackingInputRef = useRef<HTMLInputElement>(null)
 
   async function setWaitingOn(value: string) {
     setSaving(true)
@@ -209,6 +255,28 @@ function TaskRow({
       })
       setShowWaitingPopover(false)
       setWaitingInput('')
+      onRefresh?.()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function setTracking(owner: string, followUpDate: string) {
+    setSaving(true)
+    try {
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: task.id,
+          status: 'tracking',
+          tracked_owner: owner || null,
+          follow_up_date: followUpDate || null,
+        }),
+      })
+      setShowTrackingPopover(false)
+      setTrackingOwner('')
+      setTrackingFollowUp('')
       onRefresh?.()
     } finally {
       setSaving(false)
@@ -286,6 +354,74 @@ function TaskRow({
             </div>
           )}
         </div>
+        {/* Eye icon for tracking */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (task.status === 'tracking') {
+                // Already tracking — clicking clears it back to open
+                fetch('/api/tasks', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: task.id, status: 'open', tracked_owner: null, follow_up_date: null }),
+                }).then(() => onRefresh?.())
+              } else {
+                setShowTrackingPopover(true)
+                setTimeout(() => trackingInputRef.current?.focus(), 0)
+              }
+            }}
+            title={task.status === 'tracking' ? `Tracking (${task.tracked_owner ?? 'no owner'}) — click to stop tracking` : 'Track this task'}
+            className={`p-0.5 rounded transition-colors ${
+              task.status === 'tracking'
+                ? 'text-purple-600 hover:text-red-600'
+                : 'text-[var(--muted)] hover:text-purple-600 opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+          {showTrackingPopover && (
+            <div
+              className="absolute z-20 top-full left-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg p-2 w-56"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-1.5">
+                <input
+                  ref={trackingInputRef}
+                  value={trackingOwner}
+                  onChange={(e) => setTrackingOwner(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') setTracking(trackingOwner.trim(), trackingFollowUp)
+                    if (e.key === 'Escape') { setShowTrackingPopover(false); setTrackingOwner(''); setTrackingFollowUp('') }
+                  }}
+                  placeholder="Owner..."
+                  className="w-full text-xs px-2 py-1 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+                />
+                <input
+                  type="date"
+                  value={trackingFollowUp}
+                  onChange={(e) => setTrackingFollowUp(e.target.value)}
+                  className="w-full text-xs px-2 py-1 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+                />
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setTracking(trackingOwner.trim(), trackingFollowUp)}
+                    disabled={saving}
+                    className="flex-1 px-1.5 py-1 text-[10px] rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-40 transition-colors"
+                  >
+                    {saving ? '...' : 'Track'}
+                  </button>
+                  <button
+                    onClick={() => { setShowTrackingPopover(false); setTrackingOwner(''); setTrackingFollowUp('') }}
+                    className="p-1 text-[var(--muted)] hover:text-[var(--text)]"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-[var(--text)] leading-snug">
@@ -310,7 +446,12 @@ function TaskRow({
               ⏳ {task.waiting_on}
             </span>
           )}
-          {task.status !== 'open' && (
+          {task.status === 'tracking' && (
+            <span className="inline-flex items-center gap-1 text-xs text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
+              👁️ {task.tracked_owner ?? 'tracking'}
+            </span>
+          )}
+          {task.status !== 'open' && task.status !== 'tracking' && (
             <StatusBadge status={task.status} />
           )}
         </div>

@@ -4,7 +4,7 @@
 
 export type ProcessingStatus = 'pending' | 'processing' | 'done' | 'failed'
 export type EntrySource = 'email' | 'chat' | 'paste' | 'meeting_notes'
-export type TaskStatus = 'open' | 'done' | 'blocked'
+export type TaskStatus = 'open' | 'done' | 'blocked' | 'tracking' | 'dismissed'
 export type EventType =
   | 'created'
   | 'status_change'
@@ -73,6 +73,8 @@ export interface Task {
   due_date: string | null
   waiting_on: string | null
   waiting_on_entity_id: string | null
+  tracked_owner: string | null
+  follow_up_date: string | null
   resolved_at: string | null
   updated_at: string
   created_at: string

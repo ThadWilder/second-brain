@@ -53,7 +53,7 @@ export async function loadTaskDedupContext(db: SupabaseClient): Promise<string> 
     .from('tasks')
     .select('id, description, status')
     .eq('org_id', ORG_ID)
-    .in('status', ['open', 'blocked'])
+    .in('status', ['open', 'blocked', 'tracking'])
     .order('created_at', { ascending: false })
     .limit(50)
   if ((openTasks ?? []).length > 0) {

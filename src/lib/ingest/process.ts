@@ -343,7 +343,7 @@ export async function processEntry(
             .select('id')
             .eq('id', input.existing_task_id)
             .eq('org_id', ORG_ID)
-            .in('status', ['open', 'blocked'])
+            .in('status', ['open', 'blocked', 'tracking'])
             .single()
 
           if (!existingTask) continue

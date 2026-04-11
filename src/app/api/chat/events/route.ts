@@ -323,7 +323,7 @@ async function queryDecisions(db: SupabaseClient, input: { limit?: number; since
   return error ? { error: error.message } : { decisions: data }
 }
 
-async function updateTask(db: SupabaseClient, input: { task_id?: string; id?: string; status?: string; escalation?: boolean; due_date?: string | null; description?: string; waiting_on?: string | null }) {
+async function updateTask(db: SupabaseClient, input: { task_id?: string; id?: string; status?: string; escalation?: boolean; due_date?: string | null; description?: string; waiting_on?: string | null; tracked_owner?: string | null; follow_up_date?: string | null }) {
   const taskId = input.task_id ?? input.id
   if (!taskId) return { error: 'task_id is required' }
 
@@ -357,6 +357,8 @@ async function updateTask(db: SupabaseClient, input: { task_id?: string; id?: st
 
     if (input.description) updates.description = input.description
     if (input.waiting_on !== undefined) updates.waiting_on = input.waiting_on
+    if (input.tracked_owner !== undefined) updates.tracked_owner = input.tracked_owner
+    if (input.follow_up_date !== undefined) updates.follow_up_date = input.follow_up_date
 
     if (Object.keys(updates).length === 0) return { success: true, task_id: taskId, message: 'No changes needed' }
 
@@ -481,7 +483,7 @@ async function closeTasksForBrand(db: SupabaseClient, input: { brand_name: strin
     const { data: openTasks } = await db.from('tasks')
       .select('id, description, status')
       .in('id', taskIds)
-      .in('status', ['open', 'blocked'])
+      .in('status', ['open', 'blocked', 'tracking'])
       .eq('org_id', ORG_ID)
 
     if (!openTasks?.length) return { success: true, message: `No open tasks found for ${brand.name}.` }

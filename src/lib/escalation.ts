@@ -145,7 +145,7 @@ export async function getEscalationContext(db: SupabaseClient): Promise<{
       task_entities(entity_id, role, entities(name))
     `)
     .eq('org_id', ORG_ID)
-    .eq('status', 'open')
+    .in('status', ['open', 'tracking'])
     .eq('escalation', true)
     .order('updated_at', { ascending: true })
 

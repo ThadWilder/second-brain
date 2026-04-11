@@ -60,8 +60,8 @@ export async function GET(): Promise<NextResponse> {
     let open_tasks = 0, escalated_tasks = 0, last_activity: string | null = null
     if (taskIds.length > 0) {
       const { data: tasks } = await db.from('tasks').select('id, status, escalation, updated_at').in('id', taskIds)
-      open_tasks = tasks?.filter((t: { status: string }) => t.status === 'open').length ?? 0
-      escalated_tasks = tasks?.filter((t: { escalation: boolean; status: string }) => t.escalation && t.status === 'open').length ?? 0
+      open_tasks = tasks?.filter((t: { status: string }) => t.status === 'open' || t.status === 'tracking').length ?? 0
+      escalated_tasks = tasks?.filter((t: { escalation: boolean; status: string }) => t.escalation && (t.status === 'open' || t.status === 'tracking')).length ?? 0
       const dates = tasks?.map((t: { updated_at: string }) => t.updated_at).sort().reverse()
       last_activity = dates?.[0] ?? null
     }
@@ -103,7 +103,7 @@ export async function GET(): Promise<NextResponse> {
     return { entity: f, ...s }
   }))
 
-  // Open tasks
+  // Open tasks (includes open, blocked)
   const { data: allOpenTasks } = await db.from('tasks')
     .select('*, task_entities(role, entities(id, name, type))')
     .eq('org_id', ORG_ID).in('status', ['open', 'blocked'])
@@ -111,7 +111,20 @@ export async function GET(): Promise<NextResponse> {
     .order('due_date', { ascending: true, nullsFirst: false })
     .limit(50)
 
+  // Tracking tasks — for follow-up escalation
+  const { data: allTrackingTasks } = await db.from('tasks')
+    .select('*, task_entities(role, entities(id, name, type))')
+    .eq('org_id', ORG_ID).eq('status', 'tracking')
+    .order('follow_up_date', { ascending: true, nullsFirst: false })
+    .order('updated_at', { ascending: true })
+    .limit(50)
+
   const normalizedTasks = (allOpenTasks ?? []).map((t: any) => ({
+    ...t,
+    entities: (t.task_entities ?? []).map((te: any) => ({ ...te.entities, role: te.role })),
+  }))
+
+  const normalizedTrackingTasks = (allTrackingTasks ?? []).map((t: any) => ({
     ...t,
     entities: (t.task_entities ?? []).map((te: any) => ({ ...te.entities, role: te.role })),
   }))
@@ -119,6 +132,11 @@ export async function GET(): Promise<NextResponse> {
   const escalatedTasks = normalizedTasks.filter((t: any) => t.escalation)
   const regularTasks = normalizedTasks.filter((t: any) => !t.escalation && t.due_date === today)
   const staleFromYesterday = normalizedTasks.filter((t: any) => !t.escalation && (!t.due_date || t.due_date < today))
+
+  // Follow-up escalation: tracking tasks that need attention
+  const sevenDaysAgoDate = new Date(estNow.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const overdueFollowUps = normalizedTrackingTasks.filter((t: any) => t.follow_up_date && t.follow_up_date <= today)
+  const staleTracking = normalizedTrackingTasks.filter((t: any) => !t.follow_up_date && t.updated_at < sevenDaysAgoDate)
 
   // Pending responses
   const { data: pendingResponses } = await db.from('pending_responses')
@@ -181,6 +199,7 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, regularTasks, staleFromYesterday,
+    overdueFollowUps, staleTracking,
     pendingResponses: pendingResponses ?? [],
     clarifications: clarifications ?? [],
     consolidationSuggestions: consolidationSuggestions ?? [],

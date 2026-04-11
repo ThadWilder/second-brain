@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const body = await req.json()
-  const { id, status, due_date, escalation, waiting_on } = body
+  const { id, status, due_date, escalation, waiting_on, tracked_owner, follow_up_date } = body
 
   if (!id) {
     return NextResponse.json({ error: 'Task id required' }, { status: 400 })
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   let prevStatus: string | null = null
   let prevDueDate: string | null = null
   let prevWaitingOn: string | null = null
-  if (status !== undefined || due_date !== undefined || waiting_on !== undefined) {
+  if (status !== undefined || due_date !== undefined || waiting_on !== undefined || tracked_owner !== undefined || follow_up_date !== undefined) {
     const { data: prev } = await db.from('tasks').select('status, due_date, waiting_on').eq('id', id).single()
     prevStatus = prev?.status ?? null
     prevDueDate = prev?.due_date ?? null
@@ -45,9 +45,17 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (due_date !== undefined) updates.due_date = due_date
   if (escalation !== undefined) updates.escalation = escalation
   if (waiting_on !== undefined) updates.waiting_on = waiting_on || null
+  if (tracked_owner !== undefined) updates.tracked_owner = tracked_owner || null
+  if (follow_up_date !== undefined) updates.follow_up_date = follow_up_date || null
 
   if (status === 'done') {
     updates.resolved_at = new Date().toISOString()
+  }
+
+  // Clear tracking fields when moving away from tracking status
+  if (status !== undefined && status !== 'tracking' && prevStatus === 'tracking') {
+    if (tracked_owner === undefined) updates.tracked_owner = null
+    if (follow_up_date === undefined) updates.follow_up_date = null
   }
 
   const { error } = await db.from('tasks').update(updates).eq('id', id)
@@ -89,8 +97,30 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     })
   }
 
+  // Log tracked_owner change
+  if (tracked_owner !== undefined) {
+    await db.from('task_events').insert({
+      task_id: id,
+      event_type: 'note_added',
+      metadata: tracked_owner
+        ? { note: `Tracked owner set to "${tracked_owner}"` }
+        : { note: 'Tracked owner cleared' },
+    })
+  }
+
+  // Log follow_up_date change
+  if (follow_up_date !== undefined) {
+    await db.from('task_events').insert({
+      task_id: id,
+      event_type: 'note_added',
+      metadata: follow_up_date
+        ? { note: `Follow-up date set to ${follow_up_date}` }
+        : { note: 'Follow-up date cleared' },
+    })
+  }
+
   // Queue wiki updates for linked entities (fire-and-forget)
-  if (status !== undefined || due_date !== undefined || waiting_on !== undefined) {
+  if (status !== undefined || due_date !== undefined || waiting_on !== undefined || tracked_owner !== undefined || follow_up_date !== undefined) {
     queueWikiUpdatesForTask(db, id)
   }
 

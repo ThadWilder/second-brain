@@ -61,8 +61,10 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
   const allOpen = localTasks.filter((t) => t.status === 'open' || t.status === 'blocked')
   const openTasks = allOpen.filter((t) => !t.waiting_on)
   const waitingOnTasks = allOpen.filter((t) => t.waiting_on)
+  const trackingTasks = localTasks.filter((t) => t.status === 'tracking')
   const doneTasks = localTasks.filter((t) => t.status === 'done')
   const selectedTasks = allOpen.filter((t) => selectedIds.has(t.id))
+  const [trackingExpanded, setTrackingExpanded] = useState(false)
 
   const TABS: { key: Tab; label: string; count: number; icon: React.ReactNode }[] = [
     { key: 'tasks', label: 'Tasks', count: localTasks.length, icon: <ListTodo className="w-3.5 h-3.5" /> },
@@ -256,6 +258,83 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {/* On Your Radar — tracking tasks */}
+          {trackingTasks.length > 0 && (
+            <div>
+              <button
+                onClick={() => setTrackingExpanded(!trackingExpanded)}
+                className="flex items-center gap-2 mb-2 w-full text-left"
+              >
+                <p className="text-xs text-[var(--muted)] uppercase tracking-wide">
+                  On Your Radar 👁️
+                </p>
+                <span className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded-full">
+                  {trackingTasks.length}
+                </span>
+                <span className="text-xs text-[var(--muted)] ml-auto">
+                  {trackingExpanded ? '▾' : '▸'}
+                </span>
+              </button>
+              {trackingExpanded && (
+                <div className="space-y-1">
+                  {trackingTasks
+                    .sort((a, b) => {
+                      // Overdue items first
+                      const today = new Date().toISOString().slice(0, 10)
+                      const aOverdue = a.follow_up_date && a.follow_up_date <= today ? 0 : 1
+                      const bOverdue = b.follow_up_date && b.follow_up_date <= today ? 0 : 1
+                      return aOverdue - bOverdue
+                    })
+                    .map((task) => {
+                      const today = new Date().toISOString().slice(0, 10)
+                      const isOverdue = task.follow_up_date && task.follow_up_date <= today
+                      const daysSinceUpdate = Math.floor(
+                        (Date.now() - new Date(task.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+                      )
+                      return (
+                        <div
+                          key={task.id}
+                          className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                            isOverdue
+                              ? 'bg-red-50/50 border-l-[3px] border-l-red-400 border-red-200'
+                              : 'bg-purple-50/50 border-purple-200'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-[var(--text)]">
+                              <AutoLinkText text={task.description} />
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {task.tracked_owner && (
+                                <span className="inline-flex items-center gap-1 text-xs text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
+                                  👤 {task.tracked_owner}
+                                </span>
+                              )}
+                              {task.follow_up_date && (
+                                <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${
+                                  isOverdue
+                                    ? 'text-red-700 bg-red-100 font-medium'
+                                    : 'text-[var(--muted)] bg-[var(--bg)]'
+                                }`}>
+                                  📅 {new Date(task.follow_up_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                  {isOverdue && <span className="text-red-600 font-medium ml-1">overdue</span>}
+                                </span>
+                              )}
+                              {daysSinceUpdate > 0 && (
+                                <span className="text-[10px] text-[var(--muted)]">
+                                  updated {daysSinceUpdate}d ago
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              )}
             </div>
           )}
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X } from 'lucide-react'
+import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 import type { TaskStatus, EventType } from '@/types'
@@ -24,6 +24,8 @@ interface TaskData {
     escalation: boolean
     due_date: string | null
     waiting_on: string | null
+    tracked_owner: string | null
+    follow_up_date: string | null
     entry_id: string | null
     created_at: string
     updated_at: string
@@ -44,6 +46,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [allEntities, setAllEntities] = useState<Array<{ id: string; name: string; type: string }>>([])
   const [linkingEntity, setLinkingEntity] = useState(false)
   const [resolvingConsolidation, setResolvingConsolidation] = useState<string | null>(null)
+  const [showTrackingSetup, setShowTrackingSetup] = useState(false)
 
   async function loadData() {
     const r = await fetch(`/api/tasks/${taskId}`)
@@ -196,18 +199,26 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       {/* Status + Escalation */}
       <Section label="Status">
         <div className="flex items-center gap-2 flex-wrap">
-          {(['open', 'blocked', 'done'] as TaskStatus[]).map((s) => (
+          {(['open', 'blocked', 'done', 'tracking'] as TaskStatus[]).map((s) => (
             <button
               key={s}
               disabled={updating}
-              onClick={() => updateTask({ status: s })}
+              onClick={() => {
+                if (s === 'tracking') {
+                  setShowTrackingSetup(true)
+                } else {
+                  updateTask({ status: s })
+                }
+              }}
               className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
                 task.status === s
-                  ? 'border-[var(--accent)] bg-amber-50 text-[var(--accent)] font-medium'
+                  ? s === 'tracking'
+                    ? 'border-purple-300 bg-purple-50 text-purple-700 font-medium'
+                    : 'border-[var(--accent)] bg-amber-50 text-[var(--accent)] font-medium'
                   : 'border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)]'
               }`}
             >
-              {s}
+              {s === 'tracking' ? '👁️ tracking' : s}
             </button>
           ))}
 
@@ -227,6 +238,118 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
           </button>
         </div>
       </Section>
+
+      {/* Quick Actions */}
+      <Section label="Actions">
+        <div className="flex items-center gap-2 flex-wrap">
+          {task.status !== 'tracking' && (
+            <button
+              disabled={updating}
+              onClick={() => setShowTrackingSetup(true)}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+            >
+              <Eye className="w-3 h-3" />
+              Track
+            </button>
+          )}
+          {task.status === 'tracking' && (
+            <>
+              <button
+                disabled={updating}
+                onClick={() => updateTask({ status: 'open', tracked_owner: null, follow_up_date: null })}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                <ArrowLeft className="w-3 h-3" />
+                Take Over
+              </button>
+              <button
+                disabled={updating}
+                onClick={() => updateTask({ status: 'done' })}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                Plate It
+              </button>
+            </>
+          )}
+          {task.status === 'open' && !task.waiting_on && (
+            <button
+              disabled={updating}
+              onClick={() => updateTask({ status: 'done' })}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              Plate It
+            </button>
+          )}
+          {task.status !== 'done' && (
+            <button
+              disabled={updating}
+              onClick={() => updateTask({ status: 'dismissed' })}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              <Ban className="w-3 h-3" />
+              Not a task
+            </button>
+          )}
+        </div>
+      </Section>
+
+      {/* Tracking Setup Inline Form */}
+      {showTrackingSetup && (
+        <Section label="Set Up Tracking">
+          <TrackingSetupForm
+            taskId={taskId}
+            currentOwner={task.tracked_owner}
+            currentFollowUp={task.follow_up_date}
+            entities={allEntities}
+            onSave={async (owner, followUp) => {
+              await updateTask({
+                status: 'tracking',
+                tracked_owner: owner || null,
+                follow_up_date: followUp || null,
+              })
+              setShowTrackingSetup(false)
+            }}
+            onCancel={() => setShowTrackingSetup(false)}
+          />
+        </Section>
+      )}
+
+      {/* Tracking Info (when in tracking status) */}
+      {task.status === 'tracking' && !showTrackingSetup && (
+        <Section label="Tracking Details">
+          <div className="space-y-2">
+            {task.tracked_owner && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-1.5 text-purple-700 bg-purple-50 border border-purple-200 px-2 py-1 rounded-md">
+                  👤 {task.tracked_owner}
+                </span>
+              </div>
+            )}
+            {task.follow_up_date && (() => {
+              const today = new Date().toISOString().slice(0, 10)
+              const isOverdue = task.follow_up_date <= today
+              return (
+                <div className={`flex items-center gap-2 text-xs ${isOverdue ? 'text-red-700' : 'text-[var(--text)]'}`}>
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border ${
+                    isOverdue ? 'bg-red-50 border-red-200 text-red-700' : 'bg-[var(--bg)] border-[var(--border)]'
+                  }`}>
+                    📅 {new Date(task.follow_up_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {isOverdue && <span className="font-medium ml-1">overdue</span>}
+                  </span>
+                </div>
+              )
+            })()}
+            <button
+              onClick={() => setShowTrackingSetup(true)}
+              className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              edit tracking details
+            </button>
+          </div>
+        </Section>
+      )}
 
       {/* Due date */}
       {task.due_date && (
@@ -506,6 +629,101 @@ function WaitingOnField({
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function TrackingSetupForm({
+  taskId,
+  currentOwner,
+  currentFollowUp,
+  entities,
+  onSave,
+  onCancel,
+}: {
+  taskId: string
+  currentOwner: string | null
+  currentFollowUp: string | null
+  entities: Array<{ id: string; name: string; type: string }>
+  onSave: (owner: string, followUp: string) => void
+  onCancel: () => void
+}) {
+  const [owner, setOwner] = useState(currentOwner ?? '')
+  const [followUp, setFollowUp] = useState(currentFollowUp ?? '')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const suggestions = owner.trim().length > 0
+    ? entities
+        .filter((e) =>
+          ['contact', 'vendor', 'franchisee', 'freelancer', 'vendor_team', 'brand', 'department'].includes(e.type) &&
+          e.name.toLowerCase().includes(owner.toLowerCase())
+        )
+        .slice(0, 6)
+    : []
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }, [])
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <label className="text-[10px] text-[var(--muted)] uppercase tracking-wider font-medium mb-1 block">
+          Owner
+        </label>
+        <input
+          ref={inputRef}
+          value={owner}
+          onChange={(e) => setOwner(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onSave(owner.trim(), followUp)
+            if (e.key === 'Escape') onCancel()
+          }}
+          placeholder="Who's responsible?"
+          className="w-full text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+        />
+        {suggestions.length > 0 && (
+          <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg max-h-40 overflow-y-auto">
+            {suggestions.map((entity) => (
+              <button
+                key={entity.id}
+                onClick={() => setOwner(entity.name)}
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--surface-hover)] transition-colors flex items-center justify-between"
+              >
+                <span className="text-[var(--text)]">{entity.name}</span>
+                <span className="text-[var(--muted)] capitalize">{entity.type}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div>
+        <label className="text-[10px] text-[var(--muted)] uppercase tracking-wider font-medium mb-1 block">
+          Follow-up Date
+        </label>
+        <input
+          type="date"
+          value={followUp}
+          onChange={(e) => setFollowUp(e.target.value)}
+          className="w-full text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onSave(owner.trim(), followUp)}
+          disabled={saving}
+          className="px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-40 transition-colors"
+        >
+          {saving ? 'Saving...' : 'Start Tracking'}
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }
