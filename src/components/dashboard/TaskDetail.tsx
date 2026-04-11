@@ -69,15 +69,40 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   async function linkEntity(entityId: string) {
     setLinkingEntity(true)
     try {
+      const entity = allEntities.find(e => e.id === entityId)
       await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ link_entity_id: entityId, link_role: 'related' }),
       })
-      await loadData()
+      // Optimistic update: add entity to local state immediately
+      if (entity && data) {
+        setData({
+          ...data,
+          entities: [...data.entities, { id: entity.id, name: entity.name, type: entity.type, role: 'related' }],
+        })
+      }
       showFeedback('Entity linked ✓')
     } finally {
       setLinkingEntity(false)
+    }
+  }
+
+  async function unlinkEntity(entityId: string) {
+    if (!data) return
+    // Optimistic update: remove entity from local state immediately
+    const prev = data.entities
+    setData({ ...data, entities: data.entities.filter(e => e.id !== entityId) })
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity_id: entityId }),
+      })
+      showFeedback('Entity unlinked ✓')
+    } catch {
+      // Revert on failure
+      setData(d => d ? { ...d, entities: prev } : d)
     }
   }
 
@@ -456,10 +481,17 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         {entities.length > 0 && (
           <div className="space-y-1.5 mb-3">
             {entities.map((e) => (
-              <div key={e.id + e.role} className="flex items-center gap-2 text-xs">
+              <div key={e.id + e.role} className="group flex items-center gap-2 text-xs">
                 <Users className="w-3.5 h-3.5 text-[var(--muted)]" />
                 <span className="text-[var(--text)]">{e.name}</span>
                 <span className="text-[var(--muted)] capitalize">({e.role})</span>
+                <button
+                  onClick={() => unlinkEntity(e.id)}
+                  className="opacity-0 group-hover:opacity-100 p-0.5 text-[var(--muted)] hover:text-red-600 transition-all"
+                  title="Unlink entity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </div>
             ))}
           </div>

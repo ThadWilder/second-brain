@@ -47,6 +47,44 @@ export async function PATCH(
   return NextResponse.json({ error: 'No action specified' }, { status: 400 })
 }
 
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id } = await params
+  const { entity_id } = await req.json()
+  const db = getServiceClient()
+
+  if (!entity_id) {
+    return NextResponse.json({ error: 'entity_id required' }, { status: 400 })
+  }
+
+  // Verify the task belongs to this org before deleting
+  const { data: task } = await db
+    .from('tasks')
+    .select('id')
+    .eq('id', id)
+    .eq('org_id', ORG_ID)
+    .single()
+
+  if (!task) {
+    return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+  }
+
+  await db
+    .from('task_entities')
+    .delete()
+    .eq('task_id', id)
+    .eq('entity_id', entity_id)
+
+  return NextResponse.json({ success: true })
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
