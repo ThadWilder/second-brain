@@ -233,6 +233,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               overdueFollowUps={overdueFollowUps ?? []}
               staleTracking={staleTracking ?? []}
               consolidationTaskIds={new Set(consolidationTaskIds ?? [])}
+              brands={brands}
               onRefresh={fetchData}
             />
           </div>

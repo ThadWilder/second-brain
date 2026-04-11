@@ -10,6 +10,11 @@ import { TaskDetail } from './TaskDetail'
 import { PendingResponseDetail } from './PendingResponseDetail'
 import type { TaskWithEntities } from '@/types'
 
+interface BrandHealth {
+  entity: { name: string }
+  health: 'green' | 'amber' | 'red'
+}
+
 interface Props {
   escalated: TaskWithEntities[]
   needsResponse: Array<{ id: string; summary: string; created_at: string }>
@@ -20,6 +25,7 @@ interface Props {
   overdueFollowUps: TaskWithEntities[]
   staleTracking: TaskWithEntities[]
   consolidationTaskIds?: Set<string>
+  brands?: BrandHealth[]
   onRefresh?: () => void
 }
 
@@ -28,7 +34,7 @@ type PanelState =
   | { type: 'pending'; id: string; title: string }
   | null
 
-export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, overdueFollowUps, staleTracking, consolidationTaskIds, onRefresh }: Props) {
+export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, overdueFollowUps, staleTracking, consolidationTaskIds, brands, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
 
@@ -141,6 +147,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
             tasks={inboxTasks.filter((t) => !completedIds.has(t.id))}
             consolidationTaskIds={consolidationTaskIds}
             needsReplyTaskIds={needsReplyTaskIds}
+            brands={brands}
             onComplete={handleComplete}
             onTaskClick={handleTaskClick}
             onRefresh={onRefresh}
@@ -219,6 +226,7 @@ function InboxGroups({
   tasks,
   consolidationTaskIds,
   needsReplyTaskIds,
+  brands,
   onComplete,
   onTaskClick,
   onRefresh,
@@ -226,18 +234,32 @@ function InboxGroups({
   tasks: TaskWithEntities[]
   consolidationTaskIds?: Set<string>
   needsReplyTaskIds?: Set<string>
+  brands?: BrandHealth[]
   onComplete: (id: string) => void
   onTaskClick: (task: TaskWithEntities) => void
   onRefresh?: () => void
 }) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDismissing, setBulkDismissing] = useState(false)
 
-  // Group by brand (tasks about the same brand cluster together)
-  const groups: Array<{ key: string; label: string; tasks: TaskWithEntities[] }> = []
+  // Build brand health lookup
+  const brandHealth = new Map<string, 'green' | 'amber' | 'red'>()
+  for (const b of brands ?? []) {
+    brandHealth.set(b.entity.name, b.health)
+  }
+
+  // Filter by search
+  const filtered = searchQuery.trim()
+    ? tasks.filter((t) => t.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    : tasks
+
+  // Group by brand
+  const groups: Array<{ key: string; label: string; health?: 'green' | 'amber' | 'red'; tasks: TaskWithEntities[] }> = []
   const byBrand = new Map<string, TaskWithEntities[]>()
 
-  for (const task of tasks) {
-    // Group by brand role first, then fall back to any brand/department entity type
+  for (const task of filtered) {
     const brandEntity = task.entities?.find((e) => e.role === 'brand')
       ?? task.entities?.find((e) => e.type === 'brand' || e.type === 'department')
     const brand = brandEntity?.name ?? '_none'
@@ -246,7 +268,6 @@ function InboxGroups({
     byBrand.set(brand, existing)
   }
 
-  // Sort: uncategorized first (needs attention), then by task count, then alphabetical
   const sortedBrands = Array.from(byBrand.entries()).sort((a, b) => {
     if (a[0] === '_none') return -1
     if (b[0] === '_none') return 1
@@ -255,7 +276,12 @@ function InboxGroups({
   })
 
   for (const [brand, brandTasks] of sortedBrands) {
-    groups.push({ key: brand, label: brand === '_none' ? 'Uncategorized' : brand, tasks: brandTasks })
+    groups.push({
+      key: brand,
+      label: brand === '_none' ? 'Uncategorized' : brand,
+      health: brandHealth.get(brand),
+      tasks: brandTasks,
+    })
   }
 
   function toggleGroup(key: string) {
@@ -267,39 +293,107 @@ function InboxGroups({
     })
   }
 
-  return (
-    <div className="space-y-1">
-      {groups.map(({ key, label, tasks: groupTasks }) => {
-        const isExpanded = expandedGroups.has(key)
-        return (
-          <div key={key}>
-            <button
-              onClick={() => toggleGroup(key)}
-              className="w-full flex items-center gap-2 py-2 px-1 text-left hover:bg-[var(--surface-hover)] transition-colors rounded"
-            >
-              <span className="text-sm text-[var(--muted)] font-mono">{isExpanded ? '▼' : '▶'}</span>
-              <span className="text-base font-semibold text-[var(--text)]">{label}</span>
-              <span className="text-sm text-[var(--muted)]">{groupTasks.length}</span>
-            </button>
-            {isExpanded && (
-              <div className="ml-3 border-l-2 border-[var(--border)] pl-2 space-y-0.5">
-                {groupTasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    variant="normal"
-                    hasConsolidation={consolidationTaskIds?.has(task.id)}
-                    needsReply={needsReplyTaskIds?.has(task.id)}
-                    onComplete={onComplete}
-                    onClick={() => onTaskClick(task)}
-                    onRefresh={onRefresh}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function bulkDismiss() {
+    setBulkDismissing(true)
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          fetch('/api/tasks', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, status: 'dismissed' }),
+          })
         )
-      })}
+      )
+      setSelectedIds(new Set())
+      onRefresh?.()
+    } finally {
+      setBulkDismissing(false)
+    }
+  }
+
+  const healthDot = (h?: 'green' | 'amber' | 'red') => {
+    if (!h) return null
+    const color = h === 'red' ? 'bg-red-500' : h === 'amber' ? 'bg-amber-400' : 'bg-green-400'
+    return <span className={`inline-block w-2 h-2 rounded-full ${color}`} />
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Search + bulk actions */}
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Filter tasks..."
+          className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+        />
+        {selectedIds.size > 0 && (
+          <button
+            onClick={bulkDismiss}
+            disabled={bulkDismissing}
+            className="px-3 py-1.5 text-xs rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
+          >
+            {bulkDismissing ? 'Dismissing...' : `Dismiss ${selectedIds.size}`}
+          </button>
+        )}
+      </div>
+
+      {/* Groups */}
+      <div className="space-y-1">
+        {groups.map(({ key, label, health, tasks: groupTasks }) => {
+          const isExpanded = expandedGroups.has(key)
+          return (
+            <div key={key}>
+              <button
+                onClick={() => toggleGroup(key)}
+                className="w-full flex items-center gap-2 py-2 px-1 text-left hover:bg-[var(--surface-hover)] transition-colors rounded"
+              >
+                <span className="text-sm text-[var(--muted)] font-mono">{isExpanded ? '▼' : '▶'}</span>
+                {healthDot(health)}
+                <span className="text-base font-semibold text-[var(--text)]">{label}</span>
+                <span className="text-sm text-[var(--muted)]">{groupTasks.length}</span>
+              </button>
+              {isExpanded && (
+                <div className="ml-3 border-l-2 border-[var(--border)] pl-2 space-y-0.5">
+                  {groupTasks.map((task) => (
+                    <div key={task.id} className="flex items-start gap-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(task.id)}
+                        onChange={() => toggleSelect(task.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-3.5 shrink-0 accent-[var(--accent)]"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <TaskRow
+                          task={task}
+                          variant="normal"
+                          hasConsolidation={consolidationTaskIds?.has(task.id)}
+                          needsReply={needsReplyTaskIds?.has(task.id)}
+                          onComplete={onComplete}
+                          onClick={() => onTaskClick(task)}
+                          onRefresh={onRefresh}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -572,9 +666,22 @@ function TaskRow({
           {task.status !== 'open' && task.status !== 'tracking' && (
             <StatusBadge status={task.status} />
           )}
+          {taskAge(task.created_at)}
         </div>
       </div>
     </div>
+  )
+}
+
+function taskAge(createdAt: string): React.ReactNode {
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
+  if (days < 7) return null
+  const weeks = Math.floor(days / 7)
+  const label = weeks >= 4 ? `${Math.floor(weeks / 4)}mo` : `${weeks}w`
+  return (
+    <span className={`text-[10px] px-1 py-0.5 rounded ${days >= 21 ? 'text-red-500' : 'text-[var(--muted)]'}`}>
+      {label}
+    </span>
   )
 }
 
