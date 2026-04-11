@@ -28,6 +28,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [updating, setUpdating] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [savedFeedback, setSavedFeedback] = useState<string | null>(null)
 
   async function loadData() {
     const r = await fetch(`/api/tasks/${taskId}`)
@@ -39,6 +40,11 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     loadData().finally(() => setLoading(false))
   }, [taskId])
 
+  function showFeedback(msg: string) {
+    setSavedFeedback(msg)
+    setTimeout(() => setSavedFeedback(null), 2000)
+  }
+
   async function updateTask(updates: Record<string, unknown>) {
     setUpdating(true)
     await fetch('/api/tasks', {
@@ -46,9 +52,9 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: taskId, ...updates }),
     })
-    // Re-fetch detail
     await loadData()
     setUpdating(false)
+    showFeedback(updates.status === 'closed' ? 'Task closed ✓' : 'Updated ✓')
     onUpdate?.()
   }
 
@@ -68,6 +74,13 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
 
   return (
     <div className="space-y-5">
+      {/* Feedback banner */}
+      {savedFeedback && (
+        <div className="bg-green-50 text-green-700 text-xs font-medium px-3 py-2 rounded-lg text-center animate-pulse">
+          {savedFeedback}
+        </div>
+      )}
+
       {/* Description */}
       <div>
         <p className="text-sm text-[var(--text)] leading-relaxed">{task.description}</p>
@@ -199,7 +212,8 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
                   body: JSON.stringify({ add_note: noteText.trim() }),
                 })
                 setNoteText('')
-                loadData()
+                await loadData()
+                showFeedback('Note added ✓')
               } finally {
                 setSavingNote(false)
               }

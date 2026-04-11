@@ -26,6 +26,12 @@ export function PendingResponseDetail({
   const [marking, setMarking] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [savedFeedback, setSavedFeedback] = useState<string | null>(null)
+
+  function showFeedback(msg: string) {
+    setSavedFeedback(msg)
+    setTimeout(() => setSavedFeedback(null), 2000)
+  }
 
   async function loadData() {
     const r = await fetch(`/api/pending-responses/${pendingResponseId}`)
@@ -46,6 +52,7 @@ export function PendingResponseDetail({
     })
     await loadData()
     setMarking(false)
+    showFeedback('Marked as responded ✓')
     onUpdate?.()
   }
 
@@ -67,6 +74,13 @@ export function PendingResponseDetail({
 
   return (
     <div className="space-y-5">
+      {/* Feedback banner */}
+      {savedFeedback && (
+        <div className="bg-green-50 text-green-700 text-xs font-medium px-3 py-2 rounded-lg text-center animate-pulse">
+          {savedFeedback}
+        </div>
+      )}
+
       {/* Summary */}
       <div>
         <p className="text-sm text-[var(--text)] leading-relaxed">{pr.summary}</p>
@@ -159,6 +173,7 @@ export function PendingResponseDetail({
                 })
                 setNoteText('')
                 await loadData()
+                showFeedback('Note added ✓')
               } finally {
                 setSavingNote(false)
               }
