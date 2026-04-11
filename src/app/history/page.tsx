@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Clock, Search, ChevronDown, ChevronUp, Mail, MessageSquare, ClipboardPaste, Mic, ClipboardCheck, Star, Link2 } from 'lucide-react'
+import { Clock, Search, ChevronDown, ChevronUp, Mail, MessageSquare, ClipboardPaste, Mic, Eye, Link2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 import { LinkChips } from '@/components/ui/LinkChips'
@@ -163,8 +163,7 @@ export default function HistoryPage() {
         <nav className="flex items-center gap-6">
           <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
           <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/audits" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><ClipboardCheck size={15} />Audits</a>
-          <a href="/reviews" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={15} />Reviews</a>
+          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Eye size={15} />Tracking</a>
           <a href="/history" className="text-base text-white font-medium">History</a>
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
           <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>

@@ -10,7 +10,6 @@ import {
   Users,
   AlertTriangle,
   CheckCircle,
-  ClipboardCheck,
   ChevronDown,
   ChevronRight,
   Zap,
@@ -18,6 +17,7 @@ import {
   TrendingDown,
   Activity,
   Link2,
+  Eye,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 import { useToast } from '@/components/ui/Toast'
@@ -244,14 +244,7 @@ export default function ReviewsPage() {
         <nav className="flex items-center gap-6">
           <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
           <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/audits" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">
-            <ClipboardCheck size={15} />
-            Audits
-          </a>
-          <a href="/reviews" className="text-base text-white font-medium flex items-center gap-1.5">
-            <Star size={15} />
-            Reviews
-          </a>
+          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Eye size={15} />Tracking</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors">History</a>
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
           <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>

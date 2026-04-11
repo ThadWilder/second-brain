@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, use } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ClipboardCheck, ArrowLeft, CheckCircle, XCircle, Users, BarChart3, AlertTriangle, ArrowUpDown, Star, Link2 } from 'lucide-react'
+import { ClipboardCheck, ArrowLeft, CheckCircle, XCircle, Users, BarChart3, AlertTriangle, ArrowUpDown, Eye, Link2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 
 interface Franchisee {
@@ -227,8 +227,7 @@ export default function BrandAuditPage({ params }: { params: Promise<{ brandEnti
         <nav className="flex items-center gap-6">
           <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
           <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/audits" className="text-base text-white font-medium">Audits</a>
-          <a href="/reviews" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Star size={15} />Reviews</a>
+          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Eye size={15} />Tracking</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors">History</a>
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
           <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>

@@ -13,7 +13,7 @@ import { ChatInput } from '@/components/chat/ChatInput'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 import { useChat } from '@/hooks/useChat'
-import { BarChart3, Clock, ClipboardCheck, Star, Link2 } from 'lucide-react'
+import { BarChart3, Clock, Eye, Link2 } from 'lucide-react'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 const POLL_INTERVAL = 10_000
@@ -108,18 +108,11 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             KPIs
           </a>
           <a
-            href="/audits"
+            href="/tracking"
             className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
-            <ClipboardCheck size={15} />
-            Audits
-          </a>
-          <a
-            href="/reviews"
-            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
-          >
-            <Star size={15} />
-            Reviews
+            <Eye size={15} />
+            Tracking
           </a>
           <a
             href="/history"
