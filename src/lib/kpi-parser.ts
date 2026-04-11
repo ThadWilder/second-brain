@@ -201,7 +201,30 @@ function parseSheet(sheet: XLSX.WorkSheet, tabName: string): TabResult {
     }
   }
 
-  return { tab: tabName, brandName: tabName, year, metrics }
+  // Sanity check: avg_job_ticket < 100 is a parsing artifact
+  for (const m of metrics) {
+    if (m.metric === 'avg_job_ticket' && m.cy_value !== null && m.cy_value < 100) {
+      m.cy_value = null
+    }
+  }
+
+  // Determine which months have real CY data by checking core metrics
+  const coreMetrics = ['leads', 'estimates', 'sold_jobs', 'jobs_completed']
+  const validMonths = new Set<number>()
+  for (let month = 1; month <= 12; month++) {
+    let coreCount = 0
+    for (const cm of coreMetrics) {
+      const found = metrics.find(
+        m => m.month === month && m.metric === cm && m.segment === '' && m.cy_value !== null && m.cy_value !== 0
+      )
+      if (found) coreCount++
+    }
+    if (coreCount >= 2) validMonths.add(month)
+  }
+
+  const filtered = metrics.filter(m => validMonths.has(m.month))
+
+  return { tab: tabName, brandName: tabName, year, metrics: filtered }
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
