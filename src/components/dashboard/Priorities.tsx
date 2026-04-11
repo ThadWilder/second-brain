@@ -243,14 +243,16 @@ function InboxGroups({
     byBrand.set(brand, existing)
   }
 
-  // Sort: brands with more tasks first, then alphabetical
+  // Sort: uncategorized first (needs attention), then by task count, then alphabetical
   const sortedBrands = Array.from(byBrand.entries()).sort((a, b) => {
+    if (a[0] === '_none') return -1
+    if (b[0] === '_none') return 1
     if (b[1].length !== a[1].length) return b[1].length - a[1].length
     return a[0].localeCompare(b[0])
   })
 
   for (const [brand, brandTasks] of sortedBrands) {
-    groups.push({ key: brand, label: brand === '_none' ? 'General' : brand, tasks: brandTasks })
+    groups.push({ key: brand, label: brand === '_none' ? 'Uncategorized' : brand, tasks: brandTasks })
   }
 
   function toggleGroup(key: string) {
