@@ -107,6 +107,8 @@ export default function TrackingPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [completedExpanded, setCompletedExpanded] = useState(false)
+  const [pinnedLinks, setPinnedLinks] = useState<Array<{ url: string; label: string | null; category: string; display_name: string }>>([])
+
   const [pausedExpanded, setPausedExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
   const { showToast } = useToast()
@@ -157,10 +159,19 @@ export default function TrackingPage() {
     }
   }, [])
 
+  const fetchPinnedLinks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/links?pinned=true')
+      const data = await res.json()
+      setPinnedLinks((data.links ?? []).filter((l: any) => l.pinned))
+    } catch { /* ignore */ }
+  }, [])
+
   useEffect(() => {
     fetchItems()
     fetchBrands()
-  }, [fetchItems, fetchBrands])
+    fetchPinnedLinks()
+  }, [fetchItems, fetchBrands, fetchPinnedLinks])
 
   const resetForm = () => {
     setFormTitle('')
@@ -590,6 +601,31 @@ export default function TrackingPage() {
               )}
             </div>
           )}
+          {/* Pinned Resources */}
+          {pinnedLinks.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-[var(--border)]">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">Pinned Resources</h2>
+              <div className="space-y-1.5">
+                {pinnedLinks.map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors group"
+                  >
+                    <span>📌</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-[var(--text)] truncate">{link.display_name || link.label || link.url}</p>
+                      <p className="text-[10px] text-[var(--muted)] truncate">{link.url}</p>
+                    </div>
+                    <ExternalLink size={12} className="text-[var(--muted)] group-hover:text-[var(--accent)] shrink-0" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Data Sources */}
           <div className="mt-12 pt-8 border-t border-[var(--border)]">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)] mb-4">Data Sources</h2>

@@ -34,6 +34,7 @@ interface LinkResult {
   first_seen: string
   last_seen: string
   saved_link_id: string | null
+  pinned: boolean
 }
 
 function categorizeUrl(url: string): LinkCategory {
@@ -127,7 +128,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Fetch saved links
   const { data: savedLinks, error: savedError } = await db
     .from('saved_links')
-    .select('id, url, label, category, brand_entity_id, hidden, created_at')
+    .select('id, url, label, category, brand_entity_id, hidden, pinned, created_at')
     .eq('org_id', ORG_ID)
     .order('created_at', { ascending: false })
 
@@ -198,6 +199,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           first_seen: e.created_at,
           last_seen: e.created_at,
           saved_link_id: null,
+          pinned: false,
         })
       }
     }
@@ -205,13 +207,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Merge manually saved links
   for (const sl of manualLinks) {
-    const s = sl as { id: string; url: string; label: string | null; category: string | null; brand_entity_id: string | null; created_at: string }
+    const s = sl as { id: string; url: string; label: string | null; category: string | null; brand_entity_id: string | null; pinned: boolean; created_at: string }
     const existing = urlMap.get(s.url)
     if (existing) {
       // Merge: prefer manual label if set
       if (s.label) existing.label = s.label
       if (s.category) existing.category = s.category as LinkCategory
       existing.saved_link_id = s.id
+      existing.pinned = !!s.pinned
     } else {
       urlMap.set(s.url, {
         url: s.url,
@@ -223,6 +226,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         first_seen: s.created_at,
         last_seen: s.created_at,
         saved_link_id: s.id,
+        pinned: !!s.pinned,
       })
     }
   }
@@ -308,25 +312,22 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const body = await req.json()
-  const { url, label } = body as { url?: string; label?: string }
+  const { url, label, pinned } = body as { url?: string; label?: string; pinned?: boolean }
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 })
-  }
-  if (typeof label !== 'string') {
-    return NextResponse.json({ error: 'label is required' }, { status: 400 })
   }
 
   const db = getServiceClient()
   const category = categorizeUrl(url)
 
-  // Upsert into saved_links so both extracted and manual links can be labeled
+  const upsertData: Record<string, unknown> = { org_id: ORG_ID, url, category }
+  if (typeof label === 'string') upsertData.label = label || null
+  if (typeof pinned === 'boolean') upsertData.pinned = pinned
+
   const { data, error } = await db
     .from('saved_links')
-    .upsert(
-      { org_id: ORG_ID, url, label: label || null, category },
-      { onConflict: 'org_id,url' }
-    )
+    .upsert(upsertData, { onConflict: 'org_id,url' })
     .select()
     .single()
 

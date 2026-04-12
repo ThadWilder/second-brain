@@ -44,6 +44,7 @@ interface LinkItem {
   first_seen: string
   last_seen: string
   saved_link_id: string | null
+  pinned: boolean
 }
 
 interface LinksResponse {
@@ -174,6 +175,15 @@ export default function LinksPage() {
     if (res.ok) {
       fetchLinks(search, activeFilter)
     }
+  }
+
+  const handleTogglePin = async (url: string, pinned: boolean) => {
+    await fetch('/api/links', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, pinned }),
+    })
+    fetchLinks(search, activeFilter)
   }
 
   const handleUpdateLabel = async (url: string, label: string) => {
@@ -387,7 +397,7 @@ export default function LinksPage() {
                     </div>
                     <div className="space-y-2">
                       {group.items.map(link => (
-                        <LinkCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateLabel={handleUpdateLabel} />
+                        <LinkCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateLabel={handleUpdateLabel} onTogglePin={handleTogglePin} />
                       ))}
                     </div>
                   </div>
@@ -400,7 +410,7 @@ export default function LinksPage() {
           {!loading && !groupByCategory && links.length > 0 && (
             <div className="space-y-2">
               {links.map(link => (
-                <LinkCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateLabel={handleUpdateLabel} />
+                <LinkCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateLabel={handleUpdateLabel} onTogglePin={handleTogglePin} />
               ))}
             </div>
           )}
@@ -410,7 +420,7 @@ export default function LinksPage() {
   )
 }
 
-function LinkCard({ link, onDelete, onUpdateLabel }: { link: LinkItem; onDelete: (id: string) => void; onUpdateLabel: (url: string, label: string) => Promise<void> }) {
+function LinkCard({ link, onDelete, onUpdateLabel, onTogglePin }: { link: LinkItem; onDelete: (id: string) => void; onUpdateLabel: (url: string, label: string) => Promise<void>; onTogglePin: (url: string, pinned: boolean) => void }) {
   const config = CATEGORY_CONFIG[link.category] ?? CATEGORY_CONFIG.other
   const TypeIcon = config.icon
   const primarySource = link.sources[0]
@@ -558,14 +568,23 @@ function LinkCard({ link, onDelete, onUpdateLabel }: { link: LinkItem; onDelete:
           )}
         </div>
 
-        {/* Delete button */}
-        <button
-          onClick={() => link.saved_link_id ? onDelete(link.saved_link_id) : onDelete(link.url)}
-          className="text-[var(--muted)] hover:text-[var(--danger)] transition-colors shrink-0 mt-1 opacity-0 group-hover:opacity-100"
-          title="Remove link"
-        >
-          <X size={14} />
-        </button>
+        {/* Pin + Delete buttons */}
+        <div className="flex flex-col gap-1 shrink-0 mt-1 opacity-0 group-hover:opacity-100">
+          <button
+            onClick={() => onTogglePin(link.url, !link.pinned)}
+            className={`transition-colors ${link.pinned ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--accent)]'}`}
+            title={link.pinned ? 'Unpin from Kitchen' : 'Pin to Kitchen'}
+          >
+            📌
+          </button>
+          <button
+            onClick={() => link.saved_link_id ? onDelete(link.saved_link_id) : onDelete(link.url)}
+            className="text-[var(--muted)] hover:text-[var(--danger)] transition-colors"
+            title="Remove link"
+          >
+            <X size={14} />
+          </button>
+        </div>
       </div>
     </div>
   )

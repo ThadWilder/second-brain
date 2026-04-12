@@ -102,12 +102,9 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
             </span>
           )}
-          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
           <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Eye size={15} />The Kitchen</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
-          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />
-            Links
-          </a>
+          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
           <button
             onClick={() => setChatOpen(true)}
             className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
@@ -115,9 +112,11 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             <MessageCircle size={15} />
             Ask the Chef
           </button>
+          <span className="text-white/10 select-none">|</span>
+          <a href="/wiki" className="text-sm text-white/50 font-medium hover:text-white transition-colors">Wiki</a>
           <button
             onClick={handleSignOut}
-            className="text-base text-white/70 font-medium hover:text-white transition-colors"
+            className="text-sm text-white/50 font-medium hover:text-white transition-colors"
           >
             Sign out
           </button>
