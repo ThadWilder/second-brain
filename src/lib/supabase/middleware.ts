@@ -58,10 +58,19 @@ export async function updateSession(request: NextRequest) {
     if (pathname === '/api/ingest') {
       return supabaseResponse
     }
+    // /api/public/* routes use token auth, not session
+    if (pathname.startsWith('/api/public/')) {
+      return supabaseResponse
+    }
 
     if (!user || !ALLOWED_EMAILS.includes(user.email ?? '')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    return supabaseResponse
+  }
+
+  // Public pages — no auth needed
+  if (pathname.startsWith('/public/')) {
     return supabaseResponse
   }
 
