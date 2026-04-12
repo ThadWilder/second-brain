@@ -15,6 +15,14 @@
     {
       "path": "/api/cron/wiki",
       "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/audits/sync",
+      "schedule": "0 12 * * 1"
+    },
+    {
+      "path": "/api/reviews/sync",
+      "schedule": "0 12 * * 1"
     }
   ]
 }

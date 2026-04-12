@@ -106,10 +106,20 @@ function isTrueValue(val: string): boolean {
 
 // ---------- Main handler ----------
 
+// GET for Vercel Cron, POST for manual triggers
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  return handleSync(req)
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  return handleSync(req)
+}
+
+async function handleSync(req: NextRequest): Promise<NextResponse> {
   // Auth: session OR cron secret
+  const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization')
-  const cronOk = auth === `Bearer ${process.env.CRON_SECRET}`
+  const cronOk = !!secret && auth === `Bearer ${secret}`
   if (!cronOk) {
     const sessionOk = await hasValidSession()
     if (!sessionOk) {
