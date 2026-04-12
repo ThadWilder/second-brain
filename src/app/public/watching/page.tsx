@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 interface WatchingTask {
   id: string
   description: string
+  status: string
   waiting_on: string | null
   tracked_owner: string | null
   follow_up_date: string | null
@@ -147,6 +148,12 @@ export default function PublicWatchingPage() {
                     >
                       <p className="text-sm text-gray-900">{task.description}</p>
                       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        {task.status === 'done' && (
+                          <span className="text-xs text-green-700 bg-green-50 px-1.5 py-0.5 rounded border border-green-200">done</span>
+                        )}
+                        {task.status === 'tracking' && (
+                          <span className="text-xs text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">tracking</span>
+                        )}
                         {task.tracked_owner && (
                           <span className="text-xs text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
                             {task.tracked_owner}

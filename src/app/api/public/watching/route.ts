@@ -15,14 +15,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .from('tasks')
     .select('id, description, status, waiting_on, tracked_owner, follow_up_date, due_date, updated_at, created_at, task_entities(role, entities(id, name, type))')
     .eq('org_id', ORG_ID)
-    .eq('status', 'tracking')
     .eq('public', true)
-    .order('follow_up_date', { ascending: true, nullsFirst: false })
-    .order('updated_at', { ascending: true })
+    .not('status', 'eq', 'dismissed')
+    .order('status', { ascending: true })
+    .order('due_date', { ascending: true, nullsFirst: false })
+    .order('updated_at', { ascending: false })
 
   const normalized = (tasks ?? []).map((t: any) => ({
     id: t.id,
     description: t.description,
+    status: t.status,
     waiting_on: t.waiting_on,
     tracked_owner: t.tracked_owner,
     follow_up_date: t.follow_up_date,

@@ -405,6 +405,18 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
             <AlertTriangle className="w-3 h-3" />
             {task.escalation ? 'De-escalate' : 'Escalate'}
           </button>
+          <span className="text-[var(--border)]">|</span>
+          <button
+            disabled={updating}
+            onClick={() => updateTask({ public: !(task as any).public })}
+            className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border transition-colors ${
+              (task as any).public
+                ? 'border-green-200 bg-green-50 text-green-700'
+                : 'border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)]'
+            }`}
+          >
+            {(task as any).public ? '🌐 Public' : '🔒 Private'}
+          </button>
         </div>
       </Section>
 
@@ -455,24 +467,12 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
                 </div>
               )
             })()}
-            <div className="flex items-center gap-2 mt-1">
-              <button
-                onClick={() => updateTask({ public: !(task as any).public })}
-                className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md border transition-colors ${
-                  (task as any).public
-                    ? 'bg-green-50 border-green-200 text-green-700'
-                    : 'bg-[var(--bg)] border-[var(--border)] text-[var(--muted)]'
-                }`}
-              >
-                {(task as any).public ? '🌐 Public' : '🔒 Private'}
-              </button>
-              <button
-                onClick={() => setShowTrackingSetup(true)}
-                className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-              >
-                edit tracking details
-              </button>
-            </div>
+            <button
+              onClick={() => setShowTrackingSetup(true)}
+              className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              edit tracking details
+            </button>
           </div>
         </Section>
       )}
