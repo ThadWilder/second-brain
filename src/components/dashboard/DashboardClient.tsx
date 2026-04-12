@@ -113,7 +113,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
             <MessageCircle size={15} />
-            Ask
+            Ask the Chef
           </button>
           <button
             onClick={handleSignOut}
@@ -269,7 +269,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setChatOpen(false)} />
           <div className="fixed top-0 right-0 bottom-0 w-full sm:w-[420px] bg-[var(--surface)] border-l border-[var(--border)] shadow-xl z-50 flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-              <h2 className="text-sm font-semibold text-[var(--text)]">Ask Dumpbox</h2>
+              <h2 className="text-sm font-semibold text-[var(--text)]">Ask the Chef</h2>
               <button
                 onClick={() => setChatOpen(false)}
                 className="p-1 text-[var(--muted)] hover:text-[var(--text)] transition-colors"

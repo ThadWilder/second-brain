@@ -143,7 +143,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
 
       {/* Inbox — grouped by source entry */}
       {inboxTasks.filter((t) => !completedIds.has(t.id)).length > 0 && (
-        <Section id="section-inbox" title="Inbox" icon="📥" count={inboxTasks.filter((t) => !completedIds.has(t.id)).length}>
+        <Section id="section-inbox" title="The Basket" icon="🧺" count={inboxTasks.filter((t) => !completedIds.has(t.id)).length}>
           <InboxGroups
             tasks={inboxTasks.filter((t) => !completedIds.has(t.id))}
             consolidationTaskIds={consolidationTaskIds}
@@ -158,7 +158,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
 
       {/* Watching */}
       {watchingTasks.length > 0 && (
-        <Section id="section-watching" title="Watching" icon="👁️" count={watchingTasks.length}>
+        <Section id="section-watching" title="Simmering" icon="♨️" count={watchingTasks.length}>
           {watchingTasks
             .filter((t) => !completedIds.has(t.id))
             .map((task) => (
@@ -300,7 +300,7 @@ function InboxGroups({
   for (const [brand, brandTasks] of sortedBrands) {
     groups.push({
       key: brand,
-      label: brand === '_none' ? 'Uncategorized' : brand,
+      label: brand === '_none' ? 'Mystery Dumplings' : brand,
       health: brandHealth.get(brand),
       tasks: brandTasks,
     })
@@ -395,7 +395,7 @@ function InboxGroups({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Filter tasks..."
+          placeholder="Search the basket..."
           className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
         />
         {selectedIds.size >= 2 && (
