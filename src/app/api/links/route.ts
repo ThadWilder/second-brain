@@ -127,12 +127,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Fetch saved links
   const { data: savedLinks, error: savedError } = await db
     .from('saved_links')
-    .select('id, url, label, category, brand_entity_id, created_at')
+    .select('id, url, label, category, brand_entity_id, hidden, created_at')
     .eq('org_id', ORG_ID)
     .order('created_at', { ascending: false })
 
   // If saved_links table doesn't exist yet, just use empty array
-  const manualLinks = savedError ? [] : (savedLinks ?? [])
+  const allSavedLinks = savedError ? [] : (savedLinks ?? [])
+  const hiddenUrls = new Set(allSavedLinks.filter((l: any) => l.hidden).map((l: any) => l.url))
+  const manualLinks = allSavedLinks.filter((l: any) => !l.hidden)
 
   // Collect all entry IDs that have links
   const entryIds = (entries ?? []).map((e: { id: string }) => e.id)
@@ -166,6 +168,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const links = e.links ?? []
 
     for (const url of links) {
+      if (hiddenUrls.has(url)) continue
       const existing = urlMap.get(url)
       const source: LinkSource = {
         entry_id: e.id,
@@ -342,20 +345,32 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
 
   const { searchParams } = req.nextUrl
   const id = searchParams.get('id')
-  if (!id) {
-    return NextResponse.json({ error: 'id is required' }, { status: 400 })
+  const url = searchParams.get('url')
+
+  if (!id && !url) {
+    return NextResponse.json({ error: 'id or url is required' }, { status: 400 })
   }
 
   const db = getServiceClient()
 
-  const { error } = await db
-    .from('saved_links')
-    .delete()
-    .eq('id', id)
-    .eq('org_id', ORG_ID)
+  if (id) {
+    // Delete a saved link by ID
+    const { error: err } = await db
+      .from('saved_links')
+      .delete()
+      .eq('id', id)
+      .eq('org_id', ORG_ID)
+    if (err) return NextResponse.json({ error: err.message }, { status: 500 })
+  }
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (url) {
+    // Hide an extracted link by saving it as hidden
+    await db.from('saved_links').upsert({
+      org_id: ORG_ID,
+      url,
+      label: '(hidden)',
+      hidden: true,
+    }, { onConflict: 'org_id,url' })
   }
 
   return NextResponse.json({ ok: true })

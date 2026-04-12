@@ -166,8 +166,11 @@ export default function LinksPage() {
     }
   }
 
-  const handleDeleteSavedLink = async (id: string) => {
-    const res = await fetch(`/api/links?id=${id}`, { method: 'DELETE' })
+  const handleDeleteLink = async (idOrUrl: string) => {
+    // If it looks like a URL, delete by URL (extracted link); otherwise by ID (saved link)
+    const isUrl = idOrUrl.startsWith('http')
+    const param = isUrl ? `url=${encodeURIComponent(idOrUrl)}` : `id=${idOrUrl}`
+    const res = await fetch(`/api/links?${param}`, { method: 'DELETE' })
     if (res.ok) {
       fetchLinks(search, activeFilter)
     }
@@ -384,7 +387,7 @@ export default function LinksPage() {
                     </div>
                     <div className="space-y-2">
                       {group.items.map(link => (
-                        <LinkCard key={link.url} link={link} onDelete={handleDeleteSavedLink} onUpdateLabel={handleUpdateLabel} />
+                        <LinkCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateLabel={handleUpdateLabel} />
                       ))}
                     </div>
                   </div>
@@ -397,7 +400,7 @@ export default function LinksPage() {
           {!loading && !groupByCategory && links.length > 0 && (
             <div className="space-y-2">
               {links.map(link => (
-                <LinkCard key={link.url} link={link} onDelete={handleDeleteSavedLink} onUpdateLabel={handleUpdateLabel} />
+                <LinkCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateLabel={handleUpdateLabel} />
               ))}
             </div>
           )}
@@ -555,16 +558,14 @@ function LinkCard({ link, onDelete, onUpdateLabel }: { link: LinkItem; onDelete:
           )}
         </div>
 
-        {/* Delete button for saved links */}
-        {link.saved_link_id && (
-          <button
-            onClick={() => onDelete(link.saved_link_id!)}
-            className="text-[var(--muted)] hover:text-[var(--danger)] transition-colors shrink-0 mt-1"
-            title="Remove saved link"
-          >
-            <X size={14} />
-          </button>
-        )}
+        {/* Delete button */}
+        <button
+          onClick={() => link.saved_link_id ? onDelete(link.saved_link_id) : onDelete(link.url)}
+          className="text-[var(--muted)] hover:text-[var(--danger)] transition-colors shrink-0 mt-1 opacity-0 group-hover:opacity-100"
+          title="Remove link"
+        >
+          <X size={14} />
+        </button>
       </div>
     </div>
   )

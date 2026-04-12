@@ -85,8 +85,10 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
       {/* Header */}
       <header className="bg-[#2c2014] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
-          <Image src="/logo-icon-white.png" alt="Dumpbox" width={28} height={28} />
-          <span className="text-white font-bold tracking-tight text-base sm:text-lg">Dumpbox</span>
+          <a href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
+            <Image src="/logo-icon-white.png" alt="Dumpbox" width={28} height={28} />
+            <span className="text-white font-bold tracking-tight text-base sm:text-lg">Dumpbox</span>
+          </a>
           <span className="text-white/20 select-none hidden sm:inline">/</span>
           <span className="text-xs sm:text-sm text-white/70 hidden sm:inline">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
