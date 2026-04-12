@@ -172,7 +172,7 @@ export interface DashboardStats {
   open_tasks: number
   closed_7d: number
   waiting_on: number
-  dumplings_this_week: number
+  tracking: number
 }
 
 export interface HeatmapCell {

@@ -25,13 +25,13 @@ export async function GET(): Promise<NextResponse> {
   const tenDaysAgo = new Date(estNow.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString()
 
   // Stats
-  const [escalationsRes, needsResponseRes, openTasksRes, closed7dRes, waitingOnRes, dumplingsThisWeekRes] = await Promise.all([
+  const [escalationsRes, needsResponseRes, openTasksRes, closed7dRes, waitingOnRes, trackingRes] = await Promise.all([
     db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('escalation', true).eq('status', 'open'),
     db.from('pending_responses').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('responded', false),
     db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'open'),
     db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'done').gte('resolved_at', sevenDaysAgo),
     db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'open').not('waiting_on', 'is', null),
-    db.from('entries').select('id', { count: 'exact' }).eq('org_id', ORG_ID).gte('created_at', sevenDaysAgo),
+    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'tracking'),
   ])
 
   const stats = {
@@ -40,7 +40,7 @@ export async function GET(): Promise<NextResponse> {
     open_tasks: openTasksRes.count ?? 0,
     closed_7d: closed7dRes.count ?? 0,
     waiting_on: waitingOnRes.count ?? 0,
-    dumplings_this_week: dumplingsThisWeekRes.count ?? 0,
+    tracking: trackingRes.count ?? 0,
   }
 
   // All entities
@@ -216,6 +216,7 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, overdueTasks, regularTasks, inboxTasks,
+    watchingTasks: normalizedTrackingTasks,
     overdueFollowUps, staleTracking,
     pendingResponses,
     needsReplyTaskIds: [...needsReplyTaskIds],

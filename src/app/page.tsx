@@ -3,9 +3,9 @@
 import { DashboardClient } from '@/components/dashboard/DashboardClient'
 
 const EMPTY_DATA = {
-  stats: { escalations: 0, needs_response: 0, open_tasks: 0, closed_7d: 0, waiting_on: 0, dumplings_this_week: 0 },
+  stats: { escalations: 0, needs_response: 0, open_tasks: 0, closed_7d: 0, waiting_on: 0, tracking: 0 },
   brands: [], people: [], vendors: [], departments: [], franchisees: [], vendorTeam: [], freelancers: [],
-  escalatedTasks: [], overdueTasks: [], regularTasks: [], inboxTasks: [],
+  escalatedTasks: [], overdueTasks: [], regularTasks: [], inboxTasks: [], watchingTasks: [],
   overdueFollowUps: [], staleTracking: [],
   pendingResponses: [], needsReplyTaskIds: [], clarifications: [],
   consolidationSuggestions: [], consolidationTaskIds: [],

@@ -22,6 +22,7 @@ interface Props {
   overdueTasks: TaskWithEntities[]
   tasks: TaskWithEntities[]
   inboxTasks: TaskWithEntities[]
+  watchingTasks: TaskWithEntities[]
   overdueFollowUps: TaskWithEntities[]
   staleTracking: TaskWithEntities[]
   consolidationTaskIds?: Set<string>
@@ -34,7 +35,7 @@ type PanelState =
   | { type: 'pending'; id: string; title: string }
   | null
 
-export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, overdueFollowUps, staleTracking, consolidationTaskIds, brands, onRefresh }: Props) {
+export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, watchingTasks, overdueFollowUps, staleTracking, consolidationTaskIds, brands, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
 
@@ -155,6 +156,26 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
         </Section>
       )}
 
+      {/* Watching */}
+      {watchingTasks.length > 0 && (
+        <Section id="section-watching" title="Watching" icon="👁️" count={watchingTasks.length}>
+          {watchingTasks
+            .filter((t) => !completedIds.has(t.id))
+            .map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                variant="normal"
+                hasConsolidation={consolidationTaskIds?.has(task.id)}
+                needsReply={needsReplyTaskIds?.has(task.id)}
+                onComplete={handleComplete}
+                onClick={() => handleTaskClick(task)}
+                onRefresh={onRefresh}
+              />
+            ))}
+        </Section>
+      )}
+
       {/* Overdue Follow-ups */}
       {overdueFollowUps.length > 0 && (
         <Section title="Overdue Follow-ups" icon="👁️" count={overdueFollowUps.length}>
@@ -198,6 +219,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
         overdueTasks.length === 0 &&
         visibleTasks.length === 0 &&
         inboxTasks.length === 0 &&
+        watchingTasks.length === 0 &&
         overdueFollowUps.length === 0 &&
         staleTracking.length === 0 && (
           <div className="text-center py-8 text-[var(--muted)] text-sm">

@@ -67,7 +67,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
   const {
     stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
-    escalatedTasks, overdueTasks, regularTasks, inboxTasks,
+    escalatedTasks, overdueTasks, regularTasks, inboxTasks, watchingTasks,
     overdueFollowUps, staleTracking,
     pendingResponses, needsReplyTaskIds, clarifications,
     consolidationTaskIds,
@@ -230,6 +230,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               overdueTasks={overdueTasks}
               tasks={regularTasks}
               inboxTasks={inboxTasks}
+              watchingTasks={watchingTasks ?? []}
               overdueFollowUps={overdueFollowUps ?? []}
               staleTracking={staleTracking ?? []}
               consolidationTaskIds={new Set(consolidationTaskIds ?? [])}
@@ -261,7 +262,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
 // Type for all dashboard data
 interface DashboardData {
-  stats: { escalations: number; needs_response: number; open_tasks: number; closed_7d: number; waiting_on: number; dumplings_this_week: number }
+  stats: { escalations: number; needs_response: number; open_tasks: number; closed_7d: number; waiting_on: number; tracking: number }
   brands: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null; health: 'green' | 'amber' | 'red' }>
   people: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   vendors: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
@@ -273,6 +274,7 @@ interface DashboardData {
   overdueTasks: any[]
   regularTasks: any[]
   inboxTasks: any[]
+  watchingTasks: any[]
   overdueFollowUps: any[]
   staleTracking: any[]
   pendingResponses: Array<{ id: string; summary: string; created_at: string }>

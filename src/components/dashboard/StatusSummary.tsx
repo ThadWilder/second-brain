@@ -12,7 +12,7 @@ const STATS: { key: keyof DashboardStats; label: string; icon: string; scrollTo?
   { key: 'waiting_on', label: 'Waiting on Them', icon: '⏳', scrollTo: 'section-inbox' },
   { key: 'open_tasks', label: 'In the Steamer', icon: '🥟', scrollTo: 'section-inbox' },
   { key: 'closed_7d', label: 'Plated This Week', icon: '✨' },
-  { key: 'dumplings_this_week', label: 'Fresh Dumplings', icon: '📥' },
+  { key: 'tracking', label: 'Watching', icon: '👁️', scrollTo: 'section-watching' },
 ]
 
 export function StatusSummary({ stats }: Props) {
