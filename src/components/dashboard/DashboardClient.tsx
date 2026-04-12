@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { Menu, X as XIcon } from 'lucide-react'
 import Image from 'next/image'
 import { StatusSummary } from './StatusSummary'
 import { BrandCards } from './BrandCards'
@@ -79,53 +80,28 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-[#2c2014] px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <Image src="/logo-icon-white.png" alt="Dumpbox" width={32} height={32} />
-          <span className="text-white font-bold tracking-tight text-lg">Dumpbox</span>
-          <span className="text-white/20 select-none">/</span>
-          <span className="text-sm text-white/70">
+      <header className="bg-[#2c2014] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Image src="/logo-icon-white.png" alt="Dumpbox" width={28} height={28} />
+          <span className="text-white font-bold tracking-tight text-base sm:text-lg">Dumpbox</span>
+          <span className="text-white/20 select-none hidden sm:inline">/</span>
+          <span className="text-xs sm:text-sm text-white/70 hidden sm:inline">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </span>
         </div>
-        <nav className="flex items-center gap-6">
+
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-6">
           {stats.escalations > 0 && (
             <span className="text-base text-orange-300 font-medium">
               {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
             </span>
           )}
-          <a
-            href="/wiki"
-            className="text-base text-white/70 font-medium hover:text-white transition-colors"
-          >
-            Wiki
-          </a>
-          <a
-            href="/kpis"
-            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
-          >
-            <BarChart3 size={15} />
-            KPIs
-          </a>
-          <a
-            href="/tracking"
-            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
-          >
-            <Eye size={15} />
-            Initiatives
-          </a>
-          <a
-            href="/history"
-            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
-          >
-            <Clock size={15} />
-            History
-          </a>
-          <a
-            href="/links"
-            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
-          >
-            <Link2 size={15} />
+          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
+          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><BarChart3 size={15} />KPIs</a>
+          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Eye size={15} />Initiatives</a>
+          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
+          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />
             Links
           </a>
           <button
@@ -135,11 +111,19 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             Sign out
           </button>
         </nav>
+
+        {/* Mobile hamburger */}
+        <div className="md:hidden flex items-center gap-3">
+          {stats.escalations > 0 && (
+            <span className="text-sm text-orange-300 font-medium">{stats.escalations}🔥</span>
+          )}
+          <MobileMenu onSignOut={handleSignOut} />
+        </div>
       </header>
 
       {/* Main content — single scrollable column */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[1100px] mx-auto px-4 py-8 space-y-8">
+        <div className="max-w-[1100px] mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-8">
           {/* ── Hero dump box ── */}
           <div className="bg-[var(--surface)] border border-[var(--border)] border-l-[4px] border-l-[var(--accent)] rounded-xl px-3 py-3 shadow-sm">
             <ChatInput
@@ -206,7 +190,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                 <h2 className="text-base font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Status</h2>
                 <StatusSummary stats={stats} />
               </div>
-              <div>
+              <div className="hidden lg:block">
                 <h2 className="text-base font-bold text-[var(--text)] mb-3 pb-2 border-b-2 border-[var(--accent)] inline-block">Activity (10 days)</h2>
                 <Heatmap data={heatmapCells} brands={brandNames} days={heatmapDays} />
               </div>
@@ -257,6 +241,32 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
         </div>
       </div>
     </div>
+  )
+}
+
+function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
+  const [open, setOpen] = useState(false)
+  const links = [
+    { href: '/wiki', label: 'Wiki' },
+    { href: '/kpis', label: 'KPIs' },
+    { href: '/tracking', label: 'Initiatives' },
+    { href: '/history', label: 'History' },
+    { href: '/links', label: 'Links' },
+  ]
+  return (
+    <>
+      <button onClick={() => setOpen(!open)} className="text-white p-1">
+        {open ? <XIcon size={22} /> : <Menu size={22} />}
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 bg-[#2c2014] border-t border-white/10 z-50 px-4 py-3 space-y-1">
+          {links.map((l) => (
+            <a key={l.href} href={l.href} className="block py-2 text-base text-white/80 hover:text-white">{l.label}</a>
+          ))}
+          <button onClick={onSignOut} className="block py-2 text-base text-white/50 hover:text-white w-full text-left">Sign out</button>
+        </div>
+      )}
+    </>
   )
 }
 
