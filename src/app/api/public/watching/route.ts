@@ -2,8 +2,15 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  const rl = rateLimit(`public-watching:${ip}`, 30)
+  if (rl.limited) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   const token = new URL(req.url).searchParams.get('token')
   if (!process.env.PUBLIC_SHARE_TOKEN || token !== process.env.PUBLIC_SHARE_TOKEN) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
