@@ -17,6 +17,7 @@ export const anthropic = new Proxy({} as Anthropic, {
 })
 
 export const CLAUDE_MODEL = 'claude-sonnet-4-5'
+export const CLAUDE_MODEL_FAST = 'claude-haiku-4-5-20251001'
 
 export const MANAGED_AGENT_ID = process.env.MANAGED_AGENT_ID ?? ''
 export const MANAGED_ENVIRONMENT_ID = process.env.MANAGED_ENVIRONMENT_ID ?? ''

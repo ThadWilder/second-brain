@@ -13,7 +13,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
-import { anthropic, CLAUDE_MODEL } from './claude'
+import { anthropic, CLAUDE_MODEL_FAST } from './claude'
 import { ORG_ID } from './supabase'
 import type { Entity, Task, Decision } from '@/types'
 
@@ -279,7 +279,7 @@ Write the full updated wiki page markdown (do NOT include pinned sections — th
 \`\`\``
 
   const response = await anthropic.messages.create({
-    model: CLAUDE_MODEL,
+    model: CLAUDE_MODEL_FAST,
     max_tokens: 2048,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
