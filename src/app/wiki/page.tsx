@@ -119,43 +119,38 @@ export default function WikiIndex() {
 
             {sort === 'az' ? (
               <>
-                {/* Grouped by entity type */}
                 {sections.map((section) => (
-                  <CollapsibleSection
-                    key={section.key}
-                    title={section.label}
-                    icon={section.icon}
-                    count={section.pages.length}
-                    defaultExpanded={false}
-                  >
-                    <div className="space-y-2">
+                  <div key={section.key}>
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)] mb-3 flex items-center gap-2">
+                      <span>{section.icon}</span> {section.label}
+                      <span className="text-xs font-normal">{section.pages.length}</span>
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
                       {section.pages.map((page) => (
-                        <WikiCard key={page.id} page={page} />
+                        <WikiCard key={page.id} page={page} compact />
                       ))}
                     </div>
-                  </CollapsibleSection>
+                  </div>
                 ))}
 
                 {other.length > 0 && (
-                  <CollapsibleSection
-                    title="Other"
-                    icon="📄"
-                    count={other.length}
-                    defaultExpanded={false}
-                  >
-                    <div className="space-y-2">
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)] mb-3 flex items-center gap-2">
+                      <span>📄</span> Other
+                      <span className="text-xs font-normal">{other.length}</span>
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {other.map((page) => (
-                        <WikiCard key={page.id} page={page} />
+                        <WikiCard key={page.id} page={page} compact />
                       ))}
                     </div>
-                  </CollapsibleSection>
+                  </div>
                 )}
               </>
             ) : (
-              /* Flattened list sorted by recently updated */
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[...pages].sort(sortRecent).map((page) => (
-                  <WikiCard key={page.id} page={page} showTypeBadge />
+                  <WikiCard key={page.id} page={page} showTypeBadge compact />
                 ))}
               </div>
             )}
@@ -182,32 +177,28 @@ function SortButton({ active, onClick, children }: { active: boolean; onClick: (
   )
 }
 
-function WikiCard({ page, showTypeBadge }: { page: WikiPageSummary; showTypeBadge?: boolean }) {
-  const icon = TYPE_ICONS[page.entities?.type ?? ''] ?? '📄'
+function WikiCard({ page, showTypeBadge, compact }: { page: WikiPageSummary; showTypeBadge?: boolean; compact?: boolean }) {
   const age = formatAge(page.updated_at)
 
   return (
     <Link
       href={`/wiki/${page.slug}`}
-      className="block p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+      className="block px-3 py-2.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
     >
-      <div className="flex items-start gap-3">
-        <span className="text-lg">{icon}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-sm font-medium text-[var(--text)]">{page.title}</span>
-            {showTypeBadge && page.entities?.type && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--border)] text-[var(--muted)]">
-                {ENTITY_SECTIONS.find((s) => s.types.includes(page.entities!.type))?.label ?? page.entities.type}
-              </span>
-            )}
-            <span className="text-[10px] text-[var(--muted)]">{page.source_count} sources</span>
-            <span className="text-[10px] text-[var(--muted)]">{age}</span>
-          </div>
-          {page.summary && (
-            <p className="text-xs text-[var(--muted)] line-clamp-2 leading-relaxed">{page.summary}</p>
-          )}
-        </div>
+      <div className="flex items-center gap-2 mb-0.5">
+        <span className="text-sm font-medium text-[var(--text)] truncate">{page.title}</span>
+        {showTypeBadge && page.entities?.type && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--border)] text-[var(--muted)] shrink-0">
+            {ENTITY_SECTIONS.find((s) => s.types.includes(page.entities!.type))?.label ?? page.entities.type}
+          </span>
+        )}
+      </div>
+      {!compact && page.summary && (
+        <p className="text-xs text-[var(--muted)] line-clamp-2 leading-relaxed">{page.summary}</p>
+      )}
+      <div className="flex items-center gap-2 mt-1">
+        <span className="text-[10px] text-[var(--muted)]">{page.source_count} sources</span>
+        <span className="text-[10px] text-[var(--muted)]">{age}</span>
       </div>
     </Link>
   )
