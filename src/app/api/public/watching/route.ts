@@ -35,3 +35,62 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     headers: { 'Cache-Control': 'no-store' },
   })
 }
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const token = new URL(req.url).searchParams.get('token')
+  if (!process.env.PUBLIC_SHARE_TOKEN || token !== process.env.PUBLIC_SHARE_TOKEN) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { description, owner, brand_name } = await req.json()
+
+  if (!description?.trim()) {
+    return NextResponse.json({ error: 'Description required' }, { status: 400 })
+  }
+
+  const db = getServiceClient()
+
+  // Create task directly as tracking
+  const { data: task, error } = await db
+    .from('tasks')
+    .insert({
+      org_id: ORG_ID,
+      description: description.trim(),
+      status: 'tracking',
+      tracked_owner: owner?.trim() || null,
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Link to brand if provided
+  if (brand_name && task) {
+    const { data: brand } = await db
+      .from('entities')
+      .select('id')
+      .eq('org_id', ORG_ID)
+      .ilike('name', brand_name.trim())
+      .limit(1)
+      .maybeSingle()
+
+    if (brand) {
+      await db.from('task_entities').insert({
+        task_id: task.id,
+        entity_id: brand.id,
+        role: 'brand',
+      })
+    }
+  }
+
+  // Log creation event
+  await db.from('task_events').insert({
+    task_id: task.id,
+    event_type: 'created',
+    metadata: { source: 'public_watching', owner: owner?.trim() || null },
+  })
+
+  return NextResponse.json({ success: true, task_id: task.id }, { status: 201 })
+}

@@ -18,6 +18,10 @@ export default function PublicWatchingPage() {
   const [tasks, setTasks] = useState<WatchingTask[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [newDesc, setNewDesc] = useState('')
+  const [newOwner, setNewOwner] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [tokenRef, setTokenRef] = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -27,6 +31,7 @@ export default function PublicWatchingPage() {
       setLoading(false)
       return
     }
+    setTokenRef(token)
 
     fetch(`/api/public/watching?token=${token}`)
       .then((res) => {
@@ -75,6 +80,56 @@ export default function PublicWatchingPage() {
             {tasks.length} items being tracked
           </p>
         </div>
+
+        {/* Add new item */}
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (!newDesc.trim() || adding) return
+            setAdding(true)
+            try {
+              const res = await fetch(`/api/public/watching?token=${tokenRef}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: newDesc.trim(), owner: newOwner.trim() || null }),
+              })
+              if (res.ok) {
+                setNewDesc('')
+                setNewOwner('')
+                // Reload tasks
+                const data = await fetch(`/api/public/watching?token=${tokenRef}`).then((r) => r.json())
+                setTasks(data.tasks)
+              }
+            } finally {
+              setAdding(false)
+            }
+          }}
+          className="mb-6 bg-white rounded-lg border border-gray-200 p-4 space-y-2"
+        >
+          <input
+            type="text"
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+            placeholder="What are you tracking?"
+            className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-blue-400"
+          />
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={newOwner}
+              onChange={(e) => setNewOwner(e.target.value)}
+              placeholder="Owner (optional)"
+              className="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-blue-400"
+            />
+            <button
+              type="submit"
+              disabled={!newDesc.trim() || adding}
+              className="px-4 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 transition-colors"
+            >
+              {adding ? 'Adding...' : 'Add'}
+            </button>
+          </div>
+        </form>
 
         <div className="space-y-4">
           {groups.map(([brand, brandTasks]) => (
