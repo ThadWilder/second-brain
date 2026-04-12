@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ListTodo, FileText, Scale, GitMerge } from 'lucide-react'
+import { ListTodo, FileText, Scale, GitMerge, Users, X } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EntityList } from './EntityList'
@@ -10,17 +10,26 @@ import { AutoLinkText } from '@/components/ui/AutoLinkText'
 import { LinkChips } from '@/components/ui/LinkChips'
 import type { Entity, Task, Decision, Entry } from '@/types'
 
+interface Relationship {
+  id: string
+  relationship: string
+  entity: { id: string; name: string; type: string }
+  direction: string
+}
+
 interface Props {
   brand: Entity
   tasks: Task[]
   decisions: Decision[]
   entries: Entry[]
   entities: Entity[]
+  relationships?: Relationship[]
+  allEntities?: Array<{ id: string; name: string; type: string }>
 }
 
-type Tab = 'tasks' | 'entries' | 'decisions'
+type Tab = 'tasks' | 'entries' | 'decisions' | 'people'
 
-export function BrandDetail({ brand, tasks, decisions, entries, entities }: Props) {
+export function BrandDetail({ brand, tasks, decisions, entries, entities, relationships, allEntities }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('tasks')
   const [localTasks, setLocalTasks] = useState(tasks)
   const [combineMode, setCombineMode] = useState(false)
@@ -70,6 +79,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
     { key: 'tasks', label: 'Tasks', count: localTasks.length, icon: <ListTodo className="w-3.5 h-3.5" /> },
     { key: 'entries', label: 'Dumplings', count: entries.length, icon: <FileText className="w-3.5 h-3.5" /> },
     { key: 'decisions', label: 'Decisions', count: decisions.length, icon: <Scale className="w-3.5 h-3.5" /> },
+    { key: 'people', label: 'People', count: relationships?.length ?? 0, icon: <Users className="w-3.5 h-3.5" /> },
   ]
 
   return (
@@ -409,8 +419,18 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities }: Prop
         </div>
       )}
 
+      {/* People tab */}
+      {activeTab === 'people' && (
+        <PeopleAssignments
+          entityId={brand.id}
+          entityType={brand.type}
+          relationships={relationships ?? []}
+          allEntities={allEntities ?? []}
+        />
+      )}
+
       {/* Entity graph */}
-      {entities.length > 0 && (
+      {entities.length > 0 && activeTab !== 'people' && (
         <div className="pt-4 border-t border-[var(--border)]">
           <EntityList entities={entities} title="Linked Entities" />
         </div>
@@ -445,6 +465,110 @@ function ExpandableText({ text }: { text: string }) {
         >
           {expanded ? 'show less' : 'show more'}
         </button>
+      )}
+    </div>
+  )
+}
+
+function PeopleAssignments({
+  entityId,
+  entityType,
+  relationships,
+  allEntities,
+}: {
+  entityId: string
+  entityType: string
+  relationships: Relationship[]
+  allEntities: Array<{ id: string; name: string; type: string }>
+}) {
+  const [rels, setRels] = useState(relationships)
+  const [adding, setAdding] = useState(false)
+
+  const relLabel = (r: Relationship) => {
+    if (r.direction === 'inbound') return `${r.entity.name} → ${r.relationship}`
+    return `${r.relationship} → ${r.entity.name}`
+  }
+
+  async function addRelationship(targetId: string) {
+    setAdding(true)
+    const relType = entityType === 'brand' || entityType === 'department' ? 'member_of' : 'works_for'
+    try {
+      await fetch('/api/entities/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_entity_id: targetId,
+          to_entity_id: entityId,
+          relationship: relType,
+        }),
+      })
+      const target = allEntities.find(e => e.id === targetId)
+      if (target) {
+        setRels(prev => [...prev, { id: crypto.randomUUID(), relationship: relType, entity: target, direction: 'inbound' }])
+      }
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  async function removeRelationship(relId: string) {
+    await fetch('/api/entities/link', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: relId }),
+    })
+    setRels(prev => prev.filter(r => r.id !== relId))
+  }
+
+  const linkedIds = new Set(rels.map(r => r.entity.id))
+  const people = allEntities.filter(e =>
+    ['contact', 'vendor_team', 'freelancer', 'franchisee'].includes(e.type) &&
+    !linkedIds.has(e.id) && e.id !== entityId
+  )
+
+  return (
+    <div className="space-y-4">
+      {rels.length > 0 ? (
+        <div className="space-y-1.5">
+          {rels.map((r) => (
+            <div key={r.id} className="group flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+              <span className="text-sm text-[var(--text)] flex-1">{r.entity.name}</span>
+              <span className="text-xs text-[var(--muted)] capitalize">{r.relationship.replace(/_/g, ' ')}</span>
+              <span className="text-[10px] text-[var(--muted)] capitalize px-1.5 py-0.5 rounded bg-[var(--bg)]">{r.entity.type}</span>
+              <button
+                onClick={() => removeRelationship(r.id)}
+                className="opacity-0 group-hover:opacity-100 text-[var(--muted)] hover:text-red-600 transition-all"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-[var(--muted)] text-center py-4">No people linked yet.</p>
+      )}
+
+      {/* Add person */}
+      {adding ? (
+        <span className="text-xs text-[var(--muted)]">Adding...</span>
+      ) : (
+        <select
+          className="w-full text-sm px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:border-[var(--accent)] focus:outline-none"
+          defaultValue=""
+          onChange={(e) => { if (e.target.value) { addRelationship(e.target.value); e.target.value = '' } }}
+        >
+          <option value="" disabled>+ Add person...</option>
+          {['contact', 'franchisee', 'vendor_team', 'freelancer'].map(type => {
+            const group = people.filter(e => e.type === type)
+            if (!group.length) return null
+            const label = { contact: 'People', franchisee: 'Franchisees', vendor_team: 'Vendor Team', freelancer: 'Freelancers' }[type] ?? type
+            return (
+              <optgroup key={type} label={label}>
+                {group.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </optgroup>
+            )
+          })}
+        </select>
       )}
     </div>
   )

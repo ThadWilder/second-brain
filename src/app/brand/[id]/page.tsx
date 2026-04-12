@@ -114,7 +114,25 @@ async function getBrandData(brandId: string) {
     linkedEntities = (entityData ?? []) as Entity[]
   }
 
-  return { brand, tasks, entries, decisions, linkedEntities, wikiPage }
+  // Relationships for this entity
+  const [outboundRels, inboundRels, allEntities] = await Promise.all([
+    db.from('entity_relationships')
+      .select('id, relationship, to_entity_id, entities!entity_relationships_to_entity_id_fkey(id, name, type)')
+      .eq('from_entity_id', brandId)
+      .eq('org_id', ORG_ID),
+    db.from('entity_relationships')
+      .select('id, relationship, from_entity_id, entities!entity_relationships_from_entity_id_fkey(id, name, type)')
+      .eq('to_entity_id', brandId)
+      .eq('org_id', ORG_ID),
+    db.from('entities').select('id, name, type').eq('org_id', ORG_ID).eq('archived', false).order('name'),
+  ])
+
+  const relationships = [
+    ...(outboundRels.data ?? []).map((r: any) => ({ id: r.id, relationship: r.relationship, entity: r.entities, direction: 'outbound' })),
+    ...(inboundRels.data ?? []).map((r: any) => ({ id: r.id, relationship: r.relationship, entity: r.entities, direction: 'inbound' })),
+  ]
+
+  return { brand, tasks, entries, decisions, linkedEntities, wikiPage, relationships, allEntities: allEntities.data ?? [] }
 }
 
 export default async function BrandPage({ params }: Props) {
@@ -123,7 +141,7 @@ export default async function BrandPage({ params }: Props) {
 
   if (!data) notFound()
 
-  const { brand, tasks, entries, decisions, linkedEntities, wikiPage } = data
+  const { brand, tasks, entries, decisions, linkedEntities, wikiPage, relationships, allEntities } = data
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col">
@@ -158,6 +176,8 @@ export default async function BrandPage({ params }: Props) {
             decisions={decisions}
             entries={entries}
             entities={linkedEntities}
+            relationships={relationships}
+            allEntities={allEntities}
           />
         </div>
       </div>

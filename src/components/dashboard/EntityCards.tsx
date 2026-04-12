@@ -135,10 +135,10 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
     // Unassigned group
     const unassigned = entities.filter((e) => !assigned.has(e.entity.id))
 
-    // Sort groups alphabetically, then unassigned last
+    // Sort: unassigned first (needs attention), then alphabetically
     const sorted = Array.from(groups.values()).sort((a, b) => a.targetName.localeCompare(b.targetName))
 
-    return { sorted, unassigned }
+    return { unassigned, sorted }
   }, [type, entities, entityRelationships, allEntitiesProp])
 
   // Group brands and departments as assignment targets
@@ -336,17 +336,6 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
       >
         {contactGroups ? (
           <div className="space-y-4">
-            {contactGroups.sorted.map((group) => (
-              <div key={group.targetName}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-0.5 h-3.5 bg-[var(--accent)] rounded-full" />
-                  <span className="text-xs text-[var(--muted)] font-medium">
-                    {group.targetName}
-                  </span>
-                </div>
-                {renderGrid(group.items)}
-              </div>
-            ))}
             {contactGroups.unassigned.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -358,6 +347,17 @@ export function EntityCards({ title, entities, type, allEntities: allEntitiesPro
                 {renderGrid(contactGroups.unassigned, true)}
               </div>
             )}
+            {contactGroups.sorted.map((group) => (
+              <div key={group.targetName}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-0.5 h-3.5 bg-[var(--accent)] rounded-full" />
+                  <span className="text-xs text-[var(--muted)] font-medium">
+                    {group.targetName}
+                  </span>
+                </div>
+                {renderGrid(group.items)}
+              </div>
+            ))}
           </div>
         ) : (
           renderGrid(entities)
