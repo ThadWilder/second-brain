@@ -518,7 +518,7 @@ export default function TrackingPage() {
           {/* Title + Pin New */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-[var(--text)]">Tracking</h1>
+              <h1 className="text-xl font-bold text-[var(--text)]">Initiatives</h1>
               {!loading && (
                 <p className="text-sm text-[var(--muted)] mt-0.5">
                   {activeItems.length} active item{activeItems.length !== 1 ? 's' : ''}
@@ -591,6 +591,54 @@ export default function TrackingPage() {
               )}
             </div>
           )}
+          {/* Data Sources */}
+          <div className="mt-12 pt-8 border-t border-[var(--border)]">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)] mb-4">Data Sources</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { name: 'Morning Briefing', schedule: 'Daily 7am ET', path: '/api/cron/briefing', icon: '☀️' },
+                { name: 'Afternoon Nudge', schedule: 'Daily 2pm ET', path: '/api/cron/nudge', icon: '🔔' },
+                { name: 'Weekly Digest (Opus)', schedule: 'Sunday 8pm ET', path: '/api/cron/digest', icon: '📊' },
+                { name: 'Wiki Processor', schedule: 'Every 4 hours', path: '/api/cron/wiki', icon: '📖' },
+                {
+                  name: 'TMS Audit Sync',
+                  schedule: 'Mondays 8am ET',
+                  path: '/api/audits/sync',
+                  icon: '📋',
+                  sheet: 'https://docs.google.com/spreadsheets/d/1Lyq9VyktQqdvbBqSHVRFvQTSuby5H1mzwG7LfxuB7uU/edit',
+                },
+                {
+                  name: 'NiceJob Reviews Sync',
+                  schedule: 'Mondays 8am ET',
+                  path: '/api/reviews/sync',
+                  icon: '⭐',
+                  sheet: 'https://docs.google.com/spreadsheets/d/1vNBHaw_xVvnLxlTxUmjPt-e85krWxah0g5g02Xc1Fvs/edit',
+                },
+              ].map((source) => (
+                <div
+                  key={source.path}
+                  className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{source.icon}</span>
+                    <span className="text-sm font-medium text-[var(--text)]">{source.name}</span>
+                  </div>
+                  <p className="text-xs text-[var(--muted)] mt-1">{source.schedule}</p>
+                  {'sheet' in source && source.sheet && (
+                    <a
+                      href={source.sheet}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] mt-1 inline-flex items-center gap-1"
+                    >
+                      <ExternalLink size={10} />
+                      Google Sheet
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
