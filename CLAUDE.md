@@ -72,19 +72,26 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - Polling: `GET /events?order=asc&limit=100` (not SSE, no after_id)
 - Beta header: `agent-api-2026-03-01`
 
-### Cron routes
-- `/api/cron/briefing` — "Dim Sum" morning briefing via Claude + Postmark (blocked until Postmark account approved)
-- `/api/cron/digest` — weekly digest
-- `/api/cron/nudge` — stale task nudges
-- All protected by `CRON_SECRET` in Authorization header
-- All have try-catch with structured error responses
-- All have `maxDuration = 60`
+### Cron routes (all GET, Vercel Cron)
+- `/api/cron/briefing` — "Dim Sum" morning briefing via Sonnet + Postmark, daily 7am ET
+- `/api/cron/nudge` — stale task nudges via Sonnet + Postmark, daily 2pm ET
+- `/api/cron/digest` — weekly strategic digest via **Opus**, Sunday 8pm ET
+- `/api/cron/wiki` — wiki queue processor via Haiku, every 4 hours, batch size 10
+- `/api/audits/sync` — TMS audit Google Sheet sync, Mondays 8am ET
+- `/api/reviews/sync` — NiceJob reviews Google Sheet sync, Mondays 8am ET
+- All protected by `CRON_SECRET` in Authorization header (rejects if env var unset)
+- Briefing/digest have try-catch, nudge has try-catch
+
+### AI Models
+- **Sonnet 4.5** (`CLAUDE_MODEL`): ingest, briefing, nudge, chat
+- **Haiku 4.5** (`CLAUDE_MODEL_FAST`): wiki synthesis, email drafting
+- **Opus 4.6** (`CLAUDE_MODEL_DEEP`): weekly digest (strategic analysis)
 
 ### Entity resolution (`lib/entities.ts`)
 - Exact match on `normalized_name` → fuzzy match → create new
 - Aliases stored in `entity_aliases` table
 - `pg_trgm` extension enabled with GIN indexes for future server-side fuzzy search
-- Fuzzy threshold: 0.25 (known issue: too low for short names)
+- Fuzzy threshold: 0.6 for short names, 0.4 for longer
 
 ### Entity merge (`/api/entities/merge`)
 - **Atomic**: single Postgres RPC function (`merge_entities`) wrapping all 8 table operations in one transaction
@@ -93,17 +100,34 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - Deletes source entity after move
 
 ## Dashboard Features
-- **Stat cards**: fun labels — "On Fire 🔥", "Waiting on You 👀", "In the Steamer 🥟", "Plated This Week ✨"
-- **Collapsible entity sections** with counts — `CollapsibleSection` shared component
+- **Stat cards**: clickable — "On Fire 🔥", "Waiting on You 👀", "Waiting on Them ⏳", "In the Steamer 🥟", "Plated This Week ✨", "Simmering ♨️" (tracked tasks)
+- **Priority sections**: Escalations, Needs Response, Overdue, Today's Tasks, The Basket (inbox grouped by brand), Simmering (tracked), Overdue Follow-ups, Stale Tracking
+- **The Basket**: tasks grouped by brand with health dots (🔴🟡🟢), search filter, bulk dismiss/merge checkboxes, task age labels
+- **Ask the Chef**: chat drawer (right slide-out) for querying wiki/tasks/decisions via Managed Agents
+- **Dump box**: dedicated ingest input (top of page), separate from chat. Supports FYI:/TRACK: prefixes
+- **Smart ingest**: AI detects task intent (your task vs tracking vs FYI). Creates fewer, higher-level tasks
+- **Public/private toggle** on any task — 🌐/🔒 in Actions. Public tasks visible at shared team URL
+- **Task detail**: editable description (click to edit), due date picker, draft email generator, public toggle, tracking with auto-clear waiting_on
+- **Pending response dedup**: hidden from Needs Response if matching task exists, shown as "needs reply" badge on task instead. Auto-resolved on plate
+- **Convert to task**: button on pending response detail
+- **Entity cards**: team labels (blue badges), company dropdown (entities), franchisee assignment
+- **Expandable dumplings**: click "show more" on truncated content in detail panels and brand pages
 - **People grouped by relationships** — subgroups by brand/team via `member_of`/`works_on`
-- **Inline team assignment** — dropdown on all contact cards to add brand/team links
-- **Entity type selector** in edit modal — change anyone from Team Member to Franchisee etc.
-- **Archive** — hide entities from dashboard, preserve history
-- **Task detail slide-out panel** — status controls, escalation toggle, linked entities with inline add, source dumpling, event timeline, notes
-- **Pending response detail panel** — mark as responded, source dumpling, notes
-- **Clarification source panel** — click "Source" to see full original dumpling + entity resolution status
-- **Heatmap**: 10-day activity, weekend columns dimmed, Eastern time
-- **All dates in Eastern time**
+- **Topics list**: collapsible pills at bottom, click to edit/retype
+- **Heatmap**: 10-day activity, hidden on mobile, Eastern time
+- **Mobile**: hamburger menu, floating chat button, viewport meta, favicon, add-to-homescreen
+- **"Brandy Murch"** displayed as "You" in waiting_on labels
+
+## Pages
+- `/` — Dashboard (The Basket, priorities, stats, entity cards)
+- `/tracking` — **The Kitchen** 🍳 (initiatives, pinned resources, data sources)
+- `/wiki` — Wiki index + entity pages
+- `/history` — Dumpling history feed
+- `/links` — Resource Library (pin to Kitchen, hide/delete)
+- `/kpis` — KPI dashboard (linked from Kitchen)
+- `/audits` — Franchise audit tracking
+- `/reviews` — NiceJob review tracking
+- `/public/watching?token=X` — Public read-only board (team can add items)
 
 ## Design
 - **Theme**: Warm "dumpling vibes" — parchment background (`#faf6f1`) with warm radial gradients, cream cards (`#fff8f0`), amber accent (`#d4943a`), deep brown text (`#3d2c1e`)
@@ -131,7 +155,7 @@ curl -sk -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: appl
 GitHub auto-deploy is NOT linked — deploys are manual via Vercel API.
 
 ## Migrations
-Located in `supabase/migrations/`. Applied: 001-010.
+Located in `supabase/migrations/`. Applied: 001-024.
 - 001: initial schema
 - 002: wiki
 - 003: clarifications
@@ -147,12 +171,20 @@ Seed data: `supabase/seed.sql` (10 brands, 2 internal team, 4 contacts, 2 vendor
 
 ## Known Issues
 - Postmark account pending approval — outbound to non-`@dumpbox.app` addresses blocked
-- Dashboard N+1 query on entity task summaries — will slow at ~50-100 entities
-- Fuzzy match threshold too low for short names ("Moe" matches "Joe")
+- Dashboard N+1 query on entity task summaries — will slow at ~100+ entities
 - RLS policies don't check user identity, only org_id — middleware is sole auth gate
-- No multi-user scoping within org yet (team members see same dashboard)
-- Mobile not responsive (GitHub #1)
-- Full QA audit generated 2026-04-10 (99 issues, most critical fixed)
+- Wiki backlog: ~1600 pages pending, processing ~48/day via cron
+- Chat (Ask the Chef) may need Managed Agent session debugging
+
+## Security Notes
+- `.env.local` never committed to git ✓
+- Service role key server-side only ✓
+- All routes authenticated ✓
+- Rate limiting on ingest (30/min), upload (10/min), public watching (30/min)
+- Postmark webhook validates field presence only (no IP whitelist yet)
+- Public share token in URL query param (acceptable for internal team use)
+- Error responses may leak Supabase details (refactor to generic errors later)
+- CORS allows GET from any origin (mutations blocked to allowed origins only)
 
 ## Conventions
 - Use `force-dynamic` on all API routes

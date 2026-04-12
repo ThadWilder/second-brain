@@ -508,13 +508,13 @@ export default function TrackingPage() {
           </Link>
           <span className="text-white/20 select-none">/</span>
           <span className="text-sm text-white/70 flex items-center gap-1.5">
-            <Eye size={14} />
+            🍳 
             The Kitchen
           </span>
         </div>
         <nav className="flex items-center gap-6">
           <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/tracking" className="text-base text-white font-medium flex items-center gap-1.5"><Eye size={15} />The Kitchen</a>
+          <a href="/tracking" className="text-base text-white font-medium flex items-center gap-1.5">🍳 The Kitchen</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
           <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>

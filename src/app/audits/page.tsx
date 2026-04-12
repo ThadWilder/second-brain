@@ -149,7 +149,7 @@ export default function AuditsPage() {
         <nav className="flex items-center gap-6">
           <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
           <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Eye size={15} />The Kitchen</a>
+          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">🍳 The Kitchen</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors">History</a>
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
           <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
