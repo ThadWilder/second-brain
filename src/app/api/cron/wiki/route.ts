@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 /**
- * POST /api/cron/wiki
+ * GET /api/cron/wiki
  *
  * Cron endpoint that processes pending wiki queue items directly in batches of 3
  * with a 240s time guard. Called 3x/day by external cron.

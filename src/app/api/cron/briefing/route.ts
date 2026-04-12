@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 /**
- * POST /api/cron/briefing
+ * GET /api/cron/briefing
  *
  * Morning briefing — daily at 7am.
  * Called by external cron (Vercel Cron, Render, etc.)

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 /**
- * POST /api/cron/nudge
+ * GET /api/cron/nudge
  *
  * Afternoon nudge — daily at 2pm.
  * Only fires if stale tasks exist.

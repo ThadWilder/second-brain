@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 /**
- * POST /api/cron/digest
+ * GET /api/cron/digest
  *
  * Weekly digest — Sundays at 8pm.
  * Reviews the week's activity across all brands.

@@ -27,6 +27,7 @@ interface TaskData {
     tracked_owner: string | null
     follow_up_date: string | null
     entry_id: string | null
+    public: boolean
     created_at: string
     updated_at: string
   }
@@ -408,14 +409,14 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
           <span className="text-[var(--border)]">|</span>
           <button
             disabled={updating}
-            onClick={() => updateTask({ public: !(task as any).public })}
+            onClick={() => updateTask({ public: !task.public })}
             className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border transition-colors ${
-              (task as any).public
+              task.public
                 ? 'border-green-200 bg-green-50 text-green-700'
                 : 'border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)]'
             }`}
           >
-            {(task as any).public ? '🌐 Public' : '🔒 Private'}
+            {task.public ? '🌐 Public' : '🔒 Private'}
           </button>
         </div>
       </Section>

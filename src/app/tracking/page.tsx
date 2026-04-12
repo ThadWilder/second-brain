@@ -17,7 +17,6 @@ import {
   ExternalLink,
   Clock,
   Link2,
-  BarChart3,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 import { useToast } from '@/components/ui/Toast'
@@ -149,7 +148,7 @@ export default function TrackingPage() {
       const res = await fetch('/api/dashboard')
       if (!res.ok) return
       const data = await res.json()
-      const brandEntities = (data.entities ?? [])
+      const brandEntities = (data.allEntities ?? [])
         .filter((e: { type: string; archived?: boolean }) => e.type === 'brand' && !e.archived)
         .map((e: { id: string; name: string }) => ({ id: e.id, name: e.name }))
         .sort((a: BrandEntity, b: BrandEntity) => a.name.localeCompare(b.name))

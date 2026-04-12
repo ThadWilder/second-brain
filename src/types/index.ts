@@ -46,6 +46,7 @@ export interface Entity {
   first_seen: string
   last_seen: string
   created_at: string
+  archived: boolean
 }
 
 export interface EntityAlias {
@@ -76,6 +77,7 @@ export interface Task {
   tracked_owner: string | null
   follow_up_date: string | null
   resolved_at: string | null
+  public: boolean
   updated_at: string
   created_at: string
 }
@@ -93,7 +95,7 @@ export interface TaskEntity {
   id: string
   task_id: string
   entity_id: string
-  role: 'brand' | 'assigned_to' | 'vendor' | 'topic'
+  role: 'brand' | 'assigned_to' | 'vendor' | 'topic' | 'related'
 }
 
 export interface Decision {

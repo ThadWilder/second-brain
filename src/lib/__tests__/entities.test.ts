@@ -516,6 +516,7 @@ function makeEntity(overrides: Partial<Entity> & { id: string; type: string; nam
     first_seen: '2026-04-09T00:00:00Z',
     last_seen: '2026-04-09T00:00:00Z',
     created_at: '2026-04-09T00:00:00Z',
+    archived: false,
     ...overrides,
   }
 }
