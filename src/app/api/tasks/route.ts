@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const body = await req.json()
-  const { id, status, due_date, escalation, waiting_on, tracked_owner, follow_up_date, description } = body
+  const { id, status, due_date, escalation, waiting_on, tracked_owner, follow_up_date, description, public: isPublic } = body
 
   if (!id) {
     return NextResponse.json({ error: 'Task id required' }, { status: 400 })
@@ -44,6 +44,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 
   const updates: Record<string, unknown> = {}
   if (description !== undefined) updates.description = description
+  if (isPublic !== undefined) updates.public = isPublic
   if (status !== undefined) updates.status = status
   if (due_date !== undefined) updates.due_date = due_date
   if (escalation !== undefined) updates.escalation = escalation
@@ -135,6 +136,52 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.json({ success: true })
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const authenticated = await hasValidSession()
+  if (!authenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { description, entry_id, brand_name, status: taskStatus } = await req.json()
+  if (!description?.trim()) {
+    return NextResponse.json({ error: 'Description required' }, { status: 400 })
+  }
+
+  const db = getServiceClient()
+
+  const { data: task, error } = await db
+    .from('tasks')
+    .insert({
+      org_id: ORG_ID,
+      description: description.trim(),
+      status: taskStatus || 'open',
+      entry_id: entry_id || null,
+    })
+    .select('id')
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Link to brand if provided
+  if (brand_name && task) {
+    const { data: brand } = await db
+      .from('entities')
+      .select('id')
+      .eq('org_id', ORG_ID)
+      .ilike('name', brand_name.trim())
+      .limit(1)
+      .maybeSingle()
+
+    if (brand) {
+      await db.from('task_entities').insert({ task_id: task.id, entity_id: brand.id, role: 'brand' })
+    }
+  }
+
+  await db.from('task_events').insert({ task_id: task.id, event_type: 'created', metadata: { source: 'manual' } })
+
+  return NextResponse.json({ task_id: task.id }, { status: 201 })
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {

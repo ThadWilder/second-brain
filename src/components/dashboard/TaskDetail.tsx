@@ -455,12 +455,24 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
                 </div>
               )
             })()}
-            <button
-              onClick={() => setShowTrackingSetup(true)}
-              className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-            >
-              edit tracking details
-            </button>
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                onClick={() => updateTask({ public: !(task as any).public })}
+                className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md border transition-colors ${
+                  (task as any).public
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-[var(--bg)] border-[var(--border)] text-[var(--muted)]'
+                }`}
+              >
+                {(task as any).public ? '🌐 Public' : '🔒 Private'}
+              </button>
+              <button
+                onClick={() => setShowTrackingSetup(true)}
+                className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+              >
+                edit tracking details
+              </button>
+            </div>
           </div>
         </Section>
       )}

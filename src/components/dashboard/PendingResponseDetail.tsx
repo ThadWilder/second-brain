@@ -25,6 +25,7 @@ export function PendingResponseDetail({
   const [data, setData] = useState<PendingResponseData | null>(null)
   const [loading, setLoading] = useState(true)
   const [marking, setMarking] = useState(false)
+  const [converting, setConverting] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null)
@@ -111,6 +112,28 @@ export function PendingResponseDetail({
                 <CheckCircle className="w-3.5 h-3.5" />
               )}
               Mark as responded
+            </button>
+            <button
+              onClick={async () => {
+                setConverting(true)
+                try {
+                  await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      description: pr.summary,
+                      entry_id: data?.source_entry?.id ?? null,
+                    }),
+                  })
+                  await markResponded()
+                } finally {
+                  setConverting(false)
+                }
+              }}
+              disabled={marking || converting}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
+            >
+              {converting ? 'Converting...' : 'Convert to task'}
             </button>
             <button
               onClick={markResponded}

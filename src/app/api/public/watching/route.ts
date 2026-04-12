@@ -16,6 +16,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .select('id, description, status, waiting_on, tracked_owner, follow_up_date, due_date, updated_at, created_at, task_entities(role, entities(id, name, type))')
     .eq('org_id', ORG_ID)
     .eq('status', 'tracking')
+    .eq('public', true)
     .order('follow_up_date', { ascending: true, nullsFirst: false })
     .order('updated_at', { ascending: true })
 
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       description: description.trim(),
       status: 'tracking',
       tracked_owner: owner?.trim() || null,
+      public: true,
     })
     .select('id')
     .single()
