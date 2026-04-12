@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Menu, X as XIcon } from 'lucide-react'
 import Image from 'next/image'
 import { StatusSummary } from './StatusSummary'
+import { EditEntityModal } from './EditEntityModal'
 import { BrandCards } from './BrandCards'
 import { EntityCards } from './EntityCards'
 import { PeopleSection } from './PeopleSection'
@@ -237,10 +238,54 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             />
             <EntityCards title="Franchisees" entities={franchisees} type="franchisee" allEntities={allEntities} entityRelationships={entityRelationships} onRefresh={fetchData} defaultCollapsed />
             <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} defaultCollapsed />
+            <TopicsList entities={allEntities.filter((e: any) => e.type === 'topic')} allEntities={allEntities} onRefresh={fetchData} />
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+function TopicsList({ entities, allEntities, onRefresh }: { entities: any[]; allEntities: any[]; onRefresh: () => void }) {
+  const [expanded, setExpanded] = useState(false)
+  const [editTarget, setEditTarget] = useState<any>(null)
+
+  if (!entities.length) return null
+
+  return (
+    <>
+      <div>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+        >
+          <span className="font-mono text-xs">{expanded ? '▼' : '▶'}</span>
+          <span className="font-semibold uppercase tracking-wider">Topics</span>
+          <span className="text-xs">{entities.length}</span>
+        </button>
+        {expanded && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {entities.sort((a: any, b: any) => a.name.localeCompare(b.name)).map((e: any) => (
+              <button
+                key={e.id}
+                onClick={() => setEditTarget(e)}
+                className="text-xs px-2 py-1 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:border-[var(--accent)] transition-colors"
+              >
+                {e.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {editTarget && (
+        <EditEntityModal
+          entity={editTarget}
+          allEntities={allEntities}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { setEditTarget(null); onRefresh() }}
+        />
+      )}
+    </>
   )
 }
 
