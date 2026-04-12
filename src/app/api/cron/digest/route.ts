@@ -10,7 +10,7 @@ export const maxDuration = 60
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
-import { anthropic, CLAUDE_MODEL } from '@/lib/claude'
+import { anthropic, CLAUDE_MODEL_DEEP } from '@/lib/claude'
 import { sendBriefingEmail } from '@/lib/postmark'
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 
@@ -95,22 +95,33 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
 
     const claudeResponse = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 1024,
-      system: `You write weekly digest emails for a marketing agency operator. Be concise and direct.
+      model: CLAUDE_MODEL_DEEP,
+      max_tokens: 2048,
+      system: `You write weekly strategic digest emails for a marketing agency VP. You are thoughtful and analytical — don't just list numbers, interpret them.
+
 Format:
 ---
-CLOSED: X tasks across X brands
-OPENED: X new tasks
-OVERDUE: X ([brand list])
+## This Week at a Glance
+CLOSED: X tasks across X brands | OPENED: X new | OVERDUE: X
 
-CLOSED BY BRAND:
-• [brand]: X closed
+## What Got Done
+[Group closed tasks by brand. Call out anything notable — big wins, long-standing items finally resolved.]
 
-DECISIONS MADE: X
-• [summary per decision]
+## What's Stuck
+[Overdue items and stalled brands. Be specific about what's blocking progress and how long it's been.]
 
-[One sentence each on: top brand by activity, any stalled brand]
+## Decisions Made
+[List decisions with context on why they matter.]
+
+## Patterns & Observations
+[This is where you earn your keep. Look for:
+- Brands getting disproportionate attention vs. neglected ones
+- Recurring themes (e.g., GBP issues across multiple brands)
+- Velocity trends (are we closing faster or slower than opening?)
+- People or vendors who keep appearing in blockers]
+
+## Recommendation for Next Week
+[2-3 specific things to prioritize based on the data. Be opinionated.]
 ---`,
       messages: [
         {
