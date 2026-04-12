@@ -321,6 +321,44 @@ function InboxGroups({
     }
   }
 
+  async function bulkMerge() {
+    const ids = Array.from(selectedIds)
+    if (ids.length < 2) return
+    setBulkDismissing(true)
+    try {
+      // Find selected tasks in order
+      const selected = ids.map((id) => tasks.find((t) => t.id === id)).filter(Boolean) as TaskWithEntities[]
+      const keepTask = selected[0]
+      const others = selected.slice(1)
+
+      // Build merged description
+      const merged = keepTask.description + '\n\nMerged items:\n' +
+        others.map((t) => `• ${t.description}`).join('\n')
+
+      // Update kept task description
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: keepTask.id, description: merged }),
+      })
+
+      // Dismiss the rest
+      await Promise.all(
+        others.map((t) =>
+          fetch('/api/tasks', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: t.id, status: 'dismissed' }),
+          })
+        )
+      )
+      setSelectedIds(new Set())
+      onRefresh?.()
+    } finally {
+      setBulkDismissing(false)
+    }
+  }
+
   const healthDot = (h?: 'green' | 'amber' | 'red') => {
     if (!h) return null
     const color = h === 'red' ? 'bg-red-500' : h === 'amber' ? 'bg-amber-400' : 'bg-green-400'
@@ -338,6 +376,15 @@ function InboxGroups({
           placeholder="Filter tasks..."
           className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
         />
+        {selectedIds.size >= 2 && (
+          <button
+            onClick={bulkMerge}
+            disabled={bulkDismissing}
+            className="px-3 py-1.5 text-xs rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-50"
+          >
+            {bulkDismissing ? 'Merging...' : `Merge ${selectedIds.size}`}
+          </button>
+        )}
         {selectedIds.size > 0 && (
           <button
             onClick={bulkDismiss}
