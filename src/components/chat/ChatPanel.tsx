@@ -87,14 +87,18 @@ export function ChatPanel() {
         const lines = buffer.split('\n')
         buffer = lines.pop() ?? ''
 
+        let currentEventType = ''
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith('event: ')) {
+            currentEventType = line.slice(7).trim()
+          } else if (line.startsWith('data: ')) {
             try {
-              const event = JSON.parse(line.slice(6))
-              handleSSEEvent(event)
+              const data = JSON.parse(line.slice(6))
+              handleSSEEvent({ type: currentEventType, ...data })
             } catch {
               // ignore parse errors
             }
+            currentEventType = ''
           }
         }
       }
