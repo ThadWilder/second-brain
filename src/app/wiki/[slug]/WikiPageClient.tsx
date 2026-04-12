@@ -21,6 +21,7 @@ interface WikiPage {
   pinned_sections: PinnedSection[]
   locked: boolean
   last_manual_edit: string | null
+  entity_id: string | null
   entities: { type: string; name: string } | null
 }
 
@@ -303,6 +304,24 @@ export default function WikiPageClient() {
             >
               <Pencil className="w-3 h-3" />
               Edit
+            </button>
+          )}
+
+          {/* Archive */}
+          {page.entity_id && (
+            <button
+              onClick={async () => {
+                if (!confirm('Archive this wiki page? It will be hidden from the index.')) return
+                await fetch('/api/entities/update', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ entity_id: page.entity_id, archived: true }),
+                })
+                window.location.href = '/wiki'
+              }}
+              className="flex items-center gap-1 px-2 py-1 rounded text-[var(--muted)] hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors"
+            >
+              Archive
             </button>
           )}
         </div>
