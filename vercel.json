@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/digest",
       "schedule": "0 3 * * 1"
+    },
+    {
+      "path": "/api/cron/wiki",
+      "schedule": "0 */4 * * *"
     }
   ]
 }

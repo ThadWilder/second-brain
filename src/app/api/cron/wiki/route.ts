@@ -14,7 +14,7 @@ import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { updateWikiPageForEntity } from '@/lib/wiki'
 import type { Entity } from '@/types'
 
-const BATCH_SIZE = 3
+const BATCH_SIZE = 10
 const TIME_LIMIT_MS = 240_000 // 240s of 300s max — leave room for cleanup
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
