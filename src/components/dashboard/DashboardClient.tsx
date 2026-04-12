@@ -12,10 +12,11 @@ import { Priorities } from './Priorities'
 import { Heatmap } from './Heatmap'
 import { ClarificationBanner } from './ClarificationBanner'
 import { ChatInput } from '@/components/chat/ChatInput'
+import { ChatPanel } from '@/components/chat/ChatPanel'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 import { useChat } from '@/hooks/useChat'
-import { BarChart3, Clock, Eye, Link2 } from 'lucide-react'
+import { BarChart3, Clock, Eye, Link2, MessageCircle } from 'lucide-react'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 const POLL_INTERVAL = 10_000
@@ -23,6 +24,7 @@ const POLL_INTERVAL = 10_000
 export function DashboardClient({ initialData }: { initialData: DashboardData }) {
   const [data, setData] = useState<DashboardData>(initialData)
   const [lastUpdated, setLastUpdated] = useState(new Date())
+  const [chatOpen, setChatOpen] = useState(false)
   const { showToast } = useToast()
 
   const handleSignOut = useCallback(async () => {
@@ -105,6 +107,13 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />
             Links
           </a>
+          <button
+            onClick={() => setChatOpen(true)}
+            className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
+          >
+            <MessageCircle size={15} />
+            Ask
+          </button>
           <button
             onClick={handleSignOut}
             className="text-base text-white/70 font-medium hover:text-white transition-colors"
@@ -242,6 +251,37 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           </div>
         </div>
       </div>
+
+      {/* Floating chat button (mobile) */}
+      {!chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="md:hidden fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--accent)] text-white shadow-lg flex items-center justify-center hover:bg-[var(--accent-hover)] transition-colors z-40"
+        >
+          <MessageCircle size={24} />
+        </button>
+      )}
+
+      {/* Chat drawer */}
+      {chatOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setChatOpen(false)} />
+          <div className="fixed top-0 right-0 bottom-0 w-full sm:w-[420px] bg-[var(--surface)] border-l border-[var(--border)] shadow-xl z-50 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+              <h2 className="text-sm font-semibold text-[var(--text)]">Ask Dumpbox</h2>
+              <button
+                onClick={() => setChatOpen(false)}
+                className="p-1 text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+              >
+                <XIcon size={18} />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ChatPanel />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
