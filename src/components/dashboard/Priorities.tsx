@@ -701,6 +701,7 @@ function TaskRow({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-base text-[var(--text)] leading-snug">
+          {(task as any).public && <span title="Visible to team" className="mr-1">🌐</span>}
           <AutoLinkText text={task.description} />
         </p>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
