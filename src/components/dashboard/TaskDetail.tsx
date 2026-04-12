@@ -705,6 +705,17 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         </div>
       </Section>
 
+      {/* Draft Email */}
+      <Section label="Draft Email">
+        <EmailDrafter
+          taskDescription={task.description}
+          status={task.status}
+          waitingOn={task.waiting_on}
+          trackedOwner={task.tracked_owner}
+          entities={entities}
+        />
+      </Section>
+
       {/* Timestamps */}
       <Section label="Timestamps">
         <div className="space-y-1 text-xs text-[var(--muted)]">
@@ -825,6 +836,87 @@ function Section({ label, children }: { label: string; children: React.ReactNode
         {label}
       </h4>
       {children}
+    </div>
+  )
+}
+
+function EmailDrafter({
+  taskDescription,
+  status,
+  waitingOn,
+  trackedOwner,
+  entities,
+}: {
+  taskDescription: string
+  status: string
+  waitingOn: string | null
+  trackedOwner: string | null
+  entities: Array<{ id: string; name: string; type: string; role: string }>
+}) {
+  const [prompt, setPrompt] = useState('')
+  const [draft, setDraft] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  async function generate() {
+    if (!prompt.trim()) return
+    setGenerating(true)
+    setDraft('')
+    try {
+      const res = await fetch('/api/tasks/draft-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_description: taskDescription,
+          status,
+          waiting_on: waitingOn,
+          tracked_owner: trackedOwner,
+          entities,
+          prompt: prompt.trim(),
+        }),
+      })
+      const data = await res.json()
+      setDraft(data.email ?? '')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  function copyToClipboard() {
+    navigator.clipboard.writeText(draft)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="space-y-2">
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="What do you want to say? e.g. 'follow up on status, need update by Friday'"
+        rows={2}
+        className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
+      />
+      <button
+        onClick={generate}
+        disabled={!prompt.trim() || generating}
+        className="px-3 py-1.5 text-xs rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
+      >
+        {generating ? 'Drafting...' : 'Generate Email'}
+      </button>
+      {draft && (
+        <div className="mt-2">
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] whitespace-pre-wrap">
+            {draft}
+          </div>
+          <button
+            onClick={copyToClipboard}
+            className="mt-1.5 px-3 py-1.5 text-xs rounded-lg border border-[var(--border)] text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
+          >
+            {copied ? 'Copied!' : 'Copy to clipboard'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
