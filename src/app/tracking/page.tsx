@@ -499,13 +499,12 @@ export default function TrackingPage() {
           <span className="text-white/20 select-none">/</span>
           <span className="text-sm text-white/70 flex items-center gap-1.5">
             <Eye size={14} />
-            Initiatives
+            The Kitchen
           </span>
         </div>
         <nav className="flex items-center gap-6">
           <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><BarChart3 size={15} />KPIs</a>
-          <a href="/tracking" className="text-base text-white font-medium flex items-center gap-1.5"><Eye size={15} />Initiatives</a>
+          <a href="/tracking" className="text-base text-white font-medium flex items-center gap-1.5"><Eye size={15} />The Kitchen</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
           <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
@@ -518,7 +517,7 @@ export default function TrackingPage() {
           {/* Title + Pin New */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-[var(--text)]">Initiatives</h1>
+              <h1 className="text-xl font-bold text-[var(--text)]">The Kitchen</h1>
               {!loading && (
                 <p className="text-sm text-[var(--muted)] mt-0.5">
                   {activeItems.length} active item{activeItems.length !== 1 ? 's' : ''}
@@ -596,6 +595,7 @@ export default function TrackingPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)] mb-4">Data Sources</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
+                { name: 'KPI Dashboard', schedule: 'Upload workbooks manually', path: '/kpis', icon: '📈', link: '/kpis' },
                 { name: 'Morning Briefing', schedule: 'Daily 7am ET', path: '/api/cron/briefing', icon: '☀️' },
                 { name: 'Afternoon Nudge', schedule: 'Daily 2pm ET', path: '/api/cron/nudge', icon: '🔔' },
                 { name: 'Weekly Digest (Opus)', schedule: 'Sunday 8pm ET', path: '/api/cron/digest', icon: '📊' },
@@ -633,6 +633,14 @@ export default function TrackingPage() {
                     >
                       <ExternalLink size={10} />
                       Google Sheet
+                    </a>
+                  )}
+                  {'link' in source && source.link && (
+                    <a
+                      href={source.link}
+                      className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] mt-1 inline-flex items-center gap-1"
+                    >
+                      Open →
                     </a>
                   )}
                 </div>

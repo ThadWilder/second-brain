@@ -16,7 +16,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 import { useChat } from '@/hooks/useChat'
-import { BarChart3, Clock, Eye, Link2, MessageCircle } from 'lucide-react'
+import { Clock, Eye, Link2, MessageCircle } from 'lucide-react'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 const POLL_INTERVAL = 10_000
@@ -103,8 +103,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             </span>
           )}
           <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><BarChart3 size={15} />KPIs</a>
-          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Eye size={15} />Initiatives</a>
+          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Eye size={15} />The Kitchen</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />
             Links
@@ -335,8 +334,7 @@ function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
   const [open, setOpen] = useState(false)
   const links = [
     { href: '/wiki', label: 'Wiki' },
-    { href: '/kpis', label: 'KPIs' },
-    { href: '/tracking', label: 'Initiatives' },
+    { href: '/tracking', label: 'The Kitchen' },
     { href: '/history', label: 'History' },
     { href: '/links', label: 'Links' },
   ]
