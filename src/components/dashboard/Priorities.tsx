@@ -156,9 +156,9 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
         </Section>
       )}
 
-      {/* Watching */}
+      {/* Simmering — collapsible */}
       {watchingTasks.length > 0 && (
-        <Section id="section-watching" title="Simmering" icon="♨️" count={watchingTasks.length}>
+        <CollapsiblePrioritySection id="section-watching" title="Simmering" icon="♨️" count={watchingTasks.length}>
           {watchingTasks
             .filter((t) => !completedIds.has(t.id))
             .map((task) => (
@@ -173,7 +173,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
                 onRefresh={onRefresh}
               />
             ))}
-        </Section>
+        </CollapsiblePrioritySection>
       )}
 
       {/* Overdue Follow-ups */}
@@ -463,6 +463,24 @@ function InboxGroups({
           )
         })}
       </div>
+    </div>
+  )
+}
+
+function CollapsiblePrioritySection({ id, title, icon, count, children }: { id?: string; title: string; icon: string; count: number; children: React.ReactNode }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div id={id}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 mb-2 hover:opacity-80 transition-opacity"
+      >
+        <span className="text-sm text-[var(--muted)] font-mono">{expanded ? '▼' : '▶'}</span>
+        <span className="text-base">{icon}</span>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">{title}</h3>
+        <span className="text-xs text-[var(--muted)]">{count}</span>
+      </button>
+      {expanded && <div className="space-y-1">{children}</div>}
     </div>
   )
 }
