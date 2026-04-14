@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Hourglass, X, Eye } from 'lucide-react'
+import { Hourglass, X, Eye, Tag } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
@@ -535,6 +535,8 @@ function TaskRow({
   const [showTrackingPopover, setShowTrackingPopover] = useState(false)
   const [trackingOwner, setTrackingOwner] = useState('')
   const [trackingFollowUp, setTrackingFollowUp] = useState('')
+  const [showTagPopover, setShowTagPopover] = useState(false)
+  const [availableTags, setAvailableTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const trackingInputRef = useRef<HTMLInputElement>(null)
@@ -571,6 +573,36 @@ function TaskRow({
       setShowTrackingPopover(false)
       setTrackingOwner('')
       setTrackingFollowUp('')
+      onRefresh?.()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function openTagPopover() {
+    setShowTagPopover(true)
+    // Fetch available tags
+    try {
+      const res = await fetch('/api/tags')
+      const data = await res.json()
+      setAvailableTags((data.tags ?? []).map((t: { tag: string }) => t.tag))
+    } catch { /* ignore */ }
+  }
+
+  async function quickAddTag(tag: string) {
+    setSaving(true)
+    try {
+      const currentTags = task.tags ?? []
+      if (currentTags.includes(tag)) {
+        setShowTagPopover(false)
+        return
+      }
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: task.id, tags: [...currentTags, tag] }),
+      })
+      setShowTagPopover(false)
       onRefresh?.()
     } finally {
       setSaving(false)
@@ -716,6 +748,63 @@ function TaskRow({
             </div>
           )}
         </div>
+        {/* Tag icon for quick tagging */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (showTagPopover) {
+                setShowTagPopover(false)
+              } else {
+                openTagPopover()
+              }
+            }}
+            title="Add tag"
+            className={`p-0.5 rounded transition-colors ${
+              (task.tags ?? []).length > 0
+                ? 'text-[var(--accent)]'
+                : 'text-[var(--muted)] hover:text-[var(--accent)] opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            <Tag className="w-3.5 h-3.5" />
+          </button>
+          {showTagPopover && (
+            <div
+              className="absolute z-20 top-full left-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg p-2 w-44"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {availableTags.length === 0 ? (
+                <p className="text-xs text-[var(--muted)] px-1 py-1">No tags yet</p>
+              ) : (
+                <div className="max-h-32 overflow-y-auto space-y-0.5">
+                  {availableTags.map((t) => {
+                    const isApplied = (task.tags ?? []).includes(t)
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => !isApplied && quickAddTag(t)}
+                        disabled={isApplied || saving}
+                        className={`w-full text-left px-2 py-1 text-xs rounded transition-colors ${
+                          isApplied
+                            ? 'text-[var(--muted)] bg-[var(--bg)]'
+                            : 'hover:bg-[var(--surface-hover)] text-[var(--text)]'
+                        }`}
+                      >
+                        {t} {isApplied && '✓'}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              <button
+                onClick={() => setShowTagPopover(false)}
+                className="w-full text-left px-2 py-1 text-[10px] text-[var(--muted)] hover:text-[var(--text)] mt-1 border-t border-[var(--border)] pt-1"
+              >
+                Close
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-base text-[var(--text)] leading-snug">
@@ -751,6 +840,11 @@ function TaskRow({
               👁️ {task.tracked_owner ?? 'tracking'}
             </span>
           )}
+          {(task.tags ?? []).map((t) => (
+            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--bg)] border border-[var(--border)] text-[var(--muted)]">
+              {t}
+            </span>
+          ))}
           {task.status !== 'open' && task.status !== 'tracking' && (
             <StatusBadge status={task.status} />
           )}

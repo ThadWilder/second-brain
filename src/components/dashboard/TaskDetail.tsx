@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban } from 'lucide-react'
+import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban, Tag, Plus } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 import type { TaskStatus, EventType } from '@/types'
@@ -28,6 +28,7 @@ interface TaskData {
     follow_up_date: string | null
     entry_id: string | null
     public: boolean
+    tags: string[]
     created_at: string
     updated_at: string
   }
@@ -54,6 +55,10 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [waitingOnInput, setWaitingOnInput] = useState('')
   const [savingWaitingOn, setSavingWaitingOn] = useState(false)
   const [editingDueDate, setEditingDueDate] = useState(false)
+  const [tagInput, setTagInput] = useState('')
+  const [showTagInput, setShowTagInput] = useState(false)
+  const [allTags, setAllTags] = useState<string[]>([])
+  const tagInputRef = useRef<HTMLInputElement>(null)
   const waitingInputRef = useRef<HTMLInputElement>(null)
 
   async function loadData() {
@@ -67,6 +72,10 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     // Fetch all entities for linking
     fetch('/api/dashboard').then(r => r.json()).then(d => {
       setAllEntities(d.allEntities ?? [])
+    }).catch(() => {})
+    // Fetch all tags for autocomplete
+    fetch('/api/tags').then(r => r.json()).then(d => {
+      setAllTags((d.tags ?? []).map((t: { tag: string }) => t.tag))
     }).catch(() => {})
   }, [taskId])
 
@@ -173,6 +182,50 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     showFeedback(updates.status === 'closed' ? 'Task closed ✓' : 'Updated ✓')
     onUpdate?.()
   }
+
+  async function addTag(tag: string) {
+    const normalized = tag.toLowerCase().trim()
+    if (!normalized || !data) return
+    const currentTags = data.task.tags ?? []
+    if (currentTags.includes(normalized)) return
+    const newTags = [...currentTags, normalized]
+    // Optimistic update
+    setData({ ...data, task: { ...data.task, tags: newTags } })
+    setTagInput('')
+    setShowTagInput(false)
+    await fetch('/api/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: taskId, tags: newTags }),
+    })
+    // Update allTags if this is a new tag
+    if (!allTags.includes(normalized)) {
+      setAllTags(prev => [...prev, normalized].sort())
+    }
+    showFeedback('Tag added ✓')
+    onUpdate?.()
+  }
+
+  async function removeTag(tag: string) {
+    if (!data) return
+    const currentTags = data.task.tags ?? []
+    const newTags = currentTags.filter(t => t !== tag)
+    // Optimistic update
+    setData({ ...data, task: { ...data.task, tags: newTags } })
+    await fetch('/api/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: taskId, tags: newTags }),
+    })
+    showFeedback('Tag removed ✓')
+    onUpdate?.()
+  }
+
+  const tagSuggestions = tagInput.trim().length > 0
+    ? allTags
+        .filter(t => t.includes(tagInput.toLowerCase().trim()) && !(data?.task.tags ?? []).includes(t))
+        .slice(0, 6)
+    : []
 
   if (loading) {
     return (
@@ -647,6 +700,93 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         )}
       </Section>
 
+      {/* Tags */}
+      <Section label="Tags">
+        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+          {(task.tags ?? []).map((tag) => (
+            <span
+              key={tag}
+              className="group inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border"
+              style={{
+                backgroundColor: tagColor(tag).bg,
+                color: tagColor(tag).text,
+                borderColor: tagColor(tag).border,
+              }}
+            >
+              {tag}
+              <button
+                onClick={() => removeTag(tag)}
+                className="opacity-0 group-hover:opacity-100 hover:text-red-600 transition-all"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          {(task.tags ?? []).length === 0 && !showTagInput && (
+            <span className="text-xs text-[var(--muted)]">No tags yet.</span>
+          )}
+          {showTagInput ? (
+            <div className="relative">
+              <div className="flex items-center gap-1">
+                <input
+                  ref={tagInputRef}
+                  autoFocus
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && tagInput.trim()) addTag(tagInput.trim())
+                    if (e.key === 'Escape') { setShowTagInput(false); setTagInput('') }
+                  }}
+                  placeholder="tag name..."
+                  className="text-xs px-2 py-1 rounded-full border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)] w-28"
+                />
+                <button
+                  onClick={() => tagInput.trim() && addTag(tagInput.trim())}
+                  disabled={!tagInput.trim()}
+                  className="px-1.5 py-1 text-[10px] rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 transition-colors"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => { setShowTagInput(false); setTagInput('') }}
+                  className="p-0.5 text-[var(--muted)] hover:text-[var(--text)]"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+              {tagSuggestions.length > 0 && (
+                <div className="absolute z-10 top-full left-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg max-h-32 overflow-y-auto min-w-[160px]">
+                  {tagSuggestions.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => addTag(t)}
+                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2"
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: tagColor(t).text }}
+                      />
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setShowTagInput(true)
+                setTimeout(() => tagInputRef.current?.focus(), 0)
+              }}
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-full border border-dashed border-[var(--border)] text-[var(--muted)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              tag
+            </button>
+          )}
+        </div>
+      </Section>
+
       {/* Source Dumpling */}
       {source_entry && (
         <Section label="Source Dumpling">
@@ -946,6 +1086,25 @@ function ExpandableSource({ entry }: { entry: { source: string; created_at: stri
       )}
     </div>
   )
+}
+
+const TAG_PALETTE = [
+  { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' }, // amber
+  { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' }, // blue
+  { bg: '#f3e8ff', text: '#6b21a8', border: '#c4b5fd' }, // purple
+  { bg: '#dcfce7', text: '#166534', border: '#86efac' }, // green
+  { bg: '#ffe4e6', text: '#9f1239', border: '#fda4af' }, // rose
+  { bg: '#e0f2fe', text: '#075985', border: '#7dd3fc' }, // sky
+  { bg: '#fef9c3', text: '#854d0e', border: '#fde047' }, // yellow
+  { bg: '#fce7f3', text: '#9d174d', border: '#f9a8d4' }, // pink
+]
+
+function tagColor(tag: string): { bg: string; text: string; border: string } {
+  let hash = 0
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length]
 }
 
 function formatDate(iso: string): string {

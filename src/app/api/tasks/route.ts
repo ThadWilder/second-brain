@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const body = await req.json()
-  const { id, status, due_date, escalation, waiting_on, tracked_owner, follow_up_date, description, public: isPublic } = body
+  const { id, status, due_date, escalation, waiting_on, tracked_owner, follow_up_date, description, public: isPublic, tags } = body
 
   if (!id) {
     return NextResponse.json({ error: 'Task id required' }, { status: 400 })
@@ -51,6 +51,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (waiting_on !== undefined) updates.waiting_on = waiting_on || null
   if (tracked_owner !== undefined) updates.tracked_owner = tracked_owner || null
   if (follow_up_date !== undefined) updates.follow_up_date = follow_up_date || null
+  if (tags !== undefined) updates.tags = tags
 
   if (status === 'done') {
     updates.resolved_at = new Date().toISOString()

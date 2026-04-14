@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ListTodo, FileText, Scale, GitMerge, Users, X } from 'lucide-react'
+import { ListTodo, FileText, Scale, GitMerge, Users, X, Tag } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EntityList } from './EntityList'
@@ -35,6 +35,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
   const [combineMode, setCombineMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showCombineModal, setShowCombineModal] = useState(false)
+  const [tagFilter, setTagFilter] = useState<string | null>(null)
 
   const handleComplete = (id: string) => {
     setLocalTasks((prev) =>
@@ -67,11 +68,20 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
     exitCombineMode()
   }
 
-  const allOpen = localTasks.filter((t) => t.status === 'open' || t.status === 'blocked')
+  // Collect all tags used in this brand's tasks
+  const availableTags = Array.from(
+    new Set(localTasks.flatMap((t) => t.tags ?? []))
+  ).sort()
+
+  const filteredTasks = tagFilter
+    ? localTasks.filter((t) => (t.tags ?? []).includes(tagFilter))
+    : localTasks
+
+  const allOpen = filteredTasks.filter((t) => t.status === 'open' || t.status === 'blocked')
   const openTasks = allOpen.filter((t) => !t.waiting_on)
   const waitingOnTasks = allOpen.filter((t) => t.waiting_on)
-  const trackingTasks = localTasks.filter((t) => t.status === 'tracking')
-  const doneTasks = localTasks.filter((t) => t.status === 'done')
+  const trackingTasks = filteredTasks.filter((t) => t.status === 'tracking')
+  const doneTasks = filteredTasks.filter((t) => t.status === 'done')
   const selectedTasks = allOpen.filter((t) => selectedIds.has(t.id))
   const [trackingExpanded, setTrackingExpanded] = useState(false)
 
@@ -91,6 +101,21 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
           <p className="text-base text-[var(--muted)] capitalize">{brand.type}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {availableTags.length > 0 && (
+            <div className="relative">
+              <select
+                value={tagFilter ?? ''}
+                onChange={(e) => setTagFilter(e.target.value || null)}
+                className="text-xs pl-6 pr-2 py-1 rounded-full border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:border-[var(--accent)] focus:outline-none appearance-none"
+              >
+                <option value="">All tags</option>
+                {availableTags.map((tag) => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+              <Tag className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--muted)] pointer-events-none" />
+            </div>
+          )}
           <span className="text-xs text-[var(--muted)]">
             {allOpen.length} open
           </span>
@@ -180,7 +205,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
                         <p className="text-base text-[var(--text)]">
                           <AutoLinkText text={task.description} />
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           {task.due_date && (
                             <span className="text-xs text-[var(--muted)]">due {task.due_date}</span>
                           )}
@@ -188,6 +213,11 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
                             <span className="text-xs text-amber-700">waiting on {task.waiting_on}</span>
                           )}
                           <StatusBadge status={task.status} />
+                          {(task.tags ?? []).map((t) => (
+                            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--bg)] border border-[var(--border)] text-[var(--muted)]">
+                              {t}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     </div>

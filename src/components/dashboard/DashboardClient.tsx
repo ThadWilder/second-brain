@@ -16,7 +16,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 import { useChat } from '@/hooks/useChat'
-import { Clock, Link2, MessageCircle } from 'lucide-react'
+import { Clock, Link2, MessageCircle, Tag } from 'lucide-react'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 const POLL_INTERVAL = 10_000
@@ -105,6 +105,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">🍳 The Kitchen</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
           <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
+          <a href="/tags" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Tag size={15} />Tags</a>
           <button
             onClick={() => setChatOpen(true)}
             className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
@@ -336,6 +337,7 @@ function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
     { href: '/tracking', label: '🍳 The Kitchen' },
     { href: '/history', label: 'History' },
     { href: '/links', label: 'Links' },
+    { href: '/tags', label: 'Tags' },
   ]
   return (
     <>
