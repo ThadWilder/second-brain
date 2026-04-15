@@ -252,6 +252,7 @@ Your job: integrate new information into the existing wiki page for "${entity.na
 Rules:
 - The wiki page is markdown. Use ## headers, bullet points, and [[slug]] cross-references.
 - Integrate new info — don't just append. Update existing sections if they conflict or need revision.
+- DEDUPLICATE: If the new entry contains information already on the page, do NOT repeat it. Merge, don't stack.
 - Keep the page focused and useful. Remove stale/resolved items when superseded.
 ${pinnedSections.length > 0 ? '- IMPORTANT: The user has pinned sections. Do NOT include them in your output — they are managed separately and will be prepended automatically. Do NOT duplicate, rewrite, or summarize pinned content.\n' : ''}- Always keep these sections in order:
   1. ## Overview — one paragraph current state
