@@ -17,6 +17,7 @@ import { anthropic, CLAUDE_MODEL } from '@/lib/claude'
 import { sendBriefingEmail } from '@/lib/postmark'
 import { runEscalationPass, getEscalationContext } from '@/lib/escalation'
 import { format } from 'date-fns'
+import { markdownToHtml } from '@/lib/email-html'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   // Auth check — also reject if CRON_SECRET is not configured
@@ -125,10 +126,8 @@ Total open: X tasks
 
   const subject = `🍜 Your Dim Sum — ${briefingData.date} — ${briefingData.escalation_count} escalations, ${briefingData.open_task_count} open tasks`
 
-  const escapedText = briefingText
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  const htmlBody = `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${escapedText}</pre>
-<p style="font-size: 12px; color: #666;">Reply to this email to update anything.</p>`
+  const htmlBody = markdownToHtml(briefingText) +
+    `<p style="font-size: 12px; color: #999; margin-top: 24px; border-top: 1px solid #e8ddd0; padding-top: 12px;">Reply to this email to update anything.</p>`
 
   await sendBriefingEmail({
     subject,

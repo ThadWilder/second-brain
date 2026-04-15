@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { anthropic, CLAUDE_MODEL } from '@/lib/claude'
 import { sendNudgeEmail } from '@/lib/postmark'
+import { markdownToHtml } from '@/lib/email-html'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const secret = process.env.CRON_SECRET
@@ -71,9 +72,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       response.content[0].type === 'text' ? response.content[0].text : ''
 
     const subject = `Follow up needed — ${staleTasks.length} open dumplings`
-    const escapedText = nudgeText
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    const htmlBody = `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${escapedText}</pre>`
+    const htmlBody = markdownToHtml(nudgeText)
 
     const messageId = await sendNudgeEmail({
       subject,

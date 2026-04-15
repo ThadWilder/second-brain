@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { anthropic, CLAUDE_MODEL_DEEP } from '@/lib/claude'
 import { sendBriefingEmail } from '@/lib/postmark'
+import { markdownToHtml } from '@/lib/email-html'
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -136,11 +137,9 @@ CLOSED: X tasks across X brands | OPENED: X new | OVERDUE: X
 
     const subject = `Week in review — ${digestData.week}`
 
-    const escapedText = digestText
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     await sendBriefingEmail({
       subject,
-      htmlBody: `<pre style="font-family: monospace; font-size: 14px; white-space: pre-wrap;">${escapedText}</pre>`,
+      htmlBody: markdownToHtml(digestText),
       textBody: digestText,
     })
 
