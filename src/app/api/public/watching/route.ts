@@ -4,6 +4,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { rateLimit } from '@/lib/rate-limit'
 
+function emailToName(email: string | null): string | null {
+  if (!email) return null
+  const map: Record<string, string> = {
+    'bmurch@thresholdbrands.com': 'Brandy',
+    'brandymurch@gmail.com': 'Brandy',
+    'mtipsword@thresholdbrands.com': 'Michelle',
+  }
+  return map[email] ?? email.split('@')[0]
+}
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
   const rl = rateLimit(`public-watching:${ip}`, 30)
@@ -20,7 +30,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const { data: tasks } = await db
     .from('tasks')
-    .select('id, description, status, waiting_on, tracked_owner, follow_up_date, due_date, updated_at, created_at, tags, task_entities(role, entities(id, name, type))')
+    .select('id, description, status, waiting_on, tracked_owner, follow_up_date, due_date, updated_at, created_at, tags, owner_email, task_entities(role, entities(id, name, type))')
     .eq('org_id', ORG_ID)
     .eq('public', true)
     .not('status', 'eq', 'dismissed')
@@ -39,6 +49,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     updated_at: t.updated_at,
     created_at: t.created_at,
     tags: t.tags ?? [],
+    owner: emailToName(t.owner_email),
     brand: (t.task_entities ?? []).find((te: any) => te.role === 'brand')?.entities?.name ?? null,
   }))
 

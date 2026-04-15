@@ -12,10 +12,11 @@ import { cookies } from 'next/headers'
 const ALLOWED_EMAILS = [
   'bmurch@thresholdbrands.com',
   'brandymurch@gmail.com',
+  'mtipsword@thresholdbrands.com',
 ]
 
-/** Check if the current request has a valid session from an allowed email. */
-export async function hasValidSession(): Promise<boolean> {
+/** Check if the current request has a valid session. Returns user email or null. */
+export async function hasValidSession(): Promise<string | null> {
   const cookieStore = cookies()
 
   const supabase = createServerClient(
@@ -40,5 +41,6 @@ export async function hasValidSession(): Promise<boolean> {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  return !!user && ALLOWED_EMAILS.includes(user.email ?? '')
+  if (!user || !ALLOWED_EMAILS.includes(user.email ?? '')) return null
+  return user.email!
 }

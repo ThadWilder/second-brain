@@ -17,6 +17,7 @@ interface WatchingTask {
   updated_at: string
   created_at: string
   tags: string[]
+  owner: string | null
   brand: string | null
 }
 
@@ -585,6 +586,16 @@ function TaskCard({
         {/* Meta row */}
         <div className="flex items-center flex-wrap gap-2 mt-2">
           <StatusBadge task={task} />
+
+          {/* Owner */}
+          {task.owner && (
+            <span
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border"
+              style={{ background: '#f0f9ff', color: '#0369a1', borderColor: '#bae6fd' }}
+            >
+              {task.owner}
+            </span>
+          )}
 
           {/* Tags */}
           {task.tags?.map((tag) => {

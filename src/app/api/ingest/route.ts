@@ -103,6 +103,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const db = getServiceClient()
 
+  // ── Determine owner ─────────────────────────────────────────────────
+  const OWNER_MAP: Record<string, string> = {
+    'bmurch@thresholdbrands.com': 'bmurch@thresholdbrands.com',
+    'brandymurch@gmail.com': 'bmurch@thresholdbrands.com',
+    'mtipsword@thresholdbrands.com': 'mtipsword@thresholdbrands.com',
+  }
+
+  let ownerEmail: string | null = null
+  if (source === 'email') {
+    const from = ((body.From as string) ?? '').toLowerCase()
+    // Extract email from "Name <email>" format
+    const emailMatch = from.match(/<([^>]+)>/) ?? [null, from]
+    ownerEmail = OWNER_MAP[emailMatch[1]?.trim()] ?? null
+  } else {
+    const sessionEmail = await hasValidSession()
+    ownerEmail = sessionEmail ? (OWNER_MAP[sessionEmail] ?? sessionEmail) : null
+  }
+
   // ── Determine raw text + dedupe key ─────────────────────────────────
   let rawText: string
   let dedupeKey: string
@@ -125,6 +143,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       subject: inbound.Subject,
       from: inbound.From,
       message_id: inbound.MessageID,
+      owner_email: ownerEmail,
     }
 
     // Upload image attachments from email
@@ -147,7 +166,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'No text or attachments provided' }, { status: 400 })
     }
     dedupeKey = crypto.randomUUID()
-    sourceMeta = { source }
+    sourceMeta = { source, owner_email: ownerEmail }
   }
 
   // ── Step 1: Dedupe + store raw ────────────────────────────────────────

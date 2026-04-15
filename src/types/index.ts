@@ -78,6 +78,7 @@ export interface Task {
   follow_up_date: string | null
   resolved_at: string | null
   public: boolean
+  owner_email: string | null
   tags: string[]
   updated_at: string
   created_at: string

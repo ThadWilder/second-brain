@@ -12,12 +12,15 @@ import { hasValidSession } from '@/lib/auth'
 import type { Entity } from '@/types'
 
 export async function GET(): Promise<NextResponse> {
-  const authenticated = await hasValidSession()
-  if (!authenticated) {
+  const userEmail = await hasValidSession()
+  if (!userEmail) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const db = getServiceClient()
+  // Filter: my tasks + public + unowned
+  const ownerFilter = `owner_email.eq.${userEmail},public.eq.true,owner_email.is.null`
+
   // Use Eastern time for date grouping
   const estNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
   const today = estNow.toISOString().slice(0, 10)
@@ -26,12 +29,12 @@ export async function GET(): Promise<NextResponse> {
 
   // Stats
   const [escalationsRes, needsResponseRes, openTasksRes, closed7dRes, waitingOnRes, trackingRes] = await Promise.all([
-    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('escalation', true).eq('status', 'open'),
+    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('escalation', true).eq('status', 'open').or(ownerFilter),
     db.from('pending_responses').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('responded', false),
-    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'open'),
-    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'done').gte('resolved_at', sevenDaysAgo),
-    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'open').not('waiting_on', 'is', null),
-    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'tracking'),
+    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'open').or(ownerFilter),
+    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'done').gte('resolved_at', sevenDaysAgo).or(ownerFilter),
+    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'open').not('waiting_on', 'is', null).or(ownerFilter),
+    db.from('tasks').select('id', { count: 'exact' }).eq('org_id', ORG_ID).eq('status', 'tracking').or(ownerFilter),
   ])
 
   const stats = {
@@ -103,17 +106,19 @@ export async function GET(): Promise<NextResponse> {
     return { entity: f, ...s }
   }))
 
-  // Open tasks (includes open, blocked)
+  // Open tasks (includes open, blocked) — filtered by owner
   const { data: allOpenTasks } = await db.from('tasks')
     .select('*, task_entities(role, entities(id, name, type))')
     .eq('org_id', ORG_ID).in('status', ['open', 'blocked'])
+    .or(ownerFilter)
     .order('escalation', { ascending: false })
     .order('due_date', { ascending: true, nullsFirst: false })
 
-  // Tracking tasks — for follow-up escalation
+  // Tracking tasks — filtered by owner
   const { data: allTrackingTasks } = await db.from('tasks')
     .select('*, task_entities(role, entities(id, name, type))')
     .eq('org_id', ORG_ID).eq('status', 'tracking')
+    .or(ownerFilter)
     .order('follow_up_date', { ascending: true, nullsFirst: false })
     .order('updated_at', { ascending: true })
 
@@ -227,6 +232,7 @@ export async function GET(): Promise<NextResponse> {
   }
 
   return NextResponse.json({
+    userEmail,
     stats: { ...stats, unresolved_comments: totalUnresolvedComments },
     brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, overdueTasks, regularTasks, inboxTasks,

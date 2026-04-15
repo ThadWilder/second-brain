@@ -142,8 +142,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const authenticated = await hasValidSession()
-  if (!authenticated) {
+  const userEmail = await hasValidSession()
+  if (!userEmail) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -161,6 +161,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       description: description.trim(),
       status: taskStatus || 'open',
       entry_id: entry_id || null,
+      owner_email: userEmail,
     })
     .select('id')
     .single()

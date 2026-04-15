@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 const ALLOWED_EMAILS = [
   'bmurch@thresholdbrands.com',
   'brandymurch@gmail.com',
+  'mtipsword@thresholdbrands.com',
 ]
 
 export async function updateSession(request: NextRequest) {

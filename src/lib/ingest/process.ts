@@ -85,6 +85,7 @@ export async function processEntry(
     // Identify the sender/user from email or session
     const sourceMeta = (entry.source_meta ?? {}) as Record<string, string>
     const senderEmail = sourceMeta.from?.match(/<([^>]+)>/)?.[1] ?? sourceMeta.from ?? ''
+    const ownerEmail = sourceMeta.owner_email ?? null
     const senderContext = await loadSenderContext(db, senderEmail)
 
     // Load existing open tasks for dedup context
@@ -188,6 +189,7 @@ export async function processEntry(
               due_date: taskInput.due_date ?? null,
               waiting_on: taskInput.waiting_on ?? null,
               waiting_on_entity_id: waitingOnEntityId,
+              owner_email: ownerEmail,
             })
             .select()
             .single()
