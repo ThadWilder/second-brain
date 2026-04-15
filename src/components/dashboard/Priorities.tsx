@@ -27,6 +27,7 @@ interface Props {
   overdueFollowUps: TaskWithEntities[]
   staleTracking: TaskWithEntities[]
   consolidationTaskIds?: Set<string>
+  commentCounts?: Record<string, number>
   brands?: BrandHealth[]
   onRefresh?: () => void
 }
@@ -36,7 +37,7 @@ type PanelState =
   | { type: 'pending'; id: string; title: string }
   | null
 
-export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, watchingTasks, overdueFollowUps, staleTracking, consolidationTaskIds, brands, onRefresh }: Props) {
+export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, watchingTasks, overdueFollowUps, staleTracking, consolidationTaskIds, commentCounts, brands, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
   const { showToast } = useToast()
@@ -93,6 +94,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
               variant="escalated"
               hasConsolidation={consolidationTaskIds?.has(task.id)}
               needsReply={needsReplyTaskIds?.has(task.id)}
+              commentCount={commentCounts?.[task.id]}
               onComplete={handleComplete}
               onClick={() => handleTaskClick(task)}
               onRefresh={onRefresh}
@@ -134,6 +136,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
               variant="normal"
               hasConsolidation={consolidationTaskIds?.has(task.id)}
               needsReply={needsReplyTaskIds?.has(task.id)}
+              commentCount={commentCounts?.[task.id]}
               onComplete={handleComplete}
               onClick={() => handleTaskClick(task)}
               onRefresh={onRefresh}
@@ -154,6 +157,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
                 variant="escalated"
                 hasConsolidation={consolidationTaskIds?.has(task.id)}
                 needsReply={needsReplyTaskIds?.has(task.id)}
+                commentCount={commentCounts?.[task.id]}
                 onComplete={handleComplete}
                 onClick={() => handleTaskClick(task)}
                 onRefresh={onRefresh}
@@ -169,6 +173,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
             tasks={inboxTasks.filter((t) => !completedIds.has(t.id))}
             consolidationTaskIds={consolidationTaskIds}
             needsReplyTaskIds={needsReplyTaskIds}
+            commentCounts={commentCounts}
             brands={brands}
             onComplete={handleComplete}
             onTaskClick={handleTaskClick}
@@ -190,6 +195,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
                 variant="normal"
                 hasConsolidation={consolidationTaskIds?.has(task.id)}
                 needsReply={needsReplyTaskIds?.has(task.id)}
+                commentCount={commentCounts?.[task.id]}
                 onComplete={handleComplete}
                 onClick={() => handleTaskClick(task)}
                 onRefresh={onRefresh}
@@ -209,6 +215,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
                 task={task}
                 variant="escalated"
                 hasConsolidation={consolidationTaskIds?.has(task.id)}
+                commentCount={commentCounts?.[task.id]}
                 onComplete={handleComplete}
                 onClick={() => handleTaskClick(task)}
                 onRefresh={onRefresh}
@@ -228,6 +235,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
                 task={task}
                 variant="stale"
                 hasConsolidation={consolidationTaskIds?.has(task.id)}
+                commentCount={commentCounts?.[task.id]}
                 onComplete={handleComplete}
                 onClick={() => handleTaskClick(task)}
                 onRefresh={onRefresh}
@@ -270,6 +278,7 @@ function InboxGroups({
   tasks,
   consolidationTaskIds,
   needsReplyTaskIds,
+  commentCounts,
   brands,
   onComplete,
   onTaskClick,
@@ -279,6 +288,7 @@ function InboxGroups({
   tasks: TaskWithEntities[]
   consolidationTaskIds?: Set<string>
   needsReplyTaskIds?: Set<string>
+  commentCounts?: Record<string, number>
   brands?: BrandHealth[]
   onComplete: (id: string) => void
   onTaskClick: (task: TaskWithEntities) => void
@@ -494,6 +504,7 @@ function InboxGroups({
                           variant="normal"
                           hasConsolidation={consolidationTaskIds?.has(task.id)}
                           needsReply={needsReplyTaskIds?.has(task.id)}
+                          commentCount={commentCounts?.[task.id]}
                           onComplete={onComplete}
                           onClick={() => onTaskClick(task)}
                           onRefresh={onRefresh}
@@ -561,6 +572,7 @@ function TaskRow({
   variant,
   hasConsolidation,
   needsReply,
+  commentCount,
   onComplete,
   onClick,
   onRefresh,
@@ -569,6 +581,7 @@ function TaskRow({
   variant: 'escalated' | 'normal' | 'stale'
   hasConsolidation?: boolean
   needsReply?: boolean
+  commentCount?: number
   onComplete: (id: string) => void
   onClick: () => void
   onRefresh?: () => void
@@ -910,6 +923,11 @@ function TaskRow({
               {t}
             </span>
           ))}
+          {(commentCount ?? 0) > 0 && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-amber-50 text-amber-700 border border-amber-200">
+              💬 {commentCount}
+            </span>
+          )}
           {task.status !== 'open' && task.status !== 'tracking' && (
             <StatusBadge status={task.status} />
           )}

@@ -172,6 +172,19 @@ export async function GET(): Promise<NextResponse> {
     .eq('org_id', ORG_ID).eq('status', 'pending')
     .order('created_at', { ascending: true }).limit(20)
 
+  // Unresolved comment counts per task
+  const { data: unresolvedComments } = await db
+    .from('task_comments')
+    .select('task_id')
+    .eq('org_id', ORG_ID)
+    .eq('is_resolved', false)
+
+  const commentCountMap: Record<string, number> = {}
+  for (const row of unresolvedComments ?? []) {
+    commentCountMap[row.task_id] = (commentCountMap[row.task_id] ?? 0) + 1
+  }
+  const totalUnresolvedComments = unresolvedComments?.length ?? 0
+
   // Entity relationships (for grouping people by their org)
   const { data: entityRelationshipsData } = await db
     .from('entity_relationships')
@@ -214,7 +227,8 @@ export async function GET(): Promise<NextResponse> {
   }
 
   return NextResponse.json({
-    stats, brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
+    stats: { ...stats, unresolved_comments: totalUnresolvedComments },
+    brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
     escalatedTasks, overdueTasks, regularTasks, inboxTasks,
     watchingTasks: normalizedTrackingTasks,
     overdueFollowUps, staleTracking,
@@ -223,6 +237,7 @@ export async function GET(): Promise<NextResponse> {
     clarifications: clarifications ?? [],
     consolidationSuggestions: consolidationSuggestions ?? [],
     consolidationTaskIds: [...consolidationTaskIds],
+    commentCounts: commentCountMap,
     heatmapCells, heatmapDays,
     brandNames: heatmapBrands.map((b: Entity) => b.name),
     allEntities: allEntities ?? [],

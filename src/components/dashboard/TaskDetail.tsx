@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban, Tag, Plus, Globe } from 'lucide-react'
+import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban, Tag, Plus, Globe, MessageSquare, Check } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { useToast } from '@/components/ui/Toast'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
@@ -59,6 +59,8 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [tagInput, setTagInput] = useState('')
   const [showTagInput, setShowTagInput] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
+  const [comments, setComments] = useState<Array<{ id: string; author_name: string; author_email: string | null; content: string; is_resolved: boolean; created_at: string }>>([])
+  const [loadingComments, setLoadingComments] = useState(false)
   const tagInputRef = useRef<HTMLInputElement>(null)
   const waitingInputRef = useRef<HTMLInputElement>(null)
   const { showToast } = useToast()
@@ -68,9 +70,23 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     setData(await r.json())
   }
 
+  async function loadComments() {
+    setLoadingComments(true)
+    try {
+      const r = await fetch(`/api/tasks/${taskId}/comments`)
+      if (r.ok) {
+        const d = await r.json()
+        setComments(d.comments ?? [])
+      }
+    } finally {
+      setLoadingComments(false)
+    }
+  }
+
   useEffect(() => {
     setLoading(true)
     loadData().finally(() => setLoading(false))
+    loadComments()
     // Fetch all entities for linking
     fetch('/api/dashboard').then(r => r.json()).then(d => {
       setAllEntities(d.allEntities ?? [])
@@ -871,6 +887,22 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         </div>
       </Section>
 
+      {/* Team Comments */}
+      <Section label="Team Comments">
+        <TaskComments
+          taskId={taskId}
+          comments={comments}
+          loading={loadingComments}
+          onResolve={async (commentId) => {
+            // Optimistic update
+            setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, is_resolved: true } : c))
+            await fetch(`/api/tasks/${taskId}/comments/${commentId}`, { method: 'PATCH' })
+            showFeedback('Comment resolved ✓')
+            onUpdate?.()
+          }}
+        />
+      </Section>
+
       {/* Draft Email */}
       <Section label="Draft Email">
         <EmailDrafter
@@ -1108,6 +1140,75 @@ function ExpandableSource({ entry }: { entry: { source: string; created_at: stri
         >
           {expanded ? 'show less' : 'show more'}
         </button>
+      )}
+    </div>
+  )
+}
+
+function TaskComments({
+  taskId,
+  comments,
+  loading,
+  onResolve,
+}: {
+  taskId: string
+  comments: Array<{ id: string; author_name: string; author_email: string | null; content: string; is_resolved: boolean; created_at: string }>
+  loading: boolean
+  onResolve: (commentId: string) => void
+}) {
+  const unresolved = comments.filter((c) => !c.is_resolved)
+  const resolved = comments.filter((c) => c.is_resolved)
+
+  if (loading) {
+    return <p className="text-xs text-[var(--muted)]">Loading comments...</p>
+  }
+
+  if (comments.length === 0) {
+    return <p className="text-xs text-[var(--muted)]">No team comments yet.</p>
+  }
+
+  return (
+    <div className="space-y-2">
+      {unresolved.map((comment) => (
+        <div
+          key={comment.id}
+          className="border-l-[3px] border-l-amber-400 bg-amber-50/50 rounded-r-lg px-3 py-2"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs font-medium text-[var(--text)]">{comment.author_name}</span>
+                <span className="text-[10px] text-[var(--muted)]">{formatDate(comment.created_at)}</span>
+              </div>
+              <p className="text-xs text-[var(--text)] mt-0.5 leading-relaxed">{comment.content}</p>
+            </div>
+            <button
+              onClick={() => onResolve(comment.id)}
+              className="shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] rounded border border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+              title="Resolve this comment"
+            >
+              <Check className="w-3 h-3" />
+              Resolve
+            </button>
+          </div>
+        </div>
+      ))}
+      {resolved.length > 0 && (
+        <div className="space-y-1.5 mt-2">
+          {resolved.map((comment) => (
+            <div
+              key={comment.id}
+              className="border-l-[3px] border-l-gray-200 bg-[var(--bg)] rounded-r-lg px-3 py-2 opacity-60"
+            >
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs font-medium text-[var(--muted)]">{comment.author_name}</span>
+                <span className="text-[10px] text-[var(--muted)]">{formatDate(comment.created_at)}</span>
+                <span className="text-[10px] text-green-600">resolved</span>
+              </div>
+              <p className="text-xs text-[var(--muted)] mt-0.5 line-through">{comment.content}</p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

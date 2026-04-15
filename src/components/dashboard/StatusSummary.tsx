@@ -3,7 +3,7 @@
 import type { DashboardStats } from '@/types'
 
 interface Props {
-  stats: DashboardStats
+  stats: DashboardStats & { unresolved_comments?: number }
 }
 
 const STATS: { key: keyof DashboardStats; label: string; icon: string; scrollTo?: string }[] = [
@@ -21,6 +21,8 @@ export function StatusSummary({ stats }: Props) {
     const el = document.getElementById(scrollTo)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
+
+  const unresolvedComments = (stats as any).unresolved_comments ?? 0
 
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -41,6 +43,19 @@ export function StatusSummary({ stats }: Props) {
           </div>
         </div>
       ))}
+      {unresolvedComments > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-5 py-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-amber-700">
+              Team Comments
+            </span>
+            <span className="text-xl">💬</span>
+          </div>
+          <div className="text-3xl font-bold tabular-nums text-amber-700 mt-1">
+            {unresolvedComments}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

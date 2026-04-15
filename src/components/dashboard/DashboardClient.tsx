@@ -74,7 +74,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
     escalatedTasks, overdueTasks, regularTasks, inboxTasks, watchingTasks,
     overdueFollowUps, staleTracking,
     pendingResponses, needsReplyTaskIds, clarifications,
-    consolidationTaskIds,
+    consolidationTaskIds, commentCounts,
     heatmapCells, heatmapDays, brandNames,
     allEntities,
     entityRelationships,
@@ -229,6 +229,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               overdueFollowUps={overdueFollowUps ?? []}
               staleTracking={staleTracking ?? []}
               consolidationTaskIds={new Set(consolidationTaskIds ?? [])}
+              commentCounts={commentCounts ?? {}}
               brands={brands}
               onRefresh={fetchData}
             />
@@ -358,7 +359,7 @@ function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
 
 // Type for all dashboard data
 interface DashboardData {
-  stats: { escalations: number; needs_response: number; open_tasks: number; closed_7d: number; waiting_on: number; tracking: number }
+  stats: { escalations: number; needs_response: number; open_tasks: number; closed_7d: number; waiting_on: number; tracking: number; unresolved_comments: number }
   brands: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null; health: 'green' | 'amber' | 'red' }>
   people: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
   vendors: Array<{ entity: any; open_tasks: number; escalated_tasks: number; last_activity: string | null }>
@@ -378,6 +379,7 @@ interface DashboardData {
   consolidationSuggestions: Array<{ id: string; new_task_id: string; existing_task_id: string; merged_description: string; reason: string; created_at: string }>
   needsReplyTaskIds: string[]
   consolidationTaskIds: string[]
+  commentCounts: Record<string, number>
   heatmapCells: Array<{ brand_id: string; brand_name: string; date: string; count: number }>
   heatmapDays: string[]
   brandNames: string[]
