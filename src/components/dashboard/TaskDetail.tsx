@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban, Tag, Plus } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { useToast } from '@/components/ui/Toast'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 import type { TaskStatus, EventType } from '@/types'
 
@@ -60,6 +61,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
   const [allTags, setAllTags] = useState<string[]>([])
   const tagInputRef = useRef<HTMLInputElement>(null)
   const waitingInputRef = useRef<HTMLInputElement>(null)
+  const { showToast } = useToast()
 
   async function loadData() {
     const r = await fetch(`/api/tasks/${taskId}`)
@@ -179,7 +181,29 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     })
     await loadData()
     setUpdating(false)
-    showFeedback(updates.status === 'closed' ? 'Task closed ✓' : 'Updated ✓')
+
+    if (updates.status === 'done' || updates.status === 'dismissed') {
+      const label = updates.status === 'done' ? 'Plated ✓' : 'Dismissed'
+      showToast({
+        message: label,
+        type: 'success',
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            fetch('/api/tasks', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: taskId, status: 'open' }),
+            }).then(() => {
+              loadData()
+              onUpdate?.()
+            })
+          },
+        },
+      })
+    } else {
+      showFeedback(updates.status === 'closed' ? 'Task closed ✓' : 'Updated ✓')
+    }
     onUpdate?.()
   }
 

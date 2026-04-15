@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ListTodo, FileText, Scale, GitMerge, Users, X, Tag } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
+import { useToast } from '@/components/ui/Toast'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { EntityList } from './EntityList'
 import { CombineTasksModal } from './CombineTasksModal'
@@ -36,11 +37,29 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showCombineModal, setShowCombineModal] = useState(false)
   const [tagFilter, setTagFilter] = useState<string | null>(null)
+  const { showToast } = useToast()
 
   const handleComplete = (id: string) => {
     setLocalTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, status: 'done' as const, resolved_at: new Date().toISOString() } : t))
     )
+    showToast({
+      message: 'Plated ✓',
+      type: 'success',
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          fetch('/api/tasks', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, status: 'open' }),
+          })
+          setLocalTasks((prev) =>
+            prev.map((t) => (t.id === id ? { ...t, status: 'open' as const, resolved_at: null } : t))
+          )
+        },
+      },
+    })
   }
 
   const toggleSelect = (id: string) => {

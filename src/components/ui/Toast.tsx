@@ -1,7 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import { clsx } from 'clsx'
+import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react'
 
 interface Toast {
   id: string
@@ -24,52 +23,60 @@ export function useToast(): ToastContextValue {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+  const dismiss = useCallback((id: string) => {
+    const timer = timersRef.current.get(id)
+    if (timer) { clearTimeout(timer); timersRef.current.delete(id) }
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
 
   const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = crypto.randomUUID()
-    setToasts((prev) => [...prev, { ...toast, id }])
-    setTimeout(() => {
+    // Replace previous toast so only one shows at a time
+    setToasts([{ ...toast, id }])
+    // Clear any existing timers
+    for (const [, timer] of timersRef.current) clearTimeout(timer)
+    timersRef.current.clear()
+    const timer = setTimeout(() => {
+      timersRef.current.delete(id)
       setToasts((prev) => prev.filter((t) => t.id !== id))
     }, 5000)
-  }, [])
-
-  const dismiss = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id))
+    timersRef.current.set(id, timer)
   }, [])
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toast container — bottom-right */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={clsx(
-              'px-4 py-3 rounded-lg border text-sm shadow-lg animate-slide-in',
-              toast.type === 'success'
-                ? 'bg-green-50 border-green-200 text-green-800'
-                : 'bg-red-50 border-red-200 text-red-800'
-            )}
+            className="animate-slide-up rounded-lg px-4 py-3 text-sm shadow-lg"
+            style={{ background: '#2c2014', color: '#f5ede3', border: '1px solid #4a3828' }}
           >
-            <div className="flex items-start gap-2">
-              <p className="flex-1">{toast.message}</p>
+            <div className="flex items-center gap-3">
+              <p className="flex-1 font-medium">{toast.message}</p>
+              {toast.action && (
+                <button
+                  onClick={() => { toast.action!.onClick(); dismiss(toast.id) }}
+                  className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+                  style={{ background: '#1a7a6d', color: '#e0f5f0' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#22998a' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#1a7a6d' }}
+                >
+                  {toast.action.label}
+                </button>
+              )}
               <button
                 onClick={() => dismiss(toast.id)}
-                className="shrink-0 text-[var(--muted)] hover:text-[var(--text)] text-xs mt-0.5"
+                className="shrink-0 opacity-50 hover:opacity-100 text-xs transition-opacity"
                 aria-label="Dismiss"
               >
                 &times;
               </button>
             </div>
-            {toast.action && (
-              <button
-                onClick={toast.action.onClick}
-                className="mt-1.5 text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] underline underline-offset-2"
-              >
-                {toast.action.label}
-              </button>
-            )}
           </div>
         ))}
       </div>

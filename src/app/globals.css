@@ -62,3 +62,13 @@ body {
 .animate-panel-slide-in {
   animation: panel-slide-in 0.25s ease-out;
 }
+
+/* Undo toast slide-up */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}

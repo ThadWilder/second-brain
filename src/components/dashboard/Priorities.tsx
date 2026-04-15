@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { Hourglass, X, Eye, Tag } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
+import { useToast } from '@/components/ui/Toast'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 import { DetailPanel } from './DetailPanel'
@@ -38,9 +39,29 @@ type PanelState =
 export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, watchingTasks, overdueFollowUps, staleTracking, consolidationTaskIds, brands, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
+  const { showToast } = useToast()
 
   const handleComplete = (id: string) => {
     setCompletedIds((prev) => new Set([...prev, id]))
+    showToast({
+      message: 'Plated ✓',
+      type: 'success',
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          fetch('/api/tasks', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, status: 'open' }),
+          })
+          setCompletedIds((prev) => {
+            const next = new Set(prev)
+            next.delete(id)
+            return next
+          })
+        },
+      },
+    })
   }
 
   const closePanel = useCallback(() => setPanel(null), [])
@@ -152,6 +173,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
             onComplete={handleComplete}
             onTaskClick={handleTaskClick}
             onRefresh={onRefresh}
+            showToast={showToast}
           />
         </Section>
       )}
@@ -252,6 +274,7 @@ function InboxGroups({
   onComplete,
   onTaskClick,
   onRefresh,
+  showToast,
 }: {
   tasks: TaskWithEntities[]
   consolidationTaskIds?: Set<string>
@@ -260,6 +283,7 @@ function InboxGroups({
   onComplete: (id: string) => void
   onTaskClick: (task: TaskWithEntities) => void
   onRefresh?: () => void
+  showToast: (toast: { message: string; type: 'success' | 'error'; action?: { label: string; onClick: () => void } }) => void
 }) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
@@ -326,9 +350,10 @@ function InboxGroups({
 
   async function bulkDismiss() {
     setBulkDismissing(true)
+    const dismissedIds = Array.from(selectedIds)
     try {
       await Promise.all(
-        Array.from(selectedIds).map((id) =>
+        dismissedIds.map((id) =>
           fetch('/api/tasks', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -338,6 +363,25 @@ function InboxGroups({
       )
       setSelectedIds(new Set())
       onRefresh?.()
+      const count = dismissedIds.length
+      showToast({
+        message: `Dismissed ${count} task${count > 1 ? 's' : ''}`,
+        type: 'success',
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            Promise.all(
+              dismissedIds.map((id) =>
+                fetch('/api/tasks', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id, status: 'open' }),
+                })
+              )
+            ).then(() => onRefresh?.())
+          },
+        },
+      })
     } finally {
       setBulkDismissing(false)
     }

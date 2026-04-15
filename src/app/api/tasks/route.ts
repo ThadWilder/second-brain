@@ -55,6 +55,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 
   if (status === 'done') {
     updates.resolved_at = new Date().toISOString()
+  } else if (status === 'open' && (prevStatus === 'done' || prevStatus === 'dismissed')) {
+    updates.resolved_at = null
   }
 
   // Clear tracking fields when moving away from tracking status
