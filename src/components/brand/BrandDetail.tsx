@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ListTodo, FileText, Scale, GitMerge, Users, X, Tag } from 'lucide-react'
+import { ListTodo, FileText, Scale, GitMerge, Users, X, Tag, Globe } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { useToast } from '@/components/ui/Toast'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -85,6 +85,18 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
     ])
     setShowCombineModal(false)
     exitCombineMode()
+  }
+
+  const handleTogglePublic = (id: string, currentPublic: boolean) => {
+    const newPublic = !currentPublic
+    setLocalTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, public: newPublic } : t))
+    )
+    fetch('/api/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, public: newPublic }),
+    })
   }
 
   // Collect all tags used in this brand's tasks
@@ -197,7 +209,7 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
                     <div
                       key={task.id}
                       onClick={combineMode ? () => toggleSelect(task.id) : undefined}
-                      className={`flex items-start gap-3 p-4 rounded-lg border transition-colors
+                      className={`group flex items-start gap-3 p-4 rounded-lg border transition-colors
                         ${combineMode ? 'cursor-pointer' : ''}
                         ${isSelected
                           ? 'bg-amber-50 border-[var(--accent)] ring-1 ring-[var(--accent)]'
@@ -206,22 +218,39 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
                             : 'bg-[var(--surface)] border-[var(--border)]'
                         }`}
                     >
-                      {combineMode ? (
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelect(task.id)}
-                          className="mt-0.5 accent-[var(--accent)]"
-                        />
-                      ) : (
-                        <TaskCheckbox
-                          taskId={task.id}
-                          checked={false}
-                          onComplete={handleComplete}
-                        />
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {combineMode ? (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(task.id)}
+                            className="mt-0.5 accent-[var(--accent)]"
+                          />
+                        ) : (
+                          <TaskCheckbox
+                            taskId={task.id}
+                            checked={false}
+                            onComplete={handleComplete}
+                          />
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleTogglePublic(task.id, task.public)
+                          }}
+                          title={task.public ? 'Make private' : 'Make public'}
+                          className={`p-0.5 rounded transition-colors ${
+                            task.public
+                              ? 'text-teal-600 hover:text-red-600'
+                              : 'text-[var(--muted)] hover:text-teal-600 opacity-0 group-hover:opacity-100'
+                          }`}
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-base text-[var(--text)]">
+                          {task.public && <span title="Public" className="inline mr-1 -mt-0.5"><Globe className="w-3.5 h-3.5 text-teal-600 inline" /></span>}
                           <AutoLinkText text={task.description} />
                         </p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -278,29 +307,46 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
                     <div
                       key={task.id}
                       onClick={combineMode ? () => toggleSelect(task.id) : undefined}
-                      className={`flex items-start gap-3 p-4 rounded-lg border transition-colors
+                      className={`group flex items-start gap-3 p-4 rounded-lg border transition-colors
                         ${combineMode ? 'cursor-pointer' : ''}
                         ${isSelected
                           ? 'bg-amber-50 border-[var(--accent)] ring-1 ring-[var(--accent)]'
                           : 'bg-amber-50/50 border-amber-200'
                         }`}
                     >
-                      {combineMode ? (
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelect(task.id)}
-                          className="mt-0.5 accent-[var(--accent)]"
-                        />
-                      ) : (
-                        <TaskCheckbox
-                          taskId={task.id}
-                          checked={false}
-                          onComplete={handleComplete}
-                        />
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {combineMode ? (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(task.id)}
+                            className="mt-0.5 accent-[var(--accent)]"
+                          />
+                        ) : (
+                          <TaskCheckbox
+                            taskId={task.id}
+                            checked={false}
+                            onComplete={handleComplete}
+                          />
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleTogglePublic(task.id, task.public)
+                          }}
+                          title={task.public ? 'Make private' : 'Make public'}
+                          className={`p-0.5 rounded transition-colors ${
+                            task.public
+                              ? 'text-teal-600 hover:text-red-600'
+                              : 'text-[var(--muted)] hover:text-teal-600 opacity-0 group-hover:opacity-100'
+                          }`}
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-base text-[var(--text)]">
+                          {task.public && <span title="Public" className="inline mr-1 -mt-0.5"><Globe className="w-3.5 h-3.5 text-teal-600 inline" /></span>}
                           <AutoLinkText text={task.description} />
                         </p>
                         <div className="flex items-center gap-2 mt-1">
@@ -356,14 +402,29 @@ export function BrandDetail({ brand, tasks, decisions, entries, entities, relati
                       return (
                         <div
                           key={task.id}
-                          className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
+                          className={`group flex items-start gap-3 p-4 rounded-lg border transition-colors ${
                             isOverdue
                               ? 'bg-red-50/50 border-l-[3px] border-l-red-400 border-red-200'
                               : 'bg-purple-50/50 border-purple-200'
                           }`}
                         >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleTogglePublic(task.id, task.public)
+                            }}
+                            title={task.public ? 'Make private' : 'Make public'}
+                            className={`p-0.5 rounded transition-colors mt-0.5 ${
+                              task.public
+                                ? 'text-teal-600 hover:text-red-600'
+                                : 'text-[var(--muted)] hover:text-teal-600 opacity-0 group-hover:opacity-100'
+                            }`}
+                          >
+                            <Globe className="w-3.5 h-3.5" />
+                          </button>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-[var(--text)]">
+                              {task.public && <span title="Public" className="inline mr-1 -mt-0.5"><Globe className="w-3.5 h-3.5 text-teal-600 inline" /></span>}
                               <AutoLinkText text={task.description} />
                             </p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">

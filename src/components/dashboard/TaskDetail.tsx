@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban, Tag, Plus } from 'lucide-react'
+import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban, Tag, Plus, Globe } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { useToast } from '@/components/ui/Toast'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
@@ -489,11 +489,12 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
             onClick={() => updateTask({ public: !task.public })}
             className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border transition-colors ${
               task.public
-                ? 'border-green-200 bg-green-50 text-green-700'
+                ? 'border-teal-200 bg-teal-50 text-teal-700'
                 : 'border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--text)]'
             }`}
           >
-            {task.public ? '🌐 Public' : '🔒 Private'}
+            <Globe className="w-3 h-3" />
+            {task.public ? 'Public' : 'Private'}
           </button>
         </div>
       </Section>

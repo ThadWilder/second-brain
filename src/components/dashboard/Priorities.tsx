@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Hourglass, X, Eye, Tag } from 'lucide-react'
+import { Hourglass, X, Eye, Tag, Globe } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { useToast } from '@/components/ui/Toast'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -849,10 +849,31 @@ function TaskRow({
             </div>
           )}
         </div>
+        {/* Globe icon for public toggle */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            const newPublic = !task.public
+            // Optimistic update via onRefresh after PATCH
+            fetch('/api/tasks', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: task.id, public: newPublic }),
+            }).then(() => onRefresh?.())
+          }}
+          title={task.public ? 'Make private' : 'Make public'}
+          className={`p-0.5 rounded transition-colors ${
+            task.public
+              ? 'text-teal-600 hover:text-red-600'
+              : 'text-[var(--muted)] hover:text-teal-600 opacity-0 group-hover:opacity-100'
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5" />
+        </button>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-base text-[var(--text)] leading-snug">
-          {task.public && <span title="Visible to team" className="mr-1">🌐</span>}
+          {task.public && <span title="Public" className="inline mr-1 -mt-0.5"><Globe className="w-3.5 h-3.5 text-teal-600 inline" /></span>}
           <AutoLinkText text={task.description} />
         </p>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
