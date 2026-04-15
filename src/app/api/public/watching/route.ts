@@ -20,7 +20,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const { data: tasks } = await db
     .from('tasks')
-    .select('id, description, status, waiting_on, tracked_owner, follow_up_date, due_date, updated_at, created_at, task_entities(role, entities(id, name, type))')
+    .select('id, description, status, waiting_on, tracked_owner, follow_up_date, due_date, updated_at, created_at, tags, task_entities(role, entities(id, name, type))')
     .eq('org_id', ORG_ID)
     .eq('public', true)
     .not('status', 'eq', 'dismissed')
@@ -38,6 +38,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     due_date: t.due_date,
     updated_at: t.updated_at,
     created_at: t.created_at,
+    tags: t.tags ?? [],
     brand: (t.task_entities ?? []).find((te: any) => te.role === 'brand')?.entities?.name ?? null,
   }))
 
