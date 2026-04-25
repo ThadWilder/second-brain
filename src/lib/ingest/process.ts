@@ -128,6 +128,9 @@ export async function processEntry(
     // Track touched entities for wiki update step
     const touchedEntityIds = new Set<string>()
 
+    // Track project entities resolved during this ingest for task linking
+    const projectEntities: Array<{ id: string; name: string }> = []
+
     // Entity resolution map: name → entity
     const entityMap: Map<string, { id: string; isNew: boolean }> = new Map()
 
@@ -156,6 +159,11 @@ export async function processEntry(
           )
 
           touchedEntityIds.add(entity.id)
+
+          // Collect project entities for task linking below
+          if (entityInput.type === 'project') {
+            projectEntities.push({ id: entity.id, name: entity.name })
+          }
 
           if (isNew) result.entities_created++
           else result.entities_resolved++
@@ -227,6 +235,15 @@ export async function processEntry(
                 { onConflict: 'task_id,entity_id,role', ignoreDuplicates: true }
               )
             }
+          }
+
+          // Link to project entities from this ingest
+          for (const proj of projectEntities) {
+            await db.from('task_entities').upsert({
+              task_id: newTask.id,
+              entity_id: proj.id,
+              role: 'project',
+            }, { onConflict: 'task_id,entity_id,role' }).select()
           }
 
           newTasksByDescription.set(taskInput.description, newTask.id)
