@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 120
 
 /**
  * POST /api/ingest
@@ -21,6 +21,10 @@ import type { Attachment } from '@/types'
 import { hasValidSession } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import crypto from 'crypto'
+import { parsePrefixes } from '@/lib/ingest/prefixes'
+import { uploadReceiptAttachments, extractReceiptMeta, saveReceipt } from '@/lib/ingest/receipt'
+import { isBlocklisted, extractSenderEmail } from '@/lib/blocklist'
+import type { ParsedPrefixes } from '@/types'
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
 
@@ -127,9 +131,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let sourceMeta: Record<string, unknown> = {}
   let inReplyTo: string | undefined
   let attachments: Attachment[] = []
+  let prefixes: ParsedPrefixes = { isReceipt: false, note: null, projectName: null }
+  let parsedInbound: ReturnType<typeof parsePostmarkInbound> | null = null
 
   if (source === 'email') {
     const inbound = parsePostmarkInbound(body)
+    parsedInbound = inbound
     // StrippedTextReply often contains only the sender's signature on forwards.
     // Use TextBody when it has substantially more content (the full thread).
     const stripped = (inbound.StrippedTextReply || '').trim()
@@ -146,13 +153,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       owner_email: ownerEmail,
     }
 
-    // Upload image attachments from email
-    if (inbound.Attachments.length > 0) {
+    // ── Prefix detection (before attachment upload) ──────────────
+    prefixes = parsePrefixes((inbound.Subject ?? '') as string)
+    if (prefixes.note) (sourceMeta as any).user_note = prefixes.note
+    if (prefixes.projectName) (sourceMeta as any).project_name = prefixes.projectName
+
+    // Upload image attachments -- receipts handle their own upload path
+    if (!prefixes.isReceipt && inbound.Attachments.length > 0) {
       attachments = await uploadPostmarkAttachments(inbound.Attachments)
     }
 
     // Bail early if email has no usable text and no attachments
-    if (!rawText?.trim() && attachments.length === 0) {
+    if (!rawText?.trim() && attachments.length === 0 && !prefixes.isReceipt) {
       return NextResponse.json({ error: 'Email had no text or attachments' }, { status: 400 })
     }
   } else {
@@ -181,6 +193,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ entry_id: existing.id, duplicate: true })
   }
 
+  // ── Blocklist check ──────────────────────────────────────────────
+  if (source === 'email') {
+    const senderEmail = extractSenderEmail((body.From as string) ?? '')
+    const blocked = await isBlocklisted(senderEmail)
+    if (blocked) {
+      return NextResponse.json({ blocked: true })
+    }
+  }
+
   const { data: newEntry, error: insertError } = await db
     .from('entries')
     .insert({
@@ -204,8 +225,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await linkReplyToNudge(db, inReplyTo, newEntry.id)
   }
 
-  // ── Step 2: Process synchronously ────────────────────────────────────
+  // ── Step 2: Process ──────────────────────────────────────────────
   try {
+    if (prefixes.isReceipt && parsedInbound) {
+      // Receipt-specific path: upload files, extract meta, save to saved_links
+      const receiptAttachments = await uploadReceiptAttachments(parsedInbound.Attachments)
+      const meta = await extractReceiptMeta(rawText, receiptAttachments)
+      const receipt = await saveReceipt(newEntry.id, meta, receiptAttachments)
+
+      // Mark entry as done
+      await db.from('entries').update({
+        processing_status: 'done',
+        processed_at: new Date().toISOString(),
+      }).eq('id', newEntry.id)
+
+      return NextResponse.json({
+        entry_id: newEntry.id,
+        receipt_id: receipt.id,
+        type: 'receipt',
+        meta,
+      })
+    }
+
     const result = await processEntry(db, newEntry.id)
     return NextResponse.json(result)
   } catch (err) {
