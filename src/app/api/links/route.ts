@@ -35,6 +35,10 @@ interface LinkResult {
   last_seen: string
   saved_link_id: string | null
   pinned: boolean
+  kind: 'link' | 'receipt'
+  receipt_meta: Record<string, unknown> | null
+  file_url: string | null
+  file_type: string | null
 }
 
 function categorizeUrl(url: string): LinkCategory {
@@ -108,7 +112,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const { searchParams } = req.nextUrl
   const q = searchParams.get('q')?.trim() ?? ''
-  const typeFilter = searchParams.get('type')?.trim() ?? ''
+  const categoryFilter = searchParams.get('category')?.trim() || searchParams.get('type')?.trim() || ''
+  const kindFilter = searchParams.get('kind')?.trim() ?? 'all'  // all | links | receipts
 
   const db = getServiceClient()
 
@@ -128,14 +133,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Fetch saved links
   const { data: savedLinks, error: savedError } = await db
     .from('saved_links')
-    .select('id, url, label, category, brand_entity_id, hidden, pinned, created_at')
+    .select('id, url, label, category, brand_entity_id, hidden, pinned, type, receipt_meta, file_url, file_type, entry_id, created_at')
     .eq('org_id', ORG_ID)
     .order('created_at', { ascending: false })
 
   // If saved_links table doesn't exist yet, just use empty array
   const allSavedLinks = savedError ? [] : (savedLinks ?? [])
   const hiddenUrls = new Set(allSavedLinks.filter((l: any) => l.hidden).map((l: any) => l.url))
-  const manualLinks = allSavedLinks.filter((l: any) => !l.hidden)
+  const allManualLinks = allSavedLinks.filter((l: any) => !l.hidden)
+  // Split receipts from regular links
+  const receiptLinks = allManualLinks.filter((l: any) => l.type === 'receipt')
+  const manualLinks = kindFilter === 'receipts'
+    ? []
+    : allManualLinks.filter((l: any) => l.type !== 'receipt')
 
   // Collect all entry IDs that have links
   const entryIds = (entries ?? []).map((e: { id: string }) => e.id)
@@ -200,12 +210,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           last_seen: e.created_at,
           saved_link_id: null,
           pinned: false,
+          kind: 'link',
+          receipt_meta: null,
+          file_url: null,
+          file_type: null,
         })
       }
     }
   }
 
-  // Merge manually saved links
+  // Merge manually saved links (non-receipts only, unless kindFilter === 'receipts')
   for (const sl of manualLinks) {
     const s = sl as { id: string; url: string; label: string | null; category: string | null; brand_entity_id: string | null; pinned: boolean; created_at: string }
     const existing = urlMap.get(s.url)
@@ -227,6 +241,38 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         last_seen: s.created_at,
         saved_link_id: s.id,
         pinned: !!s.pinned,
+        kind: 'link',
+        receipt_meta: null,
+        file_url: null,
+        file_type: null,
+      })
+    }
+  }
+
+  // Add receipt rows (only when kindFilter is 'all' or 'receipts')
+  if (kindFilter !== 'links') {
+    for (const sl of receiptLinks) {
+      const s = sl as {
+        id: string; url: string; label: string | null; category: string | null
+        pinned: boolean; created_at: string
+        receipt_meta: Record<string, unknown> | null
+        file_url: string | null; file_type: string | null
+      }
+      urlMap.set(s.url || `receipt:${s.id}`, {
+        url: s.url || '',
+        category: (s.category as LinkCategory) ?? 'other',
+        domain: s.url ? extractDomain(s.url) : '',
+        label: s.label,
+        sources: [],
+        entities: [],
+        first_seen: s.created_at,
+        last_seen: s.created_at,
+        saved_link_id: s.id,
+        pinned: !!s.pinned,
+        kind: 'receipt',
+        receipt_meta: s.receipt_meta ?? null,
+        file_url: s.file_url ?? null,
+        file_type: s.file_type ?? null,
       })
     }
   }
@@ -235,8 +281,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   let results = Array.from(urlMap.values())
 
   // Filter by category
-  if (typeFilter && typeFilter !== 'all') {
-    results = results.filter(r => r.category === typeFilter)
+  if (categoryFilter && categoryFilter !== 'all') {
+    results = results.filter(r => r.category === categoryFilter)
   }
 
   // Search filter
@@ -312,7 +358,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const body = await req.json()
-  const { url, label, pinned } = body as { url?: string; label?: string; pinned?: boolean }
+  const { url, label, pinned, receipt_meta } = body as { url?: string; label?: string; pinned?: boolean; receipt_meta?: Record<string, unknown> }
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 })
@@ -324,6 +370,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const upsertData: Record<string, unknown> = { org_id: ORG_ID, url, category }
   if (typeof label === 'string') upsertData.label = label || null
   if (typeof pinned === 'boolean') upsertData.pinned = pinned
+  if (body.receipt_meta) upsertData.receipt_meta = body.receipt_meta
 
   const { data, error } = await db
     .from('saved_links')
