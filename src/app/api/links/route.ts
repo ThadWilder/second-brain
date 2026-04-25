@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { hasValidSession } from '@/lib/auth'
+import { isIconUrl } from '@/lib/ingest/urls'
 
 type LinkCategory = 'spreadsheet' | 'document' | 'presentation' | 'drive' | 'sharepoint' | 'other'
 
@@ -275,6 +276,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         file_type: s.file_type ?? null,
       })
     }
+  }
+
+  // Filter out icon/logo/favicon URLs
+  for (const [url] of urlMap) {
+    if (isIconUrl(url)) urlMap.delete(url)
   }
 
   // Convert to array and apply filters
