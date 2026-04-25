@@ -30,8 +30,8 @@ export const INGEST_TOOLS: any[] = [
               name: { type: 'string' },
               type: {
                 type: 'string',
-                enum: ['brand', 'department', 'franchisee', 'contact', 'vendor', 'vendor_team', 'freelancer'],
-                description: 'brand=franchise brands, department=internal teams (TMS/HQ), franchisee=franchise owners, contact=team members, vendor=external companies, vendor_team=people at vendors, freelancer=independent contractors.',
+                enum: ['brand', 'department', 'franchisee', 'contact', 'vendor', 'vendor_team', 'freelancer', 'project'],
+                description: 'brand=franchise brands, department=internal teams (TMS/HQ), franchisee=franchise owners, contact=team members, vendor=external companies, vendor_team=people at vendors, freelancer=independent contractors, project=ongoing initiatives or campaigns.',
               },
               matched_entity_id: {
                 type: 'string',
