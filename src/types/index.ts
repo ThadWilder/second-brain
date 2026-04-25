@@ -252,3 +252,61 @@ export type ChatEvent =
   | { type: 'tool_use'; tool_name: string; tool_input: unknown; tool_use_id: string }
   | { type: 'tool_result'; tool_use_id: string; result: unknown }
   | { type: 'error'; message: string }
+
+// ── Receipt types ───────────────────────────────────────────────
+export type ReceiptCategory =
+  | 'software' | 'travel' | 'meals' | 'office_supplies'
+  | 'advertising' | 'services' | 'subscriptions' | 'equipment' | 'other'
+
+export interface ReceiptMeta {
+  vendor: string | null
+  amount: number | null
+  date: string | null          // ISO 8601
+  payment_method: string | null
+  category: ReceiptCategory | null
+  brand: string | null
+}
+
+export interface SavedLink {
+  id: string
+  org_id: string
+  url: string
+  label: string | null
+  category: string | null
+  brand_entity_id: string | null
+  hidden: boolean
+  pinned: boolean
+  type: 'link' | 'receipt'
+  receipt_meta: ReceiptMeta | null
+  file_url: string | null
+  file_type: string | null
+  entry_id: string | null
+  created_at: string
+}
+
+// ── Blocklist types ─────────────────────────────────────────────
+export type BlocklistType = 'url' | 'sender'
+
+export interface BlocklistEntry {
+  id: string
+  org_id: string
+  pattern: string
+  type: BlocklistType
+  created_at: string
+}
+
+// ── Project metadata (stored in entities.metadata) ──────────────
+export type ProjectStatus = 'active' | 'completed' | 'on_hold'
+
+export interface ProjectMeta {
+  status: ProjectStatus
+  description?: string
+  target_date?: string  // ISO 8601
+}
+
+// ── Parsed email prefixes ───────────────────────────────────────
+export interface ParsedPrefixes {
+  isReceipt: boolean
+  note: string | null
+  projectName: string | null
+}
