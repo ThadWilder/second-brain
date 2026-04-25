@@ -18,6 +18,7 @@ import {
   Clock,
   Pencil,
   Download,
+  Ban,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 
@@ -61,6 +62,13 @@ interface LinkItem {
 interface LinksResponse {
   links: LinkItem[]
   total: number
+}
+
+interface BlocklistEntry {
+  id: string
+  pattern: string
+  type: string
+  created_at: string
 }
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof FileSpreadsheet; color: string; bgColor: string; borderColor: string }> = {
@@ -128,6 +136,14 @@ export default function LinksPage() {
   const [addUrl, setAddUrl] = useState('')
   const [addLabel, setAddLabel] = useState('')
   const [addLoading, setAddLoading] = useState(false)
+
+  // Bulk selection
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [showBlocklistModal, setShowBlocklistModal] = useState(false)
+  const [blocklistEntries, setBlocklistEntries] = useState<BlocklistEntry[]>([])
+
+  // Clear selection when kind/filter/search changes
+  useEffect(() => { setSelected(new Set()) }, [activeKind, activeFilter, search])
 
   const fetchLinks = useCallback(async (query: string, categoryFilter: string, kind: 'all' | 'links' | 'receipts') => {
     setLoading(true)
@@ -224,6 +240,37 @@ export default function LinksPage() {
     const supabase = createClient()
     await supabase.auth.signOut()
     window.location.href = '/login'
+  }
+
+  const handleBulkRemove = async () => {
+    for (const url of selected) {
+      await handleDeleteLink(url)
+    }
+    setSelected(new Set())
+    fetchLinks(search, activeFilter, activeKind)
+  }
+
+  const handleBulkPermanentRemove = async () => {
+    if (!confirm(`Block ${selected.size} item${selected.size !== 1 ? 's' : ''}? They won't be ingested again.`)) return
+    for (const url of selected) {
+      await fetch('/api/blocklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pattern: url, type: 'url' }),
+      })
+      const isUrl = url.startsWith('http')
+      await fetch(`/api/links?${isUrl ? `url=${encodeURIComponent(url)}` : `id=${url}`}`, { method: 'DELETE' })
+    }
+    setSelected(new Set())
+    fetchLinks(search, activeFilter, activeKind)
+  }
+
+  const toggleSelectItem = (url: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(url) ? next.delete(url) : next.add(url)
+      return next
+    })
   }
 
   // Group links by category if toggled
@@ -374,10 +421,27 @@ export default function LinksPage() {
             ))}
           </div>
 
-          {/* Filter Chips + View Toggle — only for all/links */}
+          {/* Filter Chips + View Toggle + Select All — only for all/links */}
           {activeKind !== 'receipts' && (
             <div className="flex items-center justify-between gap-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center flex-wrap gap-2">
+                {/* Select all checkbox */}
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selected.size === links.length && links.length > 0}
+                    onChange={() => {
+                      if (selected.size === links.length) {
+                        setSelected(new Set())
+                      } else {
+                        setSelected(new Set(links.map(l => l.url)))
+                      }
+                    }}
+                    className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                  />
+                  <span className="text-xs text-[var(--muted)]">All</span>
+                </label>
+                <span className="text-[var(--border)] text-xs">|</span>
                 {FILTER_OPTIONS.map(opt => (
                   <button
                     key={opt.value}
@@ -400,6 +464,27 @@ export default function LinksPage() {
                 {groupByCategory ? <LayoutList size={14} /> : <LayoutGrid size={14} />}
                 {groupByCategory ? 'Flat' : 'Group'}
               </button>
+            </div>
+          )}
+
+          {/* Select all for receipts tab */}
+          {activeKind === 'receipts' && links.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selected.size === links.length && links.length > 0}
+                  onChange={() => {
+                    if (selected.size === links.length) {
+                      setSelected(new Set())
+                    } else {
+                      setSelected(new Set(links.map(l => l.url)))
+                    }
+                  }}
+                  className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                />
+                <span className="text-xs text-[var(--muted)]">Select all</span>
+              </label>
             </div>
           )}
 
@@ -440,8 +525,24 @@ export default function LinksPage() {
                     <div className="space-y-2">
                       {group.items.map(link => (
                         link.kind === 'receipt'
-                          ? <ReceiptCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateReceiptMeta={handleUpdateReceiptMeta} onTogglePin={handleTogglePin} />
-                          : <LinkCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateLabel={handleUpdateLabel} onTogglePin={handleTogglePin} />
+                          ? <ReceiptCard
+                              key={link.url}
+                              link={link}
+                              onDelete={handleDeleteLink}
+                              onUpdateReceiptMeta={handleUpdateReceiptMeta}
+                              onTogglePin={handleTogglePin}
+                              selected={selected.has(link.url)}
+                              onSelect={toggleSelectItem}
+                            />
+                          : <LinkCard
+                              key={link.url}
+                              link={link}
+                              onDelete={handleDeleteLink}
+                              onUpdateLabel={handleUpdateLabel}
+                              onTogglePin={handleTogglePin}
+                              selected={selected.has(link.url)}
+                              onSelect={toggleSelectItem}
+                            />
                       ))}
                     </div>
                   </div>
@@ -455,18 +556,129 @@ export default function LinksPage() {
             <div className="space-y-2">
               {links.map(link => (
                 link.kind === 'receipt'
-                  ? <ReceiptCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateReceiptMeta={handleUpdateReceiptMeta} onTogglePin={handleTogglePin} />
-                  : <LinkCard key={link.url} link={link} onDelete={handleDeleteLink} onUpdateLabel={handleUpdateLabel} onTogglePin={handleTogglePin} />
+                  ? <ReceiptCard
+                      key={link.url}
+                      link={link}
+                      onDelete={handleDeleteLink}
+                      onUpdateReceiptMeta={handleUpdateReceiptMeta}
+                      onTogglePin={handleTogglePin}
+                      selected={selected.has(link.url)}
+                      onSelect={toggleSelectItem}
+                    />
+                  : <LinkCard
+                      key={link.url}
+                      link={link}
+                      onDelete={handleDeleteLink}
+                      onUpdateLabel={handleUpdateLabel}
+                      onTogglePin={handleTogglePin}
+                      selected={selected.has(link.url)}
+                      onSelect={toggleSelectItem}
+                    />
               ))}
             </div>
           )}
+
+          {/* Manage blocklist */}
+          <div className="text-center py-4">
+            <button
+              onClick={async () => {
+                const res = await fetch('/api/blocklist')
+                const data = await res.json()
+                setBlocklistEntries(data.entries ?? [])
+                setShowBlocklistModal(true)
+              }}
+              className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              Manage blocklist
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Floating action bar */}
+      {selected.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#2c2014] text-white rounded-xl px-6 py-3 flex items-center gap-4 shadow-lg z-50">
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <button
+            onClick={handleBulkRemove}
+            className="text-sm px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+          >
+            Remove
+          </button>
+          <button
+            onClick={handleBulkPermanentRemove}
+            className="text-sm px-3 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Permanently Remove
+          </button>
+          <button
+            onClick={() => setSelected(new Set())}
+            className="text-sm text-white/60 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Blocklist modal */}
+      {showBlocklistModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+          onClick={() => setShowBlocklistModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl p-6 max-w-lg w-full max-h-[60vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-[var(--text)] mb-4">Blocked Items</h3>
+            {blocklistEntries.length === 0 && (
+              <p className="text-sm text-[var(--muted)]">No blocked items</p>
+            )}
+            {blocklistEntries.map(entry => (
+              <div key={entry.id} className="flex items-center justify-between py-2 border-b border-[var(--border)]">
+                <div>
+                  <span className="text-sm text-[var(--text)]">{entry.pattern}</span>
+                  <span className="text-xs text-[var(--muted)] ml-2">({entry.type})</span>
+                </div>
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/blocklist?id=${entry.id}`, { method: 'DELETE' })
+                    setBlocklistEntries(prev => prev.filter(e => e.id !== entry.id))
+                  }}
+                  className="text-xs text-red-600 hover:text-red-800"
+                >
+                  Unblock
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => setShowBlocklistModal(false)}
+              className="mt-4 text-sm text-[var(--muted)] hover:text-[var(--text)]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function LinkCard({ link, onDelete, onUpdateLabel, onTogglePin }: { link: LinkItem; onDelete: (id: string) => void; onUpdateLabel: (url: string, label: string) => Promise<void>; onTogglePin: (url: string, pinned: boolean) => void }) {
+function LinkCard({
+  link,
+  onDelete,
+  onUpdateLabel,
+  onTogglePin,
+  selected,
+  onSelect,
+}: {
+  link: LinkItem
+  onDelete: (id: string) => void
+  onUpdateLabel: (url: string, label: string) => Promise<void>
+  onTogglePin: (url: string, pinned: boolean) => void
+  selected: boolean
+  onSelect: (url: string) => void
+}) {
   const config = CATEGORY_CONFIG[link.category] ?? CATEGORY_CONFIG.other
   const TypeIcon = config.icon
   const primarySource = link.sources[0]
@@ -509,6 +721,14 @@ function LinkCard({ link, onDelete, onUpdateLabel, onTogglePin }: { link: LinkIt
     <div className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl px-5 py-5
                     hover:border-[var(--accent)]/30 transition-colors">
       <div className="flex items-start gap-3">
+        {/* Checkbox */}
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onSelect(link.url)}
+          className="mt-1 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
+        />
+
         {/* Type icon */}
         <div className={`mt-0.5 p-2 rounded-lg ${config.bgColor} ${config.borderColor} border`}>
           <TypeIcon size={16} className={config.color} />
@@ -614,7 +834,7 @@ function LinkCard({ link, onDelete, onUpdateLabel, onTogglePin }: { link: LinkIt
           )}
         </div>
 
-        {/* Pin + Delete buttons */}
+        {/* Pin + Delete + Block buttons */}
         <div className="flex flex-col gap-1 shrink-0 mt-1 opacity-0 group-hover:opacity-100">
           <button
             onClick={() => onTogglePin(link.url, !link.pinned)}
@@ -630,6 +850,21 @@ function LinkCard({ link, onDelete, onUpdateLabel, onTogglePin }: { link: LinkIt
           >
             <X size={14} />
           </button>
+          <button
+            onClick={async () => {
+              if (!confirm('Block this item permanently?')) return
+              await fetch('/api/blocklist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pattern: link.url, type: 'url' }),
+              })
+              onDelete(link.saved_link_id ? link.saved_link_id : link.url)
+            }}
+            className="text-[var(--muted)] hover:text-red-600 transition-colors"
+            title="Permanently remove (block)"
+          >
+            <Ban size={14} />
+          </button>
         </div>
       </div>
     </div>
@@ -641,11 +876,15 @@ function ReceiptCard({
   onDelete,
   onUpdateReceiptMeta,
   onTogglePin,
+  selected,
+  onSelect,
 }: {
   link: LinkItem
   onDelete: (id: string) => void
   onUpdateReceiptMeta: (url: string, receipt_meta: LinkItem['receipt_meta']) => Promise<void>
   onTogglePin: (url: string, pinned: boolean) => void
+  selected: boolean
+  onSelect: (url: string) => void
 }) {
   const meta = link.receipt_meta
   const [editing, setEditing] = useState(false)
@@ -700,6 +939,14 @@ function ReceiptCard({
     <div className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl px-5 py-5
                     hover:border-[var(--accent)]/30 transition-colors">
       <div className="flex items-start gap-3">
+        {/* Checkbox */}
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onSelect(link.url)}
+          className="mt-1 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
+        />
+
         {/* Receipt icon */}
         <div className="mt-0.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
           <FileText size={16} className="text-amber-700" />
@@ -877,7 +1124,7 @@ function ReceiptCard({
           )}
         </div>
 
-        {/* Edit + Pin + Delete buttons */}
+        {/* Edit + Pin + Delete + Block buttons */}
         <div className="flex flex-col gap-1 shrink-0 mt-1 opacity-0 group-hover:opacity-100">
           {!editing && (
             <button
@@ -901,6 +1148,21 @@ function ReceiptCard({
             title="Remove receipt"
           >
             <X size={14} />
+          </button>
+          <button
+            onClick={async () => {
+              if (!confirm('Block this item permanently?')) return
+              await fetch('/api/blocklist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pattern: link.url, type: 'url' }),
+              })
+              onDelete(link.saved_link_id ? link.saved_link_id : link.url)
+            }}
+            className="text-[var(--muted)] hover:text-red-600 transition-colors"
+            title="Permanently remove (block)"
+          >
+            <Ban size={14} />
           </button>
         </div>
       </div>
