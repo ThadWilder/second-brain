@@ -7,3 +7,4 @@
 export { processEntry } from './process'
 export { ensureArray } from './resolve'
 export { linkReplyToNudge, detectSource } from './compat'
+export { parsePrefixes } from './prefixes'
