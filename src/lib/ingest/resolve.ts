@@ -69,9 +69,11 @@ export function buildSystemPrompt(
   entityContext: string,
   senderContext: string,
   taskContext: string,
+  userNote?: string | null,
+  projectName?: string | null,
 ): string {
   const today = new Date().toISOString().slice(0, 10)
-  return `You are an AI assistant processing operational notes for a marketing agency.
+  let prompt = `You are an AI assistant processing operational notes for a marketing agency.
 The operator is Brandy Murch (VP Digital Marketing at Threshold Brands).
 Today's date is ${today}.${senderContext}
 
@@ -121,6 +123,18 @@ Be conservative — only extract what is clearly stated.
 When resolving relative dates like "Friday" or "next week", use today's date (${today}) as the reference.
 
 TASK GRANULARITY: Create ONE task per initiative or outcome, not per micro-step. Group related sub-actions into a single task with details in the description. A typical email should produce 1-3 tasks. If you find yourself creating more than 5 tasks from one message, consolidate.`
+
+  // Append note context if present
+  if (userNote) {
+    prompt += `\n\nThe sender added this note when forwarding: "${userNote}"\nConsider this context when extracting tasks and decisions.`
+  }
+
+  // Append project context if present
+  if (projectName) {
+    prompt += `\n\nThe sender tagged this with PROJECT:${projectName}. All extracted tasks and decisions should be associated with this project entity. If this project doesn't exist yet, include it in classify_entities as type "project".`
+  }
+
+  return prompt
 }
 
 /**

@@ -91,7 +91,9 @@ export async function processEntry(
     // Load existing open tasks for dedup context
     const taskContext = await loadTaskDedupContext(db)
 
-    const systemPrompt = buildSystemPrompt(entityContext, senderContext, taskContext)
+    const userNote = sourceMeta.user_note ?? null
+    const projectName = sourceMeta.project_name ?? null
+    const systemPrompt = buildSystemPrompt(entityContext, senderContext, taskContext, userNote, projectName)
 
     // Build message content — text + optional images for vision
     const attachments: Attachment[] = entry.attachments ?? []
