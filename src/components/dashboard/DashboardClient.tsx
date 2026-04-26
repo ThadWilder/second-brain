@@ -97,11 +97,6 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
-          {stats.escalations > 0 && (
-            <span className="text-base text-orange-300 font-medium">
-              {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
-            </span>
-          )}
           <a href="/projects" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">Projects</a>
           <a href="/resources" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">Resources</a>
           <button
