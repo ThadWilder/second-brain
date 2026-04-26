@@ -7,12 +7,11 @@ import { createClient } from '@/lib/supabase/browser'
 
 type PageId = 'dashboard' | 'resources' | 'projects' | 'wiki' | 'history' | 'kpis' | 'audits' | 'reviews' | 'tags'
 
-const NAV_ITEMS: Array<{ id: PageId; label: string; href: string; icon?: typeof Clock }> = [
-  { id: 'resources', label: 'Resources', href: '/resources', icon: BookOpen },
+const NAV_ITEMS: Array<{ id: PageId; label: string; href: string; icon?: typeof Clock; small?: boolean }> = [
   { id: 'projects', label: 'Projects', href: '/projects', icon: FolderOpen },
-  { id: 'wiki', label: 'Wiki', href: '/wiki' },
+  { id: 'resources', label: 'Resources', href: '/resources', icon: BookOpen },
   { id: 'kpis', label: 'KPIs', href: '/kpis', icon: BarChart3 },
-  { id: 'history', label: 'History', href: '/history', icon: Clock },
+  { id: 'history', label: 'History', href: '/history', icon: Clock, small: true },
 ]
 
 const PAGE_LABELS: Record<PageId, { label: string; icon?: typeof Clock }> = {
@@ -64,11 +63,13 @@ export function Header({ activePage }: { activePage: PageId }) {
             <a
               key={item.id}
               href={item.href}
-              className={`text-base font-medium transition-colors flex items-center gap-1.5 ${
-                isActive ? 'text-white' : 'text-white/70 hover:text-white'
+              className={`font-medium transition-colors flex items-center gap-1.5 ${
+                item.small ? 'text-sm' : 'text-base'
+              } ${
+                isActive ? 'text-white' : (item.small ? 'text-white/50 hover:text-white' : 'text-white/70 hover:text-white')
               }`}
             >
-              {Icon && <Icon size={15} />}
+              {Icon && <Icon size={item.small ? 13 : 15} />}
               {item.label}
             </a>
           )

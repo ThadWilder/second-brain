@@ -102,19 +102,17 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               {stats.escalations} escalation{stats.escalations !== 1 ? 's' : ''}
             </span>
           )}
-          <a href="/resources" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">Resources</a>
           <a href="/projects" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">Projects</a>
-          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
-          <a href="/tags" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Tag size={15} />Tags</a>
+          <a href="/resources" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">Resources</a>
           <button
             onClick={() => setChatOpen(true)}
             className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
           >
             <MessageCircle size={15} />
-            Ask the Chef
+            Chat
           </button>
           <span className="text-white/10 select-none">|</span>
-          <a href="/wiki" className="text-sm text-white/50 font-medium hover:text-white transition-colors">Wiki</a>
+          <a href="/history" className="text-sm text-white/50 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={13} />History</a>
           <button
             onClick={handleSignOut}
             className="text-sm text-white/50 font-medium hover:text-white transition-colors"
@@ -334,11 +332,9 @@ function TopicsList({ entities, allEntities, onRefresh }: { entities: any[]; all
 function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
   const [open, setOpen] = useState(false)
   const links = [
-    { href: '/wiki', label: 'Wiki' },
-    { href: '/resources', label: 'Resources' },
     { href: '/projects', label: 'Projects' },
+    { href: '/resources', label: 'Resources' },
     { href: '/history', label: 'History' },
-    { href: '/links', label: 'Links' },
     { href: '/tags', label: 'Tags' },
   ]
   return (
