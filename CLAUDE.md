@@ -178,7 +178,7 @@ curl -sk -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: appl
 GitHub auto-deploy is NOT linked -- deploys are manual via Vercel API.
 
 ## Migrations
-Located in `supabase/migrations/`. Applied: 001-028.
+Located in `supabase/migrations/`. Applied: 001-029.
 - 001: initial schema
 - 002: wiki
 - 003: clarifications
@@ -190,6 +190,7 @@ Located in `supabase/migrations/`. Applied: 001-028.
 - 009: pg_trgm indexes
 - 010: wiki queue
 - 028: receipts (saved_links columns), blocklist table, task_entities project role, saved_links RLS
+- 029: hidden entity IDs on saved_links
 
 Seed data: `supabase/seed.sql` (10 brands, 2 internal team, 4 contacts, 2 vendors, 1 vendor team + aliases + relationships)
 

@@ -2,16 +2,17 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Clock, Link2, FolderOpen, BookOpen, BarChart3, CheckSquare } from 'lucide-react'
+import { Clock, Link2, FolderOpen, BookOpen, BarChart3, CheckSquare, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 
-type PageId = 'dashboard' | 'tasks' | 'resources' | 'projects' | 'wiki' | 'history' | 'kpis' | 'audits' | 'reviews' | 'tags'
+type PageId = 'dashboard' | 'tasks' | 'resources' | 'projects' | 'wiki' | 'history' | 'kpis' | 'audits' | 'reviews' | 'tags' | 'chat'
 
 const NAV_ITEMS: Array<{ id: PageId; label: string; href: string; icon?: typeof Clock; small?: boolean }> = [
   { id: 'tasks', label: 'Tasks', href: '/tasks', icon: CheckSquare },
   { id: 'projects', label: 'Projects', href: '/projects', icon: FolderOpen },
   { id: 'resources', label: 'Resources', href: '/resources', icon: BookOpen },
   { id: 'kpis', label: 'KPIs', href: '/kpis', icon: BarChart3 },
+  { id: 'chat' as PageId, label: 'Chat', href: '/?chat=open', icon: MessageCircle },
   { id: 'history', label: 'History', href: '/history', icon: Clock, small: true },
 ]
 
@@ -26,6 +27,7 @@ const PAGE_LABELS: Record<PageId, { label: string; icon?: typeof Clock }> = {
   audits: { label: 'Audits' },
   reviews: { label: 'Reviews' },
   tags: { label: 'Tags' },
+  chat: { label: 'Chat', icon: MessageCircle },
 }
 
 export function Header({ activePage }: { activePage: PageId }) {

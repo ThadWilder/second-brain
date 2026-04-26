@@ -88,8 +88,8 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     loadData().finally(() => setLoading(false))
     loadComments()
     // Fetch all entities for linking
-    fetch('/api/dashboard').then(r => r.json()).then(d => {
-      setAllEntities(d.allEntities ?? [])
+    fetch('/api/entities').then(r => r.json()).then(d => {
+      setAllEntities(d.entities ?? [])
     }).catch(() => {})
     // Fetch all tags for autocomplete
     fetch('/api/tags').then(r => r.json()).then(d => {

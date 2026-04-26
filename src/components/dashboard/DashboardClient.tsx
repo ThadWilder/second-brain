@@ -58,6 +58,14 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
     return () => window.removeEventListener('focus', handleFocus)
   }, [fetchData])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('chat') === 'open') {
+      setChatOpen(true)
+      // Clean up the URL
+      window.history.replaceState({}, '', '/')
+    }
+  }, [])
+
   const {
     messages,
     isStreaming,
