@@ -97,8 +97,10 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
+          <a href="/" className="text-base text-white font-medium transition-colors flex items-center gap-1.5">Tasks</a>
           <a href="/projects" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">Projects</a>
           <a href="/resources" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">Resources</a>
+          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">KPIs</a>
           <button
             onClick={() => setChatOpen(true)}
             className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"
@@ -328,10 +330,11 @@ function TopicsList({ entities, allEntities, onRefresh }: { entities: any[]; all
 function MobileMenu({ onSignOut }: { onSignOut: () => void }) {
   const [open, setOpen] = useState(false)
   const links = [
+    { href: '/', label: 'Tasks' },
     { href: '/projects', label: 'Projects' },
     { href: '/resources', label: 'Resources' },
+    { href: '/kpis', label: 'KPIs' },
     { href: '/history', label: 'History' },
-    { href: '/tags', label: 'Tags' },
   ]
   return (
     <>
