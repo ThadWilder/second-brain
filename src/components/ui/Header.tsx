@@ -5,10 +5,10 @@ import Image from 'next/image'
 import { Clock, Link2, FolderOpen, BookOpen, BarChart3, CheckSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 
-type PageId = 'dashboard' | 'resources' | 'projects' | 'wiki' | 'history' | 'kpis' | 'audits' | 'reviews' | 'tags'
+type PageId = 'dashboard' | 'tasks' | 'resources' | 'projects' | 'wiki' | 'history' | 'kpis' | 'audits' | 'reviews' | 'tags'
 
 const NAV_ITEMS: Array<{ id: PageId; label: string; href: string; icon?: typeof Clock; small?: boolean }> = [
-  { id: 'dashboard', label: 'Tasks', href: '/', icon: CheckSquare },
+  { id: 'tasks', label: 'Tasks', href: '/tasks', icon: CheckSquare },
   { id: 'projects', label: 'Projects', href: '/projects', icon: FolderOpen },
   { id: 'resources', label: 'Resources', href: '/resources', icon: BookOpen },
   { id: 'kpis', label: 'KPIs', href: '/kpis', icon: BarChart3 },
@@ -17,6 +17,7 @@ const NAV_ITEMS: Array<{ id: PageId; label: string; href: string; icon?: typeof 
 
 const PAGE_LABELS: Record<PageId, { label: string; icon?: typeof Clock }> = {
   dashboard: { label: 'Dashboard' },
+  tasks: { label: 'Tasks', icon: CheckSquare },
   resources: { label: 'Resources', icon: BookOpen },
   projects: { label: 'Projects', icon: FolderOpen },
   wiki: { label: 'Wiki' },
