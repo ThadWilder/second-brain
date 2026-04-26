@@ -94,8 +94,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       event_type: 'due_date_changed',
       metadata: { from: prevDueDate, to: due_date },
     })
-    // De-escalate if due date was pushed forward (later than before)
-    if (due_date && (!prevDueDate || due_date > prevDueDate)) {
+    // De-escalate only if an existing due date was pushed further out (rescheduled)
+    if (due_date && prevDueDate && due_date > prevDueDate) {
       await deEscalateTask(db, id, 'due_date_pushed')
     }
   }
