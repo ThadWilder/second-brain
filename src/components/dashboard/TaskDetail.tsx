@@ -101,7 +101,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     setLinkingEntity(true)
     try {
       const entity = allEntities.find(e => e.id === entityId)
-      const role = entity && ['brand', 'department'].includes(entity.type) ? 'brand' : 'related'
+      const role = entity?.type === 'project' ? 'project' : entity && ['brand', 'department'].includes(entity.type) ? 'brand' : 'related'
       await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -727,10 +727,10 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
             }}
           >
             <option value="" disabled>+ Link entity...</option>
-            {['brand', 'department', 'contact', 'vendor', 'vendor_team', 'freelancer', 'franchisee'].map(type => {
+            {['brand', 'department', 'contact', 'vendor', 'vendor_team', 'freelancer', 'franchisee', 'project'].map(type => {
               const group = allEntities.filter(e => e.type === type && !entities.some(linked => linked.id === e.id))
               if (!group.length) return null
-              const label = { brand: 'Brands', department: 'Internal Team', contact: 'People', vendor: 'Vendors', vendor_team: 'Vendor Team', freelancer: 'Freelancers', franchisee: 'Franchisees' }[type] ?? type
+              const label = { brand: 'Brands', department: 'Internal Team', contact: 'People', vendor: 'Vendors', vendor_team: 'Vendor Team', freelancer: 'Freelancers', franchisee: 'Franchisees', project: 'Projects' }[type] ?? type
               return (
                 <optgroup key={type} label={label}>
                   {group.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}

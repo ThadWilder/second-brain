@@ -228,8 +228,9 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             />
           </div>
 
-          {/* ── Entity Cards ── */}
+          {/* ── Directory ── */}
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-7" id="entity-cards-section">
+            <h2 className="text-lg font-bold text-[var(--text)]">Directory</h2>
             <BrandCards brands={brands} />
             <EntityCards title="Internal Team" entities={departments} type="department" allEntities={allEntities} />
             <PeopleSection
