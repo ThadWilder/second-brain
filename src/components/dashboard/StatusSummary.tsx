@@ -6,31 +6,29 @@ interface Props {
   stats: DashboardStats & { unresolved_comments?: number }
 }
 
-const STATS: { key: keyof DashboardStats; label: string; icon: string; scrollTo?: string }[] = [
-  { key: 'escalations', label: 'On Fire', icon: '🔥', scrollTo: 'section-escalations' },
-  { key: 'needs_response', label: 'Waiting on You', icon: '👀', scrollTo: 'section-needs-response' },
-  { key: 'waiting_on', label: 'Waiting on Them', icon: '⏳', scrollTo: 'section-inbox' },
-  { key: 'open_tasks', label: 'In the Steamer', icon: '🥟', scrollTo: 'section-inbox' },
-  { key: 'closed_7d', label: 'Plated This Week', icon: '✨' },
-  { key: 'tracking', label: 'Simmering', icon: '♨️', scrollTo: 'section-watching' },
+const STATS: { key: keyof DashboardStats; label: string; icon: string; href?: string }[] = [
+  { key: 'escalations', label: 'Escalated', icon: '🔥', href: '/tasks' },
+  { key: 'needs_response', label: 'Waiting on You', icon: '👀', href: '/tasks' },
+  { key: 'waiting_on', label: 'Waiting on Them', icon: '⏳', href: '/tasks' },
+  { key: 'open_tasks', label: 'Open Tasks', icon: '📋', href: '/tasks' },
+  { key: 'closed_7d', label: 'Completed This Week', icon: '✅' },
+  { key: 'tracking', label: 'Watching', icon: '👁️', href: '/tasks' },
 ]
 
 export function StatusSummary({ stats }: Props) {
-  function handleClick(scrollTo?: string) {
-    if (!scrollTo) return
-    const el = document.getElementById(scrollTo)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  function handleClick(href?: string) {
+    if (href) window.location.href = href
   }
 
   const unresolvedComments = (stats as any).unresolved_comments ?? 0
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      {STATS.map(({ key, label, icon, scrollTo }) => (
+      {STATS.map(({ key, label, icon, href }) => (
         <div
           key={key}
-          onClick={() => handleClick(scrollTo)}
-          className={`bg-[var(--surface-hover)] rounded-lg px-5 py-4 ${scrollTo ? 'cursor-pointer hover:bg-[var(--border)] transition-colors' : ''}`}
+          onClick={() => handleClick(href)}
+          className={`bg-[var(--surface-hover)] rounded-lg px-5 py-4 ${href ? 'cursor-pointer hover:bg-[var(--border)] transition-colors' : ''}`}
         >
           <div className="flex items-center justify-between">
             <span className="text-sm text-[var(--muted)]">
