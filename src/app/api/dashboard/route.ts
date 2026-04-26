@@ -18,8 +18,14 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const db = getServiceClient()
-  // Filter: my tasks + public + unowned
-  const ownerFilter = `owner_email.eq.${userEmail},public.eq.true,owner_email.is.null`
+  // Map email aliases to show all tasks for the same person
+  const EMAIL_ALIASES: Record<string, string[]> = {
+    'bmurch@thresholdbrands.com': ['bmurch@thresholdbrands.com', 'brandymurch@gmail.com'],
+    'brandymurch@gmail.com': ['bmurch@thresholdbrands.com', 'brandymurch@gmail.com'],
+  }
+  const myEmails = EMAIL_ALIASES[userEmail] ?? [userEmail]
+  // Filter: my tasks (any alias) + public + unowned
+  const ownerFilter = myEmails.map(e => `owner_email.eq.${e}`).join(',') + ',public.eq.true,owner_email.is.null'
 
   // Use Eastern time for date grouping
   const estNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
