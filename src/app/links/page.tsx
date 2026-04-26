@@ -225,6 +225,22 @@ export default function LinksPage() {
     }
   }
 
+  const handleHideEntity = async (url: string, entityId: string) => {
+    // Find current hidden IDs for this link from the existing data
+    const link = links.find(l => l.url === url)
+    const currentHidden: string[] = (link as any)?.hidden_entity_ids ?? []
+    const newHidden = [...new Set([...currentHidden, entityId])]
+
+    const res = await fetch('/api/links', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, hidden_entity_ids: newHidden }),
+    })
+    if (res.ok) {
+      fetchLinks(search, activeFilter, activeKind)
+    }
+  }
+
   const handleUpdateReceiptMeta = async (url: string, receipt_meta: LinkItem['receipt_meta']) => {
     const res = await fetch('/api/links', {
       method: 'PATCH',
@@ -541,6 +557,7 @@ export default function LinksPage() {
                               onDelete={handleDeleteLink}
                               onUpdateLabel={handleUpdateLabel}
                               onTogglePin={handleTogglePin}
+                              onHideEntity={handleHideEntity}
                               selected={selected.has(link.url)}
                               onSelect={toggleSelectItem}
                             />
@@ -573,6 +590,7 @@ export default function LinksPage() {
                     onDelete={handleDeleteLink}
                     onUpdateLabel={handleUpdateLabel}
                     onTogglePin={handleTogglePin}
+                    onHideEntity={handleHideEntity}
                     selected={selected.has(link.url)}
                     onSelect={toggleSelectItem}
                   />
@@ -699,6 +717,7 @@ function LinkCard({
   onDelete,
   onUpdateLabel,
   onTogglePin,
+  onHideEntity,
   selected,
   onSelect,
 }: {
@@ -706,6 +725,7 @@ function LinkCard({
   onDelete: (id: string) => void
   onUpdateLabel: (url: string, label: string) => Promise<void>
   onTogglePin: (url: string, pinned: boolean) => void
+  onHideEntity: (url: string, entityId: string) => void
   selected: boolean
   onSelect: (url: string) => void
 }) {
@@ -856,9 +876,16 @@ function LinkCard({
               {link.entities.map(e => (
                 <span
                   key={e.id}
-                  className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_PILL_STYLES[e.type] ?? TYPE_PILL_STYLES.topic}`}
+                  className={`group/pill inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${TYPE_PILL_STYLES[e.type] ?? TYPE_PILL_STYLES.topic}`}
                 >
                   {e.name}
+                  <button
+                    onClick={() => onHideEntity(link.url, e.id)}
+                    className="opacity-0 group-hover/pill:opacity-100 hover:text-red-600 transition-opacity"
+                    title={`Remove ${e.name} tag`}
+                  >
+                    <X size={10} />
+                  </button>
                 </span>
               ))}
             </div>

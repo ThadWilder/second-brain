@@ -134,7 +134,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Fetch saved links
   const { data: savedLinks, error: savedError } = await db
     .from('saved_links')
-    .select('id, url, label, category, brand_entity_id, hidden, pinned, type, receipt_meta, file_url, file_type, entry_id, created_at')
+    .select('id, url, label, category, brand_entity_id, hidden, pinned, type, receipt_meta, file_url, file_type, entry_id, hidden_entity_ids, created_at')
     .eq('org_id', ORG_ID)
     .order('created_at', { ascending: false })
 
@@ -283,6 +283,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (isIconUrl(url)) urlMap.delete(url)
   }
 
+  // Build hidden entity IDs map from saved_links
+  const hiddenEntityMap = new Map<string, Set<string>>()
+  for (const sl of allSavedLinks) {
+    const s = sl as { url: string; hidden_entity_ids?: string[] | null }
+    const ids = s.hidden_entity_ids ?? []
+    if (ids.length > 0) {
+      hiddenEntityMap.set(s.url, new Set(ids))
+    }
+  }
+
+  // Filter hidden entities from results
+  for (const [url, result] of urlMap) {
+    const hidden = hiddenEntityMap.get(url)
+    if (hidden && result.entities.length > 0) {
+      result.entities = result.entities.filter(e => !hidden.has(e.id))
+    }
+  }
+
   // Convert to array and apply filters
   let results = Array.from(urlMap.values())
 
@@ -364,7 +382,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const body = await req.json()
-  const { url, label, pinned, receipt_meta } = body as { url?: string; label?: string; pinned?: boolean; receipt_meta?: Record<string, unknown> }
+  const { url, label, pinned, receipt_meta, hidden_entity_ids } = body as { url?: string; label?: string; pinned?: boolean; receipt_meta?: Record<string, unknown>; hidden_entity_ids?: string[] }
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 })
@@ -377,6 +395,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (typeof label === 'string') upsertData.label = label || null
   if (typeof pinned === 'boolean') upsertData.pinned = pinned
   if (body.receipt_meta) upsertData.receipt_meta = body.receipt_meta
+  if (Array.isArray(hidden_entity_ids)) upsertData.hidden_entity_ids = hidden_entity_ids
 
   const { data, error } = await db
     .from('saved_links')
