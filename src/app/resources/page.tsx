@@ -2,13 +2,11 @@
 
 import { useState } from 'react'
 import { Header } from '@/components/ui/Header'
-import { BookOpen, Link2, FolderOpen } from 'lucide-react'
+import { BookOpen, Link2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
-// Lazy-load tab content to avoid loading everything at once
 const LinksTab = dynamic(() => import('@/components/resources/LinksTab'), { loading: () => <TabLoading /> })
 const WikiTab = dynamic(() => import('@/components/resources/WikiTab'), { loading: () => <TabLoading /> })
-const TrackingTab = dynamic(() => import('@/components/resources/TrackingTab'), { loading: () => <TabLoading /> })
 
 function TabLoading() {
   return (
@@ -18,12 +16,11 @@ function TabLoading() {
   )
 }
 
-type Tab = 'links' | 'wiki' | 'tracking'
+type Tab = 'links' | 'wiki'
 
 const TABS: Array<{ id: Tab; label: string; icon: typeof BookOpen }> = [
   { id: 'links', label: 'Links & Receipts', icon: Link2 },
   { id: 'wiki', label: 'Wiki', icon: BookOpen },
-  { id: 'tracking', label: 'Initiatives', icon: FolderOpen },
 ]
 
 export default function ResourcesPage() {
@@ -63,7 +60,6 @@ export default function ResourcesPage() {
           {/* Tab content */}
           {activeTab === 'links' && <LinksTab />}
           {activeTab === 'wiki' && <WikiTab />}
-          {activeTab === 'tracking' && <TrackingTab />}
         </div>
       </div>
     </div>
