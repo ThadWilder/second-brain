@@ -186,21 +186,45 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
       {/* Simmering — collapsible */}
       {watchingTasks.length > 0 && (
         <CollapsiblePrioritySection id="section-watching" title="Watch Only" icon="👁️" count={watchingTasks.length}>
-          {watchingTasks
-            .filter((t) => !completedIds.has(t.id))
-            .map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                variant="normal"
-                hasConsolidation={consolidationTaskIds?.has(task.id)}
-                needsReply={needsReplyTaskIds?.has(task.id)}
-                commentCount={commentCounts?.[task.id]}
-                onComplete={handleComplete}
-                onClick={() => handleTaskClick(task)}
-                onRefresh={onRefresh}
-              />
-            ))}
+          {(() => {
+            const visible = watchingTasks.filter((t) => !completedIds.has(t.id))
+            const byPerson = new Map<string, TaskWithEntities[]>()
+            for (const task of visible) {
+              const owner = task.tracked_owner ?? task.waiting_on ?? 'Unassigned'
+              const existing = byPerson.get(owner) ?? []
+              existing.push(task)
+              byPerson.set(owner, existing)
+            }
+            const sorted = Array.from(byPerson.entries()).sort((a, b) => {
+              if (a[0] === 'Unassigned') return 1
+              if (b[0] === 'Unassigned') return -1
+              return a[0].localeCompare(b[0])
+            })
+            return (
+              <div className="space-y-3">
+                {sorted.map(([person, tasks]) => (
+                  <div key={person}>
+                    <p className="text-xs font-medium text-[var(--muted)] mb-1">{person}</p>
+                    <div className="space-y-0.5">
+                      {tasks.map((task) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          variant="normal"
+                          hasConsolidation={consolidationTaskIds?.has(task.id)}
+                          needsReply={needsReplyTaskIds?.has(task.id)}
+                          commentCount={commentCounts?.[task.id]}
+                          onComplete={handleComplete}
+                          onClick={() => handleTaskClick(task)}
+                          onRefresh={onRefresh}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </CollapsiblePrioritySection>
       )}
 
