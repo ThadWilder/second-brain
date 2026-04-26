@@ -290,6 +290,37 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         </div>
       )}
 
+      {/* Project */}
+      <div className="flex items-center gap-2">
+        {entities.filter(e => e.role === 'project').map(e => (
+          <a
+            key={e.id}
+            href={`/projects/${e.id}`}
+            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 font-medium hover:bg-amber-100 transition-colors"
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+            {e.name}
+          </a>
+        ))}
+        {entities.filter(e => e.role === 'project').length === 0 && (
+          <select
+            className="text-xs px-2 py-1 rounded border border-dashed border-[var(--border)] bg-transparent text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:border-[var(--accent)] focus:outline-none"
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) {
+                linkEntity(e.target.value)
+                e.target.value = ''
+              }
+            }}
+          >
+            <option value="" disabled>+ Add to project...</option>
+            {allEntities.filter(e => e.type === 'project').map(e => (
+              <option key={e.id} value={e.id}>{e.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
       {/* Description */}
       <div>
         {editingDescription ? (
@@ -339,22 +370,6 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
           </p>
         )}
       </div>
-
-      {/* Linked Projects */}
-      {entities.filter(e => e.role === 'project').length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {entities.filter(e => e.role === 'project').map(e => (
-            <a
-              key={e.id}
-              href={`/projects/${e.id}`}
-              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors"
-            >
-              <FolderOpen className="w-3 h-3" />
-              {e.name}
-            </a>
-          ))}
-        </div>
-      )}
 
       {/* Consolidation Suggestions */}
       {(consolidation_suggestions ?? []).length > 0 && (
@@ -708,9 +723,9 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
 
       {/* Linked Entities */}
       <Section label="Linked Entities">
-        {entities.length > 0 && (
+        {entities.filter(e => e.role !== 'project').length > 0 && (
           <div className="space-y-1.5 mb-3">
-            {entities.map((e) => (
+            {entities.filter(e => e.role !== 'project').map((e) => (
               <div key={e.id + e.role} className="group flex items-center gap-2 text-xs">
                 <Users className="w-3.5 h-3.5 text-[var(--muted)]" />
                 <span className="text-[var(--text)]">{e.name}</span>
@@ -726,7 +741,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
             ))}
           </div>
         )}
-        {entities.length === 0 && (
+        {entities.filter(e => e.role !== 'project').length === 0 && (
           <p className="text-xs text-[var(--muted)] mb-3">No linked entities yet.</p>
         )}
         {linkingEntity ? (
