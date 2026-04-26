@@ -716,28 +716,46 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
         {linkingEntity ? (
           <span className="text-xs text-[var(--muted)]">Linking...</span>
         ) : (
-          <select
-            className="w-full text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:border-[var(--accent)] focus:outline-none"
-            defaultValue=""
-            onChange={(e) => {
-              if (e.target.value) {
-                linkEntity(e.target.value)
-                e.target.value = ''
-              }
-            }}
-          >
-            <option value="" disabled>+ Link entity...</option>
-            {['brand', 'department', 'contact', 'vendor', 'vendor_team', 'freelancer', 'franchisee', 'project'].map(type => {
-              const group = allEntities.filter(e => e.type === type && !entities.some(linked => linked.id === e.id))
-              if (!group.length) return null
-              const label = { brand: 'Brands', department: 'Internal Team', contact: 'People', vendor: 'Vendors', vendor_team: 'Vendor Team', freelancer: 'Freelancers', franchisee: 'Franchisees', project: 'Projects' }[type] ?? type
-              return (
-                <optgroup key={type} label={label}>
-                  {group.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                </optgroup>
-              )
-            })}
-          </select>
+          <div className="flex gap-2">
+            <select
+              className="flex-1 text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:border-[var(--accent)] focus:outline-none"
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  linkEntity(e.target.value)
+                  e.target.value = ''
+                }
+              }}
+            >
+              <option value="" disabled>+ Link person...</option>
+              {['contact', 'brand', 'department', 'vendor', 'vendor_team', 'freelancer', 'franchisee'].map(type => {
+                const group = allEntities.filter(e => e.type === type && !entities.some(linked => linked.id === e.id))
+                if (!group.length) return null
+                const label = { brand: 'Brands', department: 'Internal Team', contact: 'People', vendor: 'Vendors', vendor_team: 'Vendor Team', freelancer: 'Freelancers', franchisee: 'Franchisees' }[type] ?? type
+                return (
+                  <optgroup key={type} label={label}>
+                    {group.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                  </optgroup>
+                )
+              })}
+            </select>
+            <select
+              className="flex-1 text-xs px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:border-[var(--accent)] focus:outline-none"
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  linkEntity(e.target.value)
+                  e.target.value = ''
+                }
+              }}
+            >
+              <option value="" disabled>+ Link project...</option>
+              {(() => {
+                const projects = allEntities.filter(e => e.type === 'project' && !entities.some(linked => linked.id === e.id))
+                return projects.map(e => <option key={e.id} value={e.id}>{e.name}</option>)
+              })()}
+            </select>
+          </div>
         )}
       </Section>
 
