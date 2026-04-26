@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
-import { Tag, Clock, Link2, ArrowLeft } from 'lucide-react'
+import { Tag, ArrowLeft } from 'lucide-react'
+import { Header } from '@/components/ui/Header'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
-import { createClient } from '@/lib/supabase/browser'
 import type { TaskStatus } from '@/types'
 
 const TAG_PALETTE = [
@@ -64,12 +63,6 @@ export default function TagDetailPage() {
     fetchData()
   }, [fetchData])
 
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    window.location.href = '/login'
-  }
-
   // Group tasks by brand
   const grouped: Record<string, { brand: string; tasks: TaskWithEntities[] }> = {}
   for (const task of tasks) {
@@ -93,33 +86,7 @@ export default function TagDetailPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="bg-[#2c2014] px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <Link href="/">
-            <Image src="/logo-icon-white.png" alt="Dumpbox" width={32} height={32} />
-          </Link>
-          <Link href="/" className="text-white font-bold tracking-tight text-lg hover:text-white/90 transition-colors">
-            Dumpbox
-          </Link>
-          <span className="text-white/20 select-none">/</span>
-          <Link href="/tags" className="text-sm text-white/50 hover:text-white/70 transition-colors flex items-center gap-1">
-            <Tag size={14} />
-            Tags
-          </Link>
-          <span className="text-white/20 select-none">/</span>
-          <span className="text-sm text-white/70">{tag}</span>
-        </div>
-        <nav className="hidden md:flex items-center gap-6">
-          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">🍳 The Kitchen</a>
-          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
-          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
-          <a href="/tags" className="text-base text-white font-medium flex items-center gap-1.5"><Tag size={15} />Tags</a>
-          <span className="text-white/10 select-none">|</span>
-          <a href="/wiki" className="text-sm text-white/50 font-medium hover:text-white transition-colors">Wiki</a>
-          <button onClick={handleSignOut} className="text-sm text-white/50 font-medium hover:text-white transition-colors">Sign out</button>
-        </nav>
-      </header>
+      <Header activePage="tags" />
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">

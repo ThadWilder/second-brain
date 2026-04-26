@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { ClipboardCheck, RefreshCw, BarChart3, Clock, Users, CheckCircle, AlertTriangle, Eye, Link2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/browser'
+import { ClipboardCheck, RefreshCw, BarChart3, Users, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Header } from '@/components/ui/Header'
 import { useToast } from '@/components/ui/Toast'
 
 interface AuditBrand {
@@ -115,12 +114,6 @@ export default function AuditsPage() {
     }
   }
 
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    window.location.href = '/login'
-  }
-
   const brands = data?.brands ?? []
   const totalFranchisees = brands.reduce((sum, b) => sum + b.franchisee_count, 0)
   const overallAvgScore = brands.length > 0
@@ -131,30 +124,7 @@ export default function AuditsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="bg-[#2c2014] px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <Link href="/">
-            <Image src="/logo-icon-white.png" alt="Dumpbox" width={32} height={32} />
-          </Link>
-          <Link href="/" className="text-white font-bold tracking-tight text-lg hover:text-white/90 transition-colors">
-            Dumpbox
-          </Link>
-          <span className="text-white/20 select-none">/</span>
-          <span className="text-sm text-white/70 flex items-center gap-1.5">
-            <ClipboardCheck size={14} />
-            Marketing Audits
-          </span>
-        </div>
-        <nav className="flex items-center gap-6">
-          <a href="/wiki" className="text-base text-white/70 font-medium hover:text-white transition-colors">Wiki</a>
-          <a href="/kpis" className="text-base text-white/70 font-medium hover:text-white transition-colors">KPIs</a>
-          <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">🍳 The Kitchen</a>
-          <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors">History</a>
-          <a href="/links" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Link2 size={15} />Links</a>
-          <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
-        </nav>
-      </header>
+      <Header activePage="audits" />
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
