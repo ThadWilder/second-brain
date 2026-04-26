@@ -134,8 +134,16 @@ export async function GET(): Promise<NextResponse> {
 
   const escalatedTasks = normalizedTasks.filter((t: any) => t.escalation)
   const overdueTasks = normalizedTasks.filter((t: any) => !t.escalation && t.due_date && t.due_date < today)
-  const regularTasks = normalizedTasks.filter((t: any) => !t.escalation && t.due_date === today)
-  const inboxTasks = normalizedTasks.filter((t: any) => !t.escalation && (!t.due_date || t.due_date > today))
+  const regularTasks = normalizedTasks.filter((t: any) =>
+    !t.escalation && !inboxTasks.includes(t) && !overdueTasks.includes(t)
+  )
+  // Inbox = new/unreviewed: open, not escalated, no due date set, no waiting_on, no project assigned
+  const inboxTasks = normalizedTasks.filter((t: any) =>
+    !t.escalation &&
+    !t.due_date &&
+    !t.waiting_on &&
+    !(t.entities ?? []).some((e: any) => e.role === 'project')
+  )
 
   // Follow-up escalation: tracking tasks that need attention
   const sevenDaysAgoDate = new Date(estNow.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()

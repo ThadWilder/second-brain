@@ -168,7 +168,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
 
       {/* Inbox — grouped by source entry */}
       {inboxTasks.filter((t) => !completedIds.has(t.id)).length > 0 && (
-        <Section id="section-inbox" title="The Basket" icon="🧺" count={inboxTasks.filter((t) => !completedIds.has(t.id)).length}>
+        <Section id="section-inbox" title="Inbox" icon="📥" count={inboxTasks.filter((t) => !completedIds.has(t.id)).length}>
           <InboxGroups
             tasks={inboxTasks.filter((t) => !completedIds.has(t.id))}
             consolidationTaskIds={consolidationTaskIds}
