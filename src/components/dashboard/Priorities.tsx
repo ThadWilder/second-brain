@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Hourglass, X, Eye, Tag, Globe } from 'lucide-react'
+import { Hourglass, X, Eye, Tag, Globe, FolderOpen } from 'lucide-react'
 import { TaskCheckbox } from '@/components/ui/TaskCheckbox'
 import { useToast } from '@/components/ui/Toast'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -903,6 +903,12 @@ function TaskRow({
           {brand && (
             <span className="text-xs text-[var(--muted)]">{brand.name}</span>
           )}
+          {task.entities?.filter(e => e.role === 'project').map(e => (
+            <span key={e.id} className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">
+              <FolderOpen className="w-2.5 h-2.5" />
+              {e.name}
+            </span>
+          ))}
           {task.due_date && (
             <span className="text-xs text-[var(--muted)]">
               due {task.due_date}
