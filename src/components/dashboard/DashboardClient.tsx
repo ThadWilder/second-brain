@@ -229,6 +229,7 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                 overdueTasks={[]}
                 tasks={[]}
                 inboxTasks={inboxTasks}
+                backlogTasks={[]}
                 watchingTasks={[]}
                 overdueFollowUps={[]}
                 staleTracking={[]}

@@ -149,8 +149,15 @@ export async function GET(): Promise<NextResponse> {
   )
   const inboxIds = new Set(inboxTasks.map((t: any) => t.id))
   const overdueIds = new Set(overdueTasks.map((t: any) => t.id))
+  const escalatedIds = new Set(escalatedTasks.map((t: any) => t.id))
+  // Backlog = no due date but has been interacted with (not in inbox)
+  const backlogTasks = normalizedTasks.filter((t: any) =>
+    !t.escalation && !t.due_date && !inboxIds.has(t.id)
+  )
+  const backlogIds = new Set(backlogTasks.map((t: any) => t.id))
+  // Regular = has a due date (today or future), not escalated, not overdue
   const regularTasks = normalizedTasks.filter((t: any) =>
-    !t.escalation && !inboxIds.has(t.id) && !overdueIds.has(t.id)
+    !escalatedIds.has(t.id) && !inboxIds.has(t.id) && !overdueIds.has(t.id) && !backlogIds.has(t.id)
   )
 
   // Follow-up escalation: tracking tasks that need attention
@@ -251,7 +258,7 @@ export async function GET(): Promise<NextResponse> {
     userEmail,
     stats: { ...stats, unresolved_comments: totalUnresolvedComments },
     brands, people, vendors, departments, franchisees, vendorTeam, freelancers,
-    escalatedTasks, overdueTasks, regularTasks, inboxTasks,
+    escalatedTasks, overdueTasks, regularTasks, inboxTasks, backlogTasks,
     watchingTasks: normalizedTrackingTasks,
     overdueFollowUps, staleTracking,
     pendingResponses,

@@ -23,6 +23,7 @@ interface Props {
   overdueTasks: TaskWithEntities[]
   tasks: TaskWithEntities[]
   inboxTasks: TaskWithEntities[]
+  backlogTasks: TaskWithEntities[]
   watchingTasks: TaskWithEntities[]
   overdueFollowUps: TaskWithEntities[]
   staleTracking: TaskWithEntities[]
@@ -37,7 +38,7 @@ type PanelState =
   | { type: 'pending'; id: string; title: string }
   | null
 
-export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, watchingTasks, overdueFollowUps, staleTracking, consolidationTaskIds, commentCounts, brands, onRefresh }: Props) {
+export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdueTasks, tasks, inboxTasks, backlogTasks, watchingTasks, overdueFollowUps, staleTracking, consolidationTaskIds, commentCounts, brands, onRefresh }: Props) {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [panel, setPanel] = useState<PanelState>(null)
   const { showToast } = useToast()
@@ -183,7 +184,28 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
         </Section>
       )}
 
-      {/* Simmering — collapsible */}
+      {/* Backlog — no due date but reviewed */}
+      {backlogTasks.length > 0 && (
+        <CollapsiblePrioritySection id="section-backlog" title="Backlog" icon="📋" count={backlogTasks.filter((t) => !completedIds.has(t.id)).length}>
+          {backlogTasks
+            .filter((t) => !completedIds.has(t.id))
+            .map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                variant="normal"
+                hasConsolidation={consolidationTaskIds?.has(task.id)}
+                needsReply={needsReplyTaskIds?.has(task.id)}
+                commentCount={commentCounts?.[task.id]}
+                onComplete={handleComplete}
+                onClick={() => handleTaskClick(task)}
+                onRefresh={onRefresh}
+              />
+            ))}
+        </CollapsiblePrioritySection>
+      )}
+
+      {/* Watch Only — collapsible */}
       {watchingTasks.length > 0 && (
         <CollapsiblePrioritySection id="section-watching" title="Watch Only" icon="👁️" count={watchingTasks.length + overdueFollowUps.length + staleTracking.length}>
           {(() => {

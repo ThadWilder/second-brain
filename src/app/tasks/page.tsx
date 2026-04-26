@@ -46,7 +46,7 @@ function TasksContent() {
   }
 
   const {
-    escalatedTasks = [], overdueTasks = [], regularTasks = [],
+    escalatedTasks = [], overdueTasks = [], regularTasks = [], backlogTasks = [],
     watchingTasks = [], overdueFollowUps = [], staleTracking = [],
     pendingResponses = [], needsReplyTaskIds = [],
     consolidationTaskIds = [], commentCounts = {},
@@ -62,6 +62,7 @@ function TasksContent() {
         overdueTasks={overdueTasks}
         tasks={regularTasks}
         inboxTasks={[]}
+        backlogTasks={backlogTasks}
         watchingTasks={watchingTasks}
         overdueFollowUps={overdueFollowUps}
         staleTracking={staleTracking}
