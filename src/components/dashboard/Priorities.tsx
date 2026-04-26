@@ -185,11 +185,22 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
 
       {/* Simmering — collapsible */}
       {watchingTasks.length > 0 && (
-        <CollapsiblePrioritySection id="section-watching" title="Watch Only" icon="👁️" count={watchingTasks.length}>
+        <CollapsiblePrioritySection id="section-watching" title="Watch Only" icon="👁️" count={watchingTasks.length + overdueFollowUps.length + staleTracking.length}>
           {(() => {
-            const visible = watchingTasks.filter((t) => !completedIds.has(t.id))
+            const allWatching = [
+              ...watchingTasks.filter((t) => !completedIds.has(t.id)),
+              ...overdueFollowUps.filter((t) => !completedIds.has(t.id)),
+              ...staleTracking.filter((t) => !completedIds.has(t.id)),
+            ]
+            // Dedupe by ID in case a task appears in multiple lists
+            const seen = new Set<string>()
+            const deduped = allWatching.filter(t => {
+              if (seen.has(t.id)) return false
+              seen.add(t.id)
+              return true
+            })
             const byPerson = new Map<string, TaskWithEntities[]>()
-            for (const task of visible) {
+            for (const task of deduped) {
               const owner = task.tracked_owner ?? task.waiting_on ?? 'Unassigned'
               const existing = byPerson.get(owner) ?? []
               existing.push(task)
@@ -226,46 +237,6 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
             )
           })()}
         </CollapsiblePrioritySection>
-      )}
-
-      {/* Overdue Follow-ups */}
-      {overdueFollowUps.length > 0 && (
-        <Section title="Overdue Follow-ups" icon="👁️" count={overdueFollowUps.length}>
-          {overdueFollowUps
-            .filter((t) => !completedIds.has(t.id))
-            .map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                variant="escalated"
-                hasConsolidation={consolidationTaskIds?.has(task.id)}
-                commentCount={commentCounts?.[task.id]}
-                onComplete={handleComplete}
-                onClick={() => handleTaskClick(task)}
-                onRefresh={onRefresh}
-              />
-            ))}
-        </Section>
-      )}
-
-      {/* Stale Tracking Items */}
-      {staleTracking.length > 0 && (
-        <Section title="Stale tracking items" icon="👁️" count={staleTracking.length}>
-          {staleTracking
-            .filter((t) => !completedIds.has(t.id))
-            .map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                variant="stale"
-                hasConsolidation={consolidationTaskIds?.has(task.id)}
-                commentCount={commentCounts?.[task.id]}
-                onComplete={handleComplete}
-                onClick={() => handleTaskClick(task)}
-                onRefresh={onRefresh}
-              />
-            ))}
-        </Section>
       )}
 
       {visibleEscalated.length === 0 &&
