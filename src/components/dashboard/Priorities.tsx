@@ -185,7 +185,7 @@ export function Priorities({ escalated, needsResponse, needsReplyTaskIds, overdu
 
       {/* Simmering — collapsible */}
       {watchingTasks.length > 0 && (
-        <CollapsiblePrioritySection id="section-watching" title="Simmering" icon="♨️" count={watchingTasks.length}>
+        <CollapsiblePrioritySection id="section-watching" title="Watch Only" icon="👁️" count={watchingTasks.length}>
           {watchingTasks
             .filter((t) => !completedIds.has(t.id))
             .map((task) => (
@@ -299,6 +299,7 @@ function InboxGroups({
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDismissing, setBulkDismissing] = useState(false)
+  const [groupBy, setGroupBy] = useState<'none' | 'project' | 'brand'>('none')
 
   // Build brand health lookup
   const brandHealth = new Map<string, 'green' | 'amber' | 'red'>()
@@ -311,33 +312,58 @@ function InboxGroups({
     ? tasks.filter((t) => t.description.toLowerCase().includes(searchQuery.toLowerCase()))
     : tasks
 
-  // Group by brand
+  // Build groups based on groupBy mode
   const groups: Array<{ key: string; label: string; health?: 'green' | 'amber' | 'red'; tasks: TaskWithEntities[] }> = []
-  const byBrand = new Map<string, TaskWithEntities[]>()
 
-  for (const task of filtered) {
-    const brandEntity = task.entities?.find((e) => e.role === 'brand')
-      ?? task.entities?.find((e) => e.type === 'brand' || e.type === 'department')
-    const brand = brandEntity?.name ?? '_none'
-    const existing = byBrand.get(brand) ?? []
-    existing.push(task)
-    byBrand.set(brand, existing)
-  }
-
-  const sortedBrands = Array.from(byBrand.entries()).sort((a, b) => {
-    if (a[0] === '_none') return -1
-    if (b[0] === '_none') return 1
-    if (b[1].length !== a[1].length) return b[1].length - a[1].length
-    return a[0].localeCompare(b[0])
-  })
-
-  for (const [brand, brandTasks] of sortedBrands) {
-    groups.push({
-      key: brand,
-      label: brand === '_none' ? 'Mystery Dumplings' : brand,
-      health: brandHealth.get(brand),
-      tasks: brandTasks,
+  if (groupBy === 'none') {
+    // Flat list -- single group with all tasks
+    groups.push({ key: '_all', label: '', tasks: filtered })
+  } else if (groupBy === 'project') {
+    const byProject = new Map<string, TaskWithEntities[]>()
+    for (const task of filtered) {
+      const projectEntity = task.entities?.find((e) => e.role === 'project')
+      const project = projectEntity?.name ?? '_none'
+      const existing = byProject.get(project) ?? []
+      existing.push(task)
+      byProject.set(project, existing)
+    }
+    const sorted = Array.from(byProject.entries()).sort((a, b) => {
+      if (a[0] === '_none') return 1
+      if (b[0] === '_none') return -1
+      return a[0].localeCompare(b[0])
     })
+    for (const [project, projectTasks] of sorted) {
+      groups.push({
+        key: project,
+        label: project === '_none' ? 'No Project' : project,
+        tasks: projectTasks,
+      })
+    }
+  } else {
+    // Group by brand
+    const byBrand = new Map<string, TaskWithEntities[]>()
+    for (const task of filtered) {
+      const brandEntity = task.entities?.find((e) => e.role === 'brand')
+        ?? task.entities?.find((e) => e.type === 'brand' || e.type === 'department')
+      const brand = brandEntity?.name ?? '_none'
+      const existing = byBrand.get(brand) ?? []
+      existing.push(task)
+      byBrand.set(brand, existing)
+    }
+    const sorted = Array.from(byBrand.entries()).sort((a, b) => {
+      if (a[0] === '_none') return -1
+      if (b[0] === '_none') return 1
+      if (b[1].length !== a[1].length) return b[1].length - a[1].length
+      return a[0].localeCompare(b[0])
+    })
+    for (const [brand, brandTasks] of sorted) {
+      groups.push({
+        key: brand,
+        label: brand === '_none' ? 'Ungrouped' : brand,
+        health: brandHealth.get(brand),
+        tasks: brandTasks,
+      })
+    }
   }
 
   function toggleGroup(key: string) {
@@ -443,15 +469,24 @@ function InboxGroups({
 
   return (
     <div className="space-y-2">
-      {/* Search + bulk actions */}
+      {/* Search + group toggle + bulk actions */}
       <div className="flex items-center gap-2">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search the basket..."
+          placeholder="Search..."
           className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
         />
+        <select
+          value={groupBy}
+          onChange={(e) => { setGroupBy(e.target.value as 'none' | 'project' | 'brand'); setExpandedGroups(new Set()) }}
+          className="text-xs px-2 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] cursor-pointer focus:outline-none focus:border-[var(--accent)]"
+        >
+          <option value="none">No grouping</option>
+          <option value="project">By Project</option>
+          <option value="brand">By Brand</option>
+        </select>
         {selectedIds.size >= 2 && (
           <button
             onClick={bulkMerge}
@@ -472,9 +507,40 @@ function InboxGroups({
         )}
       </div>
 
-      {/* Groups */}
+      {/* Tasks */}
       <div className="space-y-1">
         {groups.map(({ key, label, health, tasks: groupTasks }) => {
+          if (groupBy === 'none') {
+            // Flat list -- no group headers
+            return (
+              <div key={key} className="space-y-0.5">
+                {groupTasks.map((task) => (
+                  <div key={task.id} className="flex items-start gap-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(task.id)}
+                      onChange={() => toggleSelect(task.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-3.5 shrink-0 accent-[var(--accent)]"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <TaskRow
+                        task={task}
+                        variant="normal"
+                        hasConsolidation={consolidationTaskIds?.has(task.id)}
+                        needsReply={needsReplyTaskIds?.has(task.id)}
+                        commentCount={commentCounts?.[task.id]}
+                        onComplete={onComplete}
+                        onClick={() => onTaskClick(task)}
+                        onRefresh={onRefresh}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          }
+          // Grouped view
           const isExpanded = expandedGroups.has(key)
           return (
             <div key={key}>
@@ -625,6 +691,7 @@ function TaskRow({
           status: 'tracking',
           tracked_owner: owner || null,
           follow_up_date: followUpDate || null,
+          public: true,
         }),
       })
       setShowTrackingPopover(false)

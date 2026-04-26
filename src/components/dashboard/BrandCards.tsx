@@ -25,9 +25,10 @@ const HEALTH_STYLES = {
 
 interface Props {
   brands: BrandSummary[]
+  defaultCollapsed?: boolean
 }
 
-export function BrandCards({ brands }: Props) {
+export function BrandCards({ brands, defaultCollapsed }: Props) {
   if (!brands.length) return null
 
   return (
@@ -35,7 +36,7 @@ export function BrandCards({ brands }: Props) {
       title="Brands"
       icon="🏢"
       count={brands.length}
-      defaultExpanded={true}
+      defaultExpanded={!defaultCollapsed}
     >
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       {brands.map((b) => {
