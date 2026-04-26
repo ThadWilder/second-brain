@@ -98,7 +98,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const claudeResponse = await anthropic.messages.create({
       model: CLAUDE_MODEL_DEEP,
       max_tokens: 2048,
-      system: `You write weekly strategic digest emails for a marketing agency VP. You are thoughtful and analytical — don't just list numbers, interpret them.
+      system: `You write weekly strategic digest emails for a marketing agency VP. You are thoughtful and analytical, don't just list numbers, interpret them. NEVER use em dashes.
 
 Format:
 ---

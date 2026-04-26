@@ -59,7 +59,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 512,
-      system: 'You write brief, direct follow-up nudge emails. List tasks. Be concise. No filler.',
+      system: 'You write brief, direct follow-up nudge emails. List tasks. Be concise. No filler. NEVER use em dashes.',
       messages: [
         {
           role: 'user',

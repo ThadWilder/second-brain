@@ -96,7 +96,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const claudeResponse = await anthropic.messages.create({
     model: CLAUDE_MODEL,
     max_tokens: 1024,
-    system: `You generate the Dim Sum — the daily briefing for a marketing agency operator.
+    system: `You generate the Dim Sum, the daily briefing for a marketing agency operator. NEVER use em dashes anywhere.
 Format the briefing as plain text email body. Use the template below.
 Be direct. Use bullet points. No fluff.
 

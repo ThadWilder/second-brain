@@ -19,7 +19,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const response = await anthropic.messages.create({
     model: CLAUDE_MODEL_FAST,
     max_tokens: 512,
-    system: `You draft short, professional emails for a marketing agency VP (Brandy Murch at Threshold Brands). Be direct, warm, and concise. No filler. Write only the email body, no subject line.`,
+    system: `You draft short, professional emails for a marketing agency VP (Brandy Murch at Threshold Brands). Be direct, warm, and concise. No filler. Write only the email body, no subject line. NEVER use em dashes (—) anywhere in the email. Use commas, periods, or colons instead.`,
     messages: [{
       role: 'user',
       content: `Draft an email about this task:
