@@ -305,6 +305,7 @@ export default function LinksPage() {
           <a href="/tracking" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5">🍳 The Kitchen</a>
           <a href="/history" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><Clock size={15} />History</a>
           <a href="/links" className="text-base text-white font-medium flex items-center gap-1.5"><Link2 size={15} />Links</a>
+          <a href="/projects" className="text-base text-white/70 font-medium hover:text-white transition-colors flex items-center gap-1.5"><FolderOpen size={15} />Projects</a>
           <button onClick={handleSignOut} className="text-base text-white/70 font-medium hover:text-white transition-colors">Sign out</button>
         </nav>
       </header>
