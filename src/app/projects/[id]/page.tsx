@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { CheckCircle2, Circle, ExternalLink, ChevronLeft } from 'lucide-react'
 import { Header } from '@/components/ui/Header'
+import { DetailPanel } from '@/components/dashboard/DetailPanel'
+import { TaskDetail } from '@/components/dashboard/TaskDetail'
 
 interface ProjectMeta {
   status?: 'active' | 'on_hold' | 'completed'
@@ -121,6 +123,7 @@ export default function ProjectDetailPage() {
 
   const openTasks = data?.tasks.filter(t => t.status !== 'done') ?? []
   const doneTasks = data?.tasks.filter(t => t.status === 'done') ?? []
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -262,7 +265,7 @@ export default function ProjectDetailPage() {
                 {openTasks.length > 0 && (
                   <div className="space-y-1.5">
                     {openTasks.map(task => (
-                      <TaskRow key={task.id} task={task} />
+                      <TaskRow key={task.id} task={task} onClick={() => setSelectedTaskId(task.id)} />
                     ))}
                   </div>
                 )}
@@ -271,7 +274,7 @@ export default function ProjectDetailPage() {
                   <div className="space-y-1.5 opacity-60">
                     <p className="text-xs text-[var(--muted)] pt-2">Completed</p>
                     {doneTasks.map(task => (
-                      <TaskRow key={task.id} task={task} />
+                      <TaskRow key={task.id} task={task} onClick={() => setSelectedTaskId(task.id)} />
                     ))}
                   </div>
                 )}
@@ -280,15 +283,28 @@ export default function ProjectDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Task detail panel */}
+      <DetailPanel
+        open={selectedTaskId !== null}
+        onClose={() => setSelectedTaskId(null)}
+        title="Task Detail"
+      >
+        {selectedTaskId && (
+          <TaskDetail taskId={selectedTaskId} onUpdate={() => { fetchDetail() }} />
+        )}
+      </DetailPanel>
     </div>
   )
 }
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({ task, onClick }: { task: Task; onClick?: () => void }) {
   const isDone = task.status === 'done'
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3 flex items-start gap-3
-                    hover:border-[var(--accent)]/30 transition-colors">
+    <div
+      onClick={onClick}
+      className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-4 py-3 flex items-start gap-3
+                    hover:border-[var(--accent)]/30 transition-colors cursor-pointer">
       {isDone
         ? <CheckCircle2 size={16} className="text-green-500 shrink-0 mt-0.5" />
         : <Circle size={16} className="text-[var(--muted)] shrink-0 mt-0.5" />
