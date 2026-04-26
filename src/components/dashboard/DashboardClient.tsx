@@ -208,12 +208,12 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
             <ClarificationBanner clarifications={clarifications} />
           )}
 
-          {/* ── Inbox (unfiled tasks) ── */}
-          {(inboxTasks ?? []).length > 0 && (
-            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm" id="inbox-section">
-              <h2 className="text-base font-bold text-[var(--text)] mb-4 pb-2 border-b-2 border-[var(--accent)] inline-block">
-                Inbox
-              </h2>
+          {/* ── Inbox (new/unreviewed tasks) ── */}
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm" id="inbox-section">
+            <h2 className="text-base font-bold text-[var(--text)] mb-4 pb-2 border-b-2 border-[var(--accent)] inline-block">
+              Inbox
+            </h2>
+            {(inboxTasks ?? []).length > 0 ? (
               <Priorities
                 escalated={[]}
                 needsResponse={[]}
@@ -229,25 +229,9 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
                 brands={brands}
                 onRefresh={fetchData}
               />
-            </div>
-          )}
-
-          {/* ── Directory ── */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-7" id="entity-cards-section">
-            <h2 className="text-lg font-bold text-[var(--text)]">Directory</h2>
-            <BrandCards brands={brands} defaultCollapsed />
-            <EntityCards title="Internal Team" entities={departments} type="department" allEntities={allEntities} defaultCollapsed />
-            <PeopleSection
-              contacts={people}
-              vendorTeam={vendorTeam}
-              freelancers={freelancers}
-              allEntities={allEntities}
-              entityRelationships={entityRelationships}
-              onRefresh={fetchData}
-            />
-            <EntityCards title="Franchisees" entities={franchisees} type="franchisee" allEntities={allEntities} entityRelationships={entityRelationships} onRefresh={fetchData} defaultCollapsed />
-            <EntityCards title="Vendors" entities={vendors} type="vendor" allEntities={allEntities} defaultCollapsed />
-            <TopicsList entities={allEntities.filter((e: any) => e.type === 'topic')} allEntities={allEntities} onRefresh={fetchData} />
+            ) : (
+              <p className="text-sm text-[var(--muted)] py-4 text-center">Inbox Empty!</p>
+            )}
           </div>
         </div>
       </div>
