@@ -537,61 +537,32 @@ export default function LinksPage() {
           )}
 
           {/* Flat list view */}
-          {!loading && !groupByCategory && links.length > 0 && (() => {
-            const pinnedItems = links.filter(l => l.pinned)
-            const unpinnedItems = links.filter(l => !l.pinned)
-            const renderCard = (link: LinkItem) => (
-              link.kind === 'receipt'
-                ? <ReceiptCard
-                    key={link.url}
-                    link={link}
-                    onDelete={handleDeleteLink}
-                    onUpdateReceiptMeta={handleUpdateReceiptMeta}
-                    onTogglePin={handleTogglePin}
-                    selected={selected.has(link.url)}
-                    onSelect={toggleSelectItem}
-                  />
-                : <LinkCard
-                    key={link.url}
-                    link={link}
-                    onDelete={handleDeleteLink}
-                    onUpdateLabel={handleUpdateLabel}
-                    onTogglePin={handleTogglePin}
-                    onHideEntity={handleHideEntity}
-                    selected={selected.has(link.url)}
-                    onSelect={toggleSelectItem}
-                  />
-            )
-            return (
-              <div className="space-y-6">
-                {pinnedItems.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-sm">📌</span>
-                      <h2 className="text-sm font-semibold text-[var(--text)]">Pinned</h2>
-                      <span className="text-xs text-[var(--muted)]">({pinnedItems.length})</span>
-                    </div>
-                    <div className="space-y-2">
-                      {pinnedItems.map(renderCard)}
-                    </div>
-                  </div>
-                )}
-                {unpinnedItems.length > 0 && (
-                  <div>
-                    {pinnedItems.length > 0 && (
-                      <div className="flex items-center gap-2 mb-3">
-                        <h2 className="text-sm font-semibold text-[var(--text)]">Everything Else</h2>
-                        <span className="text-xs text-[var(--muted)]">({unpinnedItems.length})</span>
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      {unpinnedItems.map(renderCard)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
+          {!loading && !groupByCategory && links.length > 0 && (
+            <div className="space-y-2">
+              {links.map(link => (
+                link.kind === 'receipt'
+                  ? <ReceiptCard
+                      key={link.url}
+                      link={link}
+                      onDelete={handleDeleteLink}
+                      onUpdateReceiptMeta={handleUpdateReceiptMeta}
+                      onTogglePin={handleTogglePin}
+                      selected={selected.has(link.url)}
+                      onSelect={toggleSelectItem}
+                    />
+                  : <LinkCard
+                      key={link.url}
+                      link={link}
+                      onDelete={handleDeleteLink}
+                      onUpdateLabel={handleUpdateLabel}
+                      onTogglePin={handleTogglePin}
+                      onHideEntity={handleHideEntity}
+                      selected={selected.has(link.url)}
+                      onSelect={toggleSelectItem}
+                    />
+              ))}
+            </div>
+          )}
 
           {/* Manage blocklist */}
           <div className="text-center py-4">
