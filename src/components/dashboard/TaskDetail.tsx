@@ -102,10 +102,15 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
     try {
       const entity = allEntities.find(e => e.id === entityId)
       const role = entity?.type === 'project' ? 'project' : entity && ['brand', 'department'].includes(entity.type) ? 'brand' : 'related'
+      const patchBody: Record<string, unknown> = { link_entity_id: entityId, link_role: role }
+      // Auto-set private when linking to "Personal" project
+      if (entity?.type === 'project' && entity.name.toLowerCase() === 'personal') {
+        patchBody.public = false
+      }
       await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ link_entity_id: entityId, link_role: role }),
+        body: JSON.stringify(patchBody),
       })
       // Optimistic update: add entity to local state immediately
       if (entity && data) {

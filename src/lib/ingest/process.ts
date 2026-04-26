@@ -244,6 +244,10 @@ export async function processEntry(
               entity_id: proj.id,
               role: 'project',
             }, { onConflict: 'task_id,entity_id,role' }).select()
+            // Auto-private for Personal project
+            if (proj.name.toLowerCase() === 'personal') {
+              await db.from('tasks').update({ public: false }).eq('id', newTask.id)
+            }
           }
 
           newTasksByDescription.set(taskInput.description, newTask.id)

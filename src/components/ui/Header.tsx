@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Clock, Link2, FolderOpen, BookOpen, BarChart3 } from 'lucide-react'
+import { Clock, Link2, FolderOpen, BookOpen, BarChart3, CheckSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser'
 
 type PageId = 'dashboard' | 'resources' | 'projects' | 'wiki' | 'history' | 'kpis' | 'audits' | 'reviews' | 'tags'
 
 const NAV_ITEMS: Array<{ id: PageId; label: string; href: string; icon?: typeof Clock; small?: boolean }> = [
+  { id: 'dashboard', label: 'Tasks', href: '/', icon: CheckSquare },
   { id: 'projects', label: 'Projects', href: '/projects', icon: FolderOpen },
   { id: 'resources', label: 'Resources', href: '/resources', icon: BookOpen },
   { id: 'kpis', label: 'KPIs', href: '/kpis', icon: BarChart3 },
