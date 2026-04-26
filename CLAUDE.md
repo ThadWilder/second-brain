@@ -8,13 +8,13 @@ Items dumped into the app are called **dumplings**. The morning briefing email i
 - **Database**: Supabase (Postgres + RLS + pg_trgm extension)
 - **AI**: Anthropic Claude (direct API for ingest/cron, Managed Agents for chat)
 - **Email**: Postmark (inbound via `dump@dumpbox.app`, outbound from `briefing@dumpbox.app`)
-- **Hosting**: Render (auto-deploy from GitHub master branch)
+- **Hosting**: Vercel Pro plan
 - **Domain**: `dumpbox.app` (Cloudflare DNS)
 - **Auth**: Google OAuth via Supabase Auth
 
 ## Key IDs
 - **Supabase**: project `duohzmiicitrskitmsgo`
-- **Render**: auto-deploy from `master` branch
+- **Vercel**: project `prj_alea21zo0mlDm6VKxShnxF2AJWob`
 - **Postmark**: server `second-brain`, inbound hash `8887764d`
 - **Managed Agent**: `agent_011CZv7UFycAxkYUM9MrxSXv`, env `env_01WfxP2sgGKrqLTDkTG1p2Eb`
 - **Org ID**: `00000000-0000-0000-0000-000000000001` (single-org, hardcoded)
@@ -170,7 +170,12 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Blocklist**: checked during email ingest only, RLS enabled
 
 ## Deploy
-Auto-deploy from GitHub `master` branch via Render. Push to master triggers a new deploy.
+```bash
+curl -sk -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
+  "https://api.vercel.com/v13/deployments" \
+  -d '{"name":"second-brain","project":"prj_alea21zo0mlDm6VKxShnxF2AJWob","gitSource":{"type":"github","repoId":1204368059,"ref":"master"},"target":"production"}'
+```
+GitHub auto-deploy is NOT linked -- deploys are manual via Vercel API.
 
 ## Migrations
 Located in `supabase/migrations/`. Applied: 001-028.
