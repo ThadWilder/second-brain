@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban, Tag, Plus, Globe, MessageSquare, Check } from 'lucide-react'
+import { Clock, Users, FileText, AlertTriangle, Loader2, GitMerge, Hourglass, X, Eye, ArrowLeft, CheckCircle2, Ban, Tag, Plus, Globe, MessageSquare, Check, FolderOpen } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { useToast } from '@/components/ui/Toast'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
@@ -339,6 +339,22 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
           </p>
         )}
       </div>
+
+      {/* Linked Projects */}
+      {entities.filter(e => e.role === 'project').length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {entities.filter(e => e.role === 'project').map(e => (
+            <a
+              key={e.id}
+              href={`/projects/${e.id}`}
+              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors"
+            >
+              <FolderOpen className="w-3 h-3" />
+              {e.name}
+            </a>
+          ))}
+        </div>
+      )}
 
       {/* Consolidation Suggestions */}
       {(consolidation_suggestions ?? []).length > 0 && (
