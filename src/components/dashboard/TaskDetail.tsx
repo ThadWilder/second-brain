@@ -447,7 +447,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
       {/* Actions */}
       <Section label="Actions">
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Plate It — for open, tracking, waiting-on tasks */}
+          {/* Complete — for open, tracking, waiting-on tasks */}
           {(task.status === 'open' || task.status === 'tracking' || task.waiting_on) && task.status !== 'done' && (
             <button
               disabled={updating}
@@ -455,10 +455,10 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
               className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
             >
               <CheckCircle2 className="w-3 h-3" />
-              Plate It
+              Complete
             </button>
           )}
-          {/* Track It — for open, waiting-on tasks (not already tracking) */}
+          {/* Watch Only — for open, waiting-on tasks (not already tracking) */}
           {(task.status === 'open' || (task.waiting_on && task.status !== 'tracking')) && task.status !== 'done' && task.status !== 'dismissed' && (
             <button
               disabled={updating}
@@ -466,7 +466,7 @@ export function TaskDetail({ taskId, onUpdate }: { taskId: string; onUpdate?: ()
               className="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
             >
               <Eye className="w-3 h-3" />
-              Track It
+              Watch Only
             </button>
           )}
           {/* Waiting On — for open, tracking tasks (not already waiting) */}
