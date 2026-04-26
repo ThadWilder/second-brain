@@ -37,6 +37,7 @@ Items dumped into the app are called **dumplings**. The morning briefing email i
 | Vendor | `vendor` | 🤝 | The Marketing Agency, Red Brick |
 | Vendor Team | `vendor_team` | 👤 | Moe |
 | Freelancer | `freelancer` | 💻 | (independent contractors) |
+| Project | `project` | 📋 | Website Redesign, Q2 Campaign |
 
 Entities can be archived (`archived` boolean column) — hidden from dashboard but history preserved.
 
@@ -87,6 +88,24 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Haiku 4.5** (`CLAUDE_MODEL_FAST`): wiki synthesis, email drafting
 - **Opus 4.6** (`CLAUDE_MODEL_DEEP`): weekly digest (strategic analysis)
 
+### Email Prefix Commands
+- `RECEIPT:` — triggers receipt-specific ingest path (skip tasks, extract receipt metadata, save to saved_links)
+- `NOTE:` — attaches user note to the dumpling, passed as context to Claude
+- `PROJECT:` — tags ingest with a project entity, auto-creates if new
+- Prefixes are case-insensitive, can appear anywhere in subject (survives Fwd:/Re:), and can be combined
+
+### Projects (entity type)
+- `entities.type = 'project'`, metadata: `{status, description, target_date}`
+- Tasks linked via `task_entities` with `role: 'project'`
+- Auto-detected by Claude during ingest, or created via `PROJECT:` prefix
+- `/projects` page lists active projects with task counts
+- `/projects/[id]` detail view with tasks, status, wiki link
+
+### Blocklist
+- `blocklist` table: `pattern` (URL or email) + `type` ('url' or 'sender')
+- Checked early in ingest pipeline (after dedupe, before processing)
+- Managed via "Permanently Remove" in Resource Library or `/api/blocklist` API
+
 ### Entity resolution (`lib/entities.ts`)
 - Exact match on `normalized_name` → fuzzy match → create new
 - Aliases stored in `entity_aliases` table
@@ -104,7 +123,7 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Priority sections**: Escalations, Needs Response, Overdue, Today's Tasks, The Basket (inbox grouped by brand), Simmering (tracked), Overdue Follow-ups, Stale Tracking
 - **The Basket**: tasks grouped by brand with health dots (🔴🟡🟢), search filter, bulk dismiss/merge checkboxes, task age labels
 - **Ask the Chef**: chat drawer (right slide-out) for querying wiki/tasks/decisions via Managed Agents
-- **Dump box**: dedicated ingest input (top of page), separate from chat. Supports FYI:/TRACK: prefixes
+- **Dump box**: dedicated ingest input (top of page), separate from chat. Supports FYI:/TRACK:/RECEIPT:/NOTE:/PROJECT: prefixes
 - **Smart ingest**: AI detects task intent (your task vs tracking vs FYI). Creates fewer, higher-level tasks
 - **Public/private toggle** on any task — 🌐/🔒 in Actions. Public tasks visible at shared team URL
 - **Task detail**: editable description (click to edit), due date picker, draft email generator, public toggle, tracking with auto-clear waiting_on
@@ -117,6 +136,7 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Heatmap**: 10-day activity, hidden on mobile, Eastern time
 - **Mobile**: hamburger menu, floating chat button, viewport meta, favicon, add-to-homescreen
 - **"Brandy Murch"** displayed as "You" in waiting_on labels
+- **Resource Library**: Filter tabs (All/Links/Receipts), receipt cards with metadata editing + download, bulk selection with floating action bar, "Permanently Remove" with blocklist, icon/favicon/logo URL filtering
 
 ## Pages
 - `/` — Dashboard (The Basket, priorities, stats, entity cards)
@@ -127,6 +147,8 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - `/kpis` — KPI dashboard (linked from Kitchen)
 - `/audits` — Franchise audit tracking
 - `/reviews` — NiceJob review tracking
+- `/projects` — Projects list (active projects with task counts)
+- `/projects/[id]` — Project detail (tasks, status, wiki link)
 - `/public/watching?token=X` — Public read-only board (team can add items)
 
 ## Design
@@ -145,6 +167,7 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Auth callback**: redirect path validated (no open redirect)
 - **CORS**: only `dumpbox.app` allowed (localhost removed)
 - **Entity merge**: atomic Postgres RPC (no partial corruption)
+- **Blocklist**: checked during email ingest only, RLS enabled
 
 ## Deploy
 ```bash
@@ -155,7 +178,7 @@ curl -sk -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: appl
 GitHub auto-deploy is NOT linked — deploys are manual via Vercel API.
 
 ## Migrations
-Located in `supabase/migrations/`. Applied: 001-024.
+Located in `supabase/migrations/`. Applied: 001-028.
 - 001: initial schema
 - 002: wiki
 - 003: clarifications
@@ -166,6 +189,7 @@ Located in `supabase/migrations/`. Applied: 001-024.
 - 008: merge entities RPC
 - 009: pg_trgm indexes
 - 010: wiki queue
+- 028: receipts (saved_links columns), blocklist table, task_entities project role, saved_links RLS
 
 Seed data: `supabase/seed.sql` (10 brands, 2 internal team, 4 contacts, 2 vendors, 1 vendor team + aliases + relationships)
 
