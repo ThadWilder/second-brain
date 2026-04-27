@@ -321,6 +321,8 @@ interface NewLinkItem {
 
 function NewLinkRow({ link, onAction }: { link: NewLinkItem; onAction: () => void }) {
   const [acting, setActing] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [label, setLabel] = useState(link.display_name)
 
   const handlePin = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -330,7 +332,7 @@ function NewLinkRow({ link, onAction }: { link: NewLinkItem; onAction: () => voi
       await fetch('/api/links', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: link.url, pinned: true }),
+        body: JSON.stringify({ url: link.url, pinned: true, label: label !== link.display_name ? label : undefined }),
       })
       onAction()
     } finally {
@@ -353,16 +355,29 @@ function NewLinkRow({ link, onAction }: { link: NewLinkItem; onAction: () => voi
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 bg-[var(--surface-hover,#fff8f0)] border border-[var(--border)] rounded-lg hover:border-[var(--accent)]/30 transition-colors">
       <div className="flex-1 min-w-0">
-        <a
-          href={link.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-medium text-[var(--text)] hover:text-[var(--accent)] transition-colors truncate block"
-        >
-          {link.display_name}
-        </a>
+        {editing ? (
+          <input
+            autoFocus
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setEditing(false)
+              if (e.key === 'Escape') { setLabel(link.display_name); setEditing(false) }
+            }}
+            onBlur={() => setEditing(false)}
+            className="text-sm font-medium text-[var(--text)] bg-white border border-[var(--accent)] rounded px-2 py-0.5 w-full focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          />
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            className="text-sm font-medium text-[var(--text)] hover:text-[var(--accent)] transition-colors truncate block text-left w-full"
+            title="Click to rename before pinning"
+          >
+            {label}
+          </button>
+        )}
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[11px] text-[var(--muted)] truncate">{link.domain}</span>
+          <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-[var(--muted)] truncate hover:text-[var(--accent)]">{link.domain}</a>
           <span className="text-[var(--border)] text-[11px]">&middot;</span>
           <span className="text-[11px] text-[var(--muted)]">
             {new Date(link.first_seen).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })}
