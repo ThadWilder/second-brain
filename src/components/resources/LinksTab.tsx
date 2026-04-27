@@ -42,6 +42,7 @@ interface LinkItem {
   last_seen: string
   saved_link_id: string | null
   pinned: boolean
+  hidden_entity_ids: string[]
   kind: 'link' | 'receipt'
   receipt_meta: {
     vendor: string | null
@@ -222,9 +223,8 @@ export default function LinksTab() {
   }
 
   const handleHideEntity = async (url: string, entityId: string) => {
-    // Find current hidden IDs for this link from the existing data
     const link = links.find(l => l.url === url)
-    const currentHidden: string[] = (link as any)?.hidden_entity_ids ?? []
+    const currentHidden = link?.hidden_entity_ids ?? []
     const newHidden = [...new Set([...currentHidden, entityId])]
 
     const res = await fetch('/api/links', {

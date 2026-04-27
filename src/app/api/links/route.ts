@@ -36,6 +36,7 @@ interface LinkResult {
   last_seen: string
   saved_link_id: string | null
   pinned: boolean
+  hidden_entity_ids: string[]
   kind: 'link' | 'receipt'
   receipt_meta: Record<string, unknown> | null
   file_url: string | null
@@ -212,6 +213,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           last_seen: e.created_at,
           saved_link_id: null,
           pinned: false,
+          hidden_entity_ids: [],
           kind: 'link',
           receipt_meta: null,
           file_url: null,
@@ -223,7 +225,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Merge manually saved links (non-receipts only, unless kindFilter === 'receipts')
   for (const sl of manualLinks) {
-    const s = sl as { id: string; url: string; label: string | null; category: string | null; brand_entity_id: string | null; pinned: boolean; created_at: string }
+    const s = sl as { id: string; url: string; label: string | null; category: string | null; brand_entity_id: string | null; pinned: boolean; hidden_entity_ids?: string[] | null; created_at: string }
     const existing = urlMap.get(s.url)
     if (existing) {
       // Merge: prefer manual label if set
@@ -231,6 +233,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       if (s.category) existing.category = s.category as LinkCategory
       existing.saved_link_id = s.id
       existing.pinned = !!s.pinned
+      existing.hidden_entity_ids = s.hidden_entity_ids ?? []
     } else {
       urlMap.set(s.url, {
         url: s.url,
@@ -243,6 +246,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         last_seen: s.created_at,
         saved_link_id: s.id,
         pinned: !!s.pinned,
+        hidden_entity_ids: s.hidden_entity_ids ?? [],
         kind: 'link',
         receipt_meta: null,
         file_url: null,
@@ -271,6 +275,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         last_seen: s.created_at,
         saved_link_id: s.id,
         pinned: !!s.pinned,
+        hidden_entity_ids: [],
         kind: 'receipt',
         receipt_meta: s.receipt_meta ?? null,
         file_url: s.file_url ?? null,
