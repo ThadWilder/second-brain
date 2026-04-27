@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient, ORG_ID } from '@/lib/supabase'
 import { hasValidSession } from '@/lib/auth'
-import { isIconUrl } from '@/lib/ingest/urls'
+import { isJunkUrl } from '@/lib/ingest/urls'
 
 type LinkCategory = 'spreadsheet' | 'document' | 'presentation' | 'drive' | 'sharepoint' | 'other'
 
@@ -115,6 +115,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const q = searchParams.get('q')?.trim() ?? ''
   const categoryFilter = searchParams.get('category')?.trim() || searchParams.get('type')?.trim() || ''
   const kindFilter = searchParams.get('kind')?.trim() ?? 'all'  // all | links | receipts
+  const statusFilter = searchParams.get('status')?.trim() ?? ''  // 'new' = unhandled, 'pinned' = pinned only
 
   const db = getServiceClient()
 
@@ -280,7 +281,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Filter out icon/logo/favicon URLs
   for (const [url] of urlMap) {
-    if (isIconUrl(url)) urlMap.delete(url)
+    if (isJunkUrl(url)) urlMap.delete(url)
   }
 
   // Build hidden entity IDs map from saved_links
@@ -319,6 +320,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       r.sources.some(s => (s.subject ?? '').toLowerCase().includes(lower)) ||
       r.entities.some(e => e.name.toLowerCase().includes(lower))
     )
+  }
+
+  // Status filter: 'new' = no saved_links row (not pinned/hidden), 'pinned' = pinned only
+  if (statusFilter === 'new') {
+    results = results.filter(r => !r.saved_link_id && r.kind === 'link')
+  } else if (statusFilter === 'pinned') {
+    results = results.filter(r => r.pinned)
   }
 
   // Sort by most recent first

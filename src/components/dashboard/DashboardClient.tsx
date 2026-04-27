@@ -320,18 +320,34 @@ interface NewLinkItem {
 }
 
 function NewLinkRow({ link, onAction }: { link: NewLinkItem; onAction: () => void }) {
-  const handlePin = async () => {
-    await fetch('/api/links', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: link.url, pinned: true }),
-    })
-    onAction()
+  const [acting, setActing] = useState(false)
+
+  const handlePin = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setActing(true)
+    try {
+      await fetch('/api/links', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: link.url, pinned: true }),
+      })
+      onAction()
+    } finally {
+      setActing(false)
+    }
   }
 
-  const handleHide = async () => {
-    await fetch(`/api/links?url=${encodeURIComponent(link.url)}`, { method: 'DELETE' })
-    onAction()
+  const handleHide = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setActing(true)
+    try {
+      await fetch(`/api/links?url=${encodeURIComponent(link.url)}`, { method: 'DELETE' })
+      onAction()
+    } finally {
+      setActing(false)
+    }
   }
 
   return (
@@ -356,18 +372,20 @@ function NewLinkRow({ link, onAction }: { link: NewLinkItem; onAction: () => voi
       <div className="flex items-center gap-1.5 shrink-0">
         <button
           onClick={handlePin}
-          className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
+          disabled={acting}
+          className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors disabled:opacity-50"
           title="Pin to resources"
         >
           <Pin size={11} />
-          Pin
+          {acting ? '...' : 'Pin'}
         </button>
         <button
           onClick={handleHide}
-          className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--text)]/30 transition-colors"
+          disabled={acting}
+          className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--text)]/30 transition-colors disabled:opacity-50"
           title="Hide"
         >
-          Hide
+          {acting ? '...' : 'Hide'}
         </button>
       </div>
     </div>
