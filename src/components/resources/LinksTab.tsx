@@ -531,32 +531,72 @@ export default function LinksTab() {
       )}
 
       {/* Flat list view */}
-      {!loading && !groupByCategory && links.length > 0 && (
-        <div className="space-y-2">
-          {links.map(link => (
-            link.kind === 'receipt'
-              ? <ReceiptCard
-                  key={link.url}
-                  link={link}
-                  onDelete={handleDeleteLink}
-                  onUpdateReceiptMeta={handleUpdateReceiptMeta}
-                  onTogglePin={handleTogglePin}
-                  selected={selected.has(link.url)}
-                  onSelect={toggleSelectItem}
-                />
-              : <LinkCard
-                  key={link.url}
-                  link={link}
-                  onDelete={handleDeleteLink}
-                  onUpdateLabel={handleUpdateLabel}
-                  onTogglePin={handleTogglePin}
-                  onHideEntity={handleHideEntity}
-                  selected={selected.has(link.url)}
-                  onSelect={toggleSelectItem}
-                />
-          ))}
-        </div>
-      )}
+      {!loading && !groupByCategory && links.length > 0 && (() => {
+        const pinnedLinks = links.filter(l => l.pinned)
+        const unpinnedLinks = links.filter(l => !l.pinned)
+        return (
+          <div className="space-y-4">
+            {pinnedLinks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-base">📌</span>
+                  <h2 className="text-sm font-semibold text-[var(--text)]">Pinned</h2>
+                </div>
+                <div className="space-y-2">
+                  {pinnedLinks.map(link => (
+                    link.kind === 'receipt'
+                      ? <ReceiptCard
+                          key={link.url}
+                          link={link}
+                          onDelete={handleDeleteLink}
+                          onUpdateReceiptMeta={handleUpdateReceiptMeta}
+                          onTogglePin={handleTogglePin}
+                          selected={selected.has(link.url)}
+                          onSelect={toggleSelectItem}
+                        />
+                      : <LinkCard
+                          key={link.url}
+                          link={link}
+                          onDelete={handleDeleteLink}
+                          onUpdateLabel={handleUpdateLabel}
+                          onTogglePin={handleTogglePin}
+                          onHideEntity={handleHideEntity}
+                          selected={selected.has(link.url)}
+                          onSelect={toggleSelectItem}
+                        />
+                  ))}
+                </div>
+              </div>
+            )}
+            {unpinnedLinks.length > 0 && (
+              <div className="space-y-2">
+                {unpinnedLinks.map(link => (
+                  link.kind === 'receipt'
+                    ? <ReceiptCard
+                        key={link.url}
+                        link={link}
+                        onDelete={handleDeleteLink}
+                        onUpdateReceiptMeta={handleUpdateReceiptMeta}
+                        onTogglePin={handleTogglePin}
+                        selected={selected.has(link.url)}
+                        onSelect={toggleSelectItem}
+                      />
+                    : <LinkCard
+                        key={link.url}
+                        link={link}
+                        onDelete={handleDeleteLink}
+                        onUpdateLabel={handleUpdateLabel}
+                        onTogglePin={handleTogglePin}
+                        onHideEntity={handleHideEntity}
+                        selected={selected.has(link.url)}
+                        onSelect={toggleSelectItem}
+                      />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Manage blocklist */}
       <div className="text-center py-4">
@@ -823,7 +863,7 @@ function LinkCard({
         </div>
 
         {/* Pin + Delete + Block buttons */}
-        <div className="flex flex-col gap-1 shrink-0 mt-1 opacity-0 group-hover:opacity-100">
+        <div className={`flex flex-col gap-1 shrink-0 mt-1 ${link.pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
           <button
             onClick={() => onTogglePin(link.url, !link.pinned)}
             className={`transition-colors ${link.pinned ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--accent)]'}`}

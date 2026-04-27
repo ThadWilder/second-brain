@@ -16,7 +16,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/browser'
 import { useChat } from '@/hooks/useChat'
-import { Clock, Link2, MessageCircle, Tag } from 'lucide-react'
+import { Clock, Link2, MessageCircle, Tag, Pin } from 'lucide-react'
 import { AutoLinkText } from '@/components/ui/AutoLinkText'
 
 const POLL_INTERVAL = 10_000
@@ -25,12 +25,25 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
   const [data, setData] = useState<DashboardData>(initialData)
   const [lastUpdated, setLastUpdated] = useState(new Date())
   const [chatOpen, setChatOpen] = useState(false)
+  const [newLinks, setNewLinks] = useState<NewLinkItem[]>([])
   const { showToast } = useToast()
 
   const handleSignOut = useCallback(async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
     window.location.href = '/login'
+  }, [])
+
+  const fetchNewLinks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/links?status=new&kind=links')
+      if (res.ok) {
+        const data = await res.json()
+        setNewLinks(data.links ?? [])
+      }
+    } catch {
+      // silent
+    }
   }, [])
 
   const fetchData = useCallback(async () => {
@@ -48,9 +61,10 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
 
   useEffect(() => {
     fetchData()
+    fetchNewLinks()
     const interval = setInterval(fetchData, POLL_INTERVAL)
     return () => clearInterval(interval)
-  }, [fetchData])
+  }, [fetchData, fetchNewLinks])
 
   useEffect(() => {
     const handleFocus = () => fetchData()
@@ -242,6 +256,25 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
               <p className="text-sm text-[var(--muted)] py-4 text-center">Inbox Empty!</p>
             )}
           </div>
+
+          {/* ── New Links ── */}
+          {newLinks.length > 0 && (
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
+              <h2 className="text-base font-bold text-[var(--text)] mb-4 pb-2 border-b-2 border-[var(--accent)] inline-flex items-center gap-2">
+                <Link2 size={15} />
+                New Links
+              </h2>
+              <div className="space-y-2">
+                {newLinks.map(link => (
+                  <NewLinkRow
+                    key={link.url}
+                    link={link}
+                    onAction={fetchNewLinks}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -275,6 +308,68 @@ export function DashboardClient({ initialData }: { initialData: DashboardData })
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+interface NewLinkItem {
+  url: string
+  domain: string
+  display_name: string
+  first_seen: string
+}
+
+function NewLinkRow({ link, onAction }: { link: NewLinkItem; onAction: () => void }) {
+  const handlePin = async () => {
+    await fetch('/api/links', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: link.url, pinned: true }),
+    })
+    onAction()
+  }
+
+  const handleHide = async () => {
+    await fetch(`/api/links?url=${encodeURIComponent(link.url)}`, { method: 'DELETE' })
+    onAction()
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5 bg-[var(--surface-hover,#fff8f0)] border border-[var(--border)] rounded-lg hover:border-[var(--accent)]/30 transition-colors">
+      <div className="flex-1 min-w-0">
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-medium text-[var(--text)] hover:text-[var(--accent)] transition-colors truncate block"
+        >
+          {link.display_name}
+        </a>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[11px] text-[var(--muted)] truncate">{link.domain}</span>
+          <span className="text-[var(--border)] text-[11px]">&middot;</span>
+          <span className="text-[11px] text-[var(--muted)]">
+            {new Date(link.first_seen).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          onClick={handlePin}
+          className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
+          title="Pin to resources"
+        >
+          <Pin size={11} />
+          Pin
+        </button>
+        <button
+          onClick={handleHide}
+          className="px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--text)]/30 transition-colors"
+          title="Hide"
+        >
+          Hide
+        </button>
+      </div>
     </div>
   )
 }
