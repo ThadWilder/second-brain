@@ -37,6 +37,7 @@ interface LinkResult {
   saved_link_id: string | null
   pinned: boolean
   hidden_entity_ids: string[]
+  project_entity_id: string | null
   kind: 'link' | 'receipt'
   receipt_meta: Record<string, unknown> | null
   file_url: string | null
@@ -136,7 +137,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Fetch saved links
   const { data: savedLinks, error: savedError } = await db
     .from('saved_links')
-    .select('id, url, label, category, brand_entity_id, hidden, pinned, type, receipt_meta, file_url, file_type, entry_id, hidden_entity_ids, created_at')
+    .select('id, url, label, category, brand_entity_id, hidden, pinned, type, receipt_meta, file_url, file_type, entry_id, hidden_entity_ids, project_entity_id, created_at')
     .eq('org_id', ORG_ID)
     .order('created_at', { ascending: false })
 
@@ -214,6 +215,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           saved_link_id: null,
           pinned: false,
           hidden_entity_ids: [],
+          project_entity_id: null,
           kind: 'link',
           receipt_meta: null,
           file_url: null,
@@ -225,15 +227,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Merge manually saved links (non-receipts only, unless kindFilter === 'receipts')
   for (const sl of manualLinks) {
-    const s = sl as { id: string; url: string; label: string | null; category: string | null; brand_entity_id: string | null; pinned: boolean; hidden_entity_ids?: string[] | null; created_at: string }
+    const s = sl as { id: string; url: string; label: string | null; category: string | null; brand_entity_id: string | null; pinned: boolean; hidden_entity_ids?: string[] | null; project_entity_id?: string | null; created_at: string }
     const existing = urlMap.get(s.url)
     if (existing) {
-      // Merge: prefer manual label if set
       if (s.label) existing.label = s.label
       if (s.category) existing.category = s.category as LinkCategory
       existing.saved_link_id = s.id
       existing.pinned = !!s.pinned
       existing.hidden_entity_ids = s.hidden_entity_ids ?? []
+      existing.project_entity_id = s.project_entity_id ?? null
     } else {
       urlMap.set(s.url, {
         url: s.url,
@@ -247,6 +249,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         saved_link_id: s.id,
         pinned: !!s.pinned,
         hidden_entity_ids: s.hidden_entity_ids ?? [],
+        project_entity_id: s.project_entity_id ?? null,
         kind: 'link',
         receipt_meta: null,
         file_url: null,
@@ -276,6 +279,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         saved_link_id: s.id,
         pinned: !!s.pinned,
         hidden_entity_ids: [],
+        project_entity_id: null,
         kind: 'receipt',
         receipt_meta: s.receipt_meta ?? null,
         file_url: s.file_url ?? null,
@@ -395,7 +399,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const body = await req.json()
-  const { url, label, pinned, receipt_meta, hidden_entity_ids } = body as { url?: string; label?: string; pinned?: boolean; receipt_meta?: Record<string, unknown>; hidden_entity_ids?: string[] }
+  const { url, label, pinned, receipt_meta, hidden_entity_ids, project_entity_id } = body as { url?: string; label?: string; pinned?: boolean; receipt_meta?: Record<string, unknown>; hidden_entity_ids?: string[]; project_entity_id?: string | null }
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 })
@@ -409,6 +413,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (typeof pinned === 'boolean') upsertData.pinned = pinned
   if (body.receipt_meta) upsertData.receipt_meta = body.receipt_meta
   if (Array.isArray(hidden_entity_ids)) upsertData.hidden_entity_ids = hidden_entity_ids
+  if (project_entity_id !== undefined) upsertData.project_entity_id = project_entity_id
 
   const { data, error } = await db
     .from('saved_links')

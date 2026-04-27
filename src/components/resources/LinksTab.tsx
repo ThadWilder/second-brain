@@ -54,6 +54,7 @@ interface LinkItem {
   } | null
   file_url: string | null
   file_type: string | null
+  project_entity_id: string | null
 }
 
 interface LinksResponse {
@@ -134,6 +135,8 @@ export default function LinksTab() {
   const [addLabel, setAddLabel] = useState('')
   const [addLoading, setAddLoading] = useState(false)
 
+  const [projectEntities, setProjectEntities] = useState<Array<{id: string, name: string}>>([])
+
   // Bulk selection
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showBlocklistModal, setShowBlocklistModal] = useState(false)
@@ -162,6 +165,12 @@ export default function LinksTab() {
   useEffect(() => {
     fetchLinks(search, activeFilter, activeKind)
   }, [search, activeFilter, activeKind, fetchLinks])
+
+  useEffect(() => {
+    fetch('/api/entities').then(r => r.json()).then(d => {
+      setProjectEntities((d.entities ?? []).filter((e: any) => e.type === 'project'))
+    }).catch(() => {})
+  }, [])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -521,6 +530,8 @@ export default function LinksTab() {
                           onHideEntity={handleHideEntity}
                           selected={selected.has(link.url)}
                           onSelect={toggleSelectItem}
+                          projectEntities={projectEntities}
+                          onSetProject={() => fetchLinks(search, activeFilter, activeKind)}
                         />
                   ))}
                 </div>
@@ -563,6 +574,8 @@ export default function LinksTab() {
                           onHideEntity={handleHideEntity}
                           selected={selected.has(link.url)}
                           onSelect={toggleSelectItem}
+                          projectEntities={projectEntities}
+                          onSetProject={() => fetchLinks(search, activeFilter, activeKind)}
                         />
                   ))}
                 </div>
@@ -590,6 +603,8 @@ export default function LinksTab() {
                         onHideEntity={handleHideEntity}
                         selected={selected.has(link.url)}
                         onSelect={toggleSelectItem}
+                        projectEntities={projectEntities}
+                        onSetProject={() => fetchLinks(search, activeFilter, activeKind)}
                       />
                 ))}
               </div>
@@ -690,6 +705,8 @@ function LinkCard({
   onHideEntity,
   selected,
   onSelect,
+  projectEntities,
+  onSetProject,
 }: {
   link: LinkItem
   onDelete: (id: string) => void
@@ -698,6 +715,8 @@ function LinkCard({
   onHideEntity: (url: string, entityId: string) => void
   selected: boolean
   onSelect: (url: string) => void
+  projectEntities: Array<{id: string, name: string}>
+  onSetProject: () => void
 }) {
   const config = CATEGORY_CONFIG[link.category] ?? CATEGORY_CONFIG.other
   const TypeIcon = config.icon
@@ -818,6 +837,16 @@ function LinkCard({
               {config.label}
             </span>
 
+            {/* Project badge (always visible when set) */}
+            {link.project_entity_id && (() => {
+              const proj = projectEntities.find(p => p.id === link.project_entity_id)
+              return proj ? (
+                <span className="text-xs px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+                  {proj.name}
+                </span>
+              ) : null
+            })()}
+
             {/* Source */}
             {primarySource && (
               <span className="text-[10px] text-[var(--muted)]">
@@ -862,7 +891,7 @@ function LinkCard({
           )}
         </div>
 
-        {/* Pin + Delete + Block buttons */}
+        {/* Pin + Delete + Block + Project buttons */}
         <div className={`flex flex-col gap-1 shrink-0 mt-1 ${link.pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
           <button
             onClick={() => onTogglePin(link.url, !link.pinned)}
@@ -893,6 +922,28 @@ function LinkCard({
           >
             <Ban size={14} />
           </button>
+          {projectEntities.length > 0 && (
+            <select
+              value={link.project_entity_id ?? ''}
+              onChange={async (e) => {
+                e.stopPropagation()
+                const val = e.target.value || null
+                await fetch('/api/links', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url: link.url, project_entity_id: val }),
+                })
+                onSetProject()
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] px-1 py-0.5 rounded border border-[var(--border)] bg-transparent text-[var(--muted)] cursor-pointer hover:border-[var(--accent)] focus:outline-none"
+            >
+              <option value="">No project</option>
+              {projectEntities.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
     </div>
