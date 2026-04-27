@@ -153,8 +153,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       owner_email: ownerEmail,
     }
 
-    // ── Prefix detection (before attachment upload) ──────────────
+    // ── Prefix detection (check subject first, then body as fallback) ──
     prefixes = parsePrefixes((inbound.Subject ?? '') as string)
+    if (!prefixes.isReceipt && !prefixes.note && !prefixes.projectName) {
+      // Check first few lines of body for prefixes
+      const bodyStart = (rawText ?? '').split('\n').slice(0, 3).join(' ')
+      const bodyPrefixes = parsePrefixes(bodyStart)
+      if (bodyPrefixes.isReceipt || bodyPrefixes.note || bodyPrefixes.projectName) {
+        prefixes = bodyPrefixes
+      }
+    }
     if (prefixes.note) (sourceMeta as any).user_note = prefixes.note
     if (prefixes.projectName) (sourceMeta as any).project_name = prefixes.projectName
 
