@@ -14,7 +14,6 @@ import {
   LayoutList,
   LayoutGrid,
   Pencil,
-  Download,
   Ban,
 } from 'lucide-react'
 
@@ -43,17 +42,6 @@ interface LinkItem {
   saved_link_id: string | null
   pinned: boolean
   hidden_entity_ids: string[]
-  kind: 'link' | 'receipt'
-  receipt_meta: {
-    vendor: string | null
-    amount: number | null
-    date: string | null
-    payment_method: string | null
-    category: string | null
-    brand: string | null
-  } | null
-  file_url: string | null
-  file_type: string | null
   project_entity_id: string | null
 }
 
@@ -128,7 +116,6 @@ export default function LinksTab() {
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [activeFilter, setActiveFilter] = useState('all')
-  const [activeKind, setActiveKind] = useState<'all' | 'links' | 'receipts'>('all')
   const [groupByCategory, setGroupByCategory] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addUrl, setAddUrl] = useState('')
@@ -142,16 +129,16 @@ export default function LinksTab() {
   const [showBlocklistModal, setShowBlocklistModal] = useState(false)
   const [blocklistEntries, setBlocklistEntries] = useState<BlocklistEntry[]>([])
 
-  // Clear selection when kind/filter/search changes
-  useEffect(() => { setSelected(new Set()) }, [activeKind, activeFilter, search])
+  // Clear selection when filter/search changes
+  useEffect(() => { setSelected(new Set()) }, [activeFilter, search])
 
-  const fetchLinks = useCallback(async (query: string, categoryFilter: string, kind: 'all' | 'links' | 'receipts') => {
+  const fetchLinks = useCallback(async (query: string, categoryFilter: string) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
       if (query) params.set('q', query)
       if (categoryFilter && categoryFilter !== 'all') params.set('category', categoryFilter)
-      if (kind !== 'all') params.set('kind', kind)
+      params.set('kind', 'links')
       const res = await fetch(`/api/links?${params}`)
       if (!res.ok) return
       const data: LinksResponse = await res.json()
@@ -163,8 +150,8 @@ export default function LinksTab() {
   }, [])
 
   useEffect(() => {
-    fetchLinks(search, activeFilter, activeKind)
-  }, [search, activeFilter, activeKind, fetchLinks])
+    fetchLinks(search, activeFilter)
+  }, [search, activeFilter, fetchLinks])
 
   useEffect(() => {
     fetch('/api/entities').then(r => r.json()).then(d => {
@@ -195,7 +182,7 @@ export default function LinksTab() {
         setAddUrl('')
         setAddLabel('')
         setShowAddForm(false)
-        fetchLinks(search, activeFilter, activeKind)
+        fetchLinks(search, activeFilter)
       }
     } finally {
       setAddLoading(false)
@@ -207,7 +194,7 @@ export default function LinksTab() {
     const param = isUrl ? `url=${encodeURIComponent(idOrUrl)}` : `id=${idOrUrl}`
     const res = await fetch(`/api/links?${param}`, { method: 'DELETE' })
     if (res.ok) {
-      fetchLinks(search, activeFilter, activeKind)
+      fetchLinks(search, activeFilter)
     }
   }
 
@@ -217,7 +204,7 @@ export default function LinksTab() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, pinned }),
     })
-    fetchLinks(search, activeFilter, activeKind)
+    fetchLinks(search, activeFilter)
   }
 
   const handleUpdateLabel = async (url: string, label: string) => {
@@ -227,7 +214,7 @@ export default function LinksTab() {
       body: JSON.stringify({ url, label }),
     })
     if (res.ok) {
-      fetchLinks(search, activeFilter, activeKind)
+      fetchLinks(search, activeFilter)
     }
   }
 
@@ -242,18 +229,7 @@ export default function LinksTab() {
       body: JSON.stringify({ url, hidden_entity_ids: newHidden }),
     })
     if (res.ok) {
-      fetchLinks(search, activeFilter, activeKind)
-    }
-  }
-
-  const handleUpdateReceiptMeta = async (url: string, receipt_meta: LinkItem['receipt_meta']) => {
-    const res = await fetch('/api/links', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, receipt_meta }),
-    })
-    if (res.ok) {
-      fetchLinks(search, activeFilter, activeKind)
+      fetchLinks(search, activeFilter)
     }
   }
 
@@ -262,7 +238,7 @@ export default function LinksTab() {
       await handleDeleteLink(url)
     }
     setSelected(new Set())
-    fetchLinks(search, activeFilter, activeKind)
+    fetchLinks(search, activeFilter)
   }
 
   const handleBulkPermanentRemove = async () => {
@@ -277,7 +253,7 @@ export default function LinksTab() {
       await fetch(`/api/links?${isUrl ? `url=${encodeURIComponent(url)}` : `id=${url}`}`, { method: 'DELETE' })
     }
     setSelected(new Set())
-    fetchLinks(search, activeFilter, activeKind)
+    fetchLinks(search, activeFilter)
   }
 
   const toggleSelectItem = (url: string) => {
@@ -305,7 +281,7 @@ export default function LinksTab() {
           <h1 className="text-xl font-bold text-[var(--text)]">Resource Library</h1>
           {!loading && (
             <p className="text-sm text-[var(--muted)] mt-0.5">
-              {total} {activeKind === 'receipts' ? 'receipt' : activeKind === 'links' ? 'link' : 'item'}{total !== 1 ? 's' : ''} collected
+              {total} link{total !== 1 ? 's' : ''} collected
             </p>
           )}
         </div>
@@ -391,72 +367,10 @@ export default function LinksTab() {
         </form>
       )}
 
-      {/* Kind tabs (All / Links / Receipts) */}
-      <div className="flex gap-1 border-b border-[var(--border)] mb-4">
-        {(['all', 'links', 'receipts'] as const).map(k => (
-          <button
-            key={k}
-            onClick={() => setActiveKind(k)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeKind === k
-                ? 'border-[var(--accent)] text-[var(--accent)]'
-                : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'
-            }`}
-          >
-            {k === 'all' ? 'All' : k === 'links' ? 'Links' : 'Receipts'}
-          </button>
-        ))}
-      </div>
-
-      {/* Filter Chips + View Toggle + Select All -- only for all/links */}
-      {activeKind !== 'receipts' && (
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center flex-wrap gap-2">
-            {/* Select all checkbox */}
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selected.size === links.length && links.length > 0}
-                onChange={() => {
-                  if (selected.size === links.length) {
-                    setSelected(new Set())
-                  } else {
-                    setSelected(new Set(links.map(l => l.url)))
-                  }
-                }}
-                className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
-              />
-              <span className="text-xs text-[var(--muted)]">All</span>
-            </label>
-            <span className="text-[var(--border)] text-xs">|</span>
-            {FILTER_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => handleFilterChange(opt.value)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
-                  activeFilter === opt.value
-                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
-                    : 'bg-[var(--surface)] text-[var(--text)] border-[var(--border)] hover:bg-[var(--surface-hover)]'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setGroupByCategory(!groupByCategory)}
-            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1"
-            title={groupByCategory ? 'Show as flat list' : 'Group by category'}
-          >
-            {groupByCategory ? <LayoutList size={14} /> : <LayoutGrid size={14} />}
-            {groupByCategory ? 'Flat' : 'Group'}
-          </button>
-        </div>
-      )}
-
-      {/* Select all for receipts tab */}
-      {activeKind === 'receipts' && links.length > 0 && (
-        <div className="flex items-center gap-2">
+      {/* Filter Chips + View Toggle + Select All */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center flex-wrap gap-2">
+          {/* Select all checkbox */}
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
               type="checkbox"
@@ -470,10 +384,32 @@ export default function LinksTab() {
               }}
               className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
             />
-            <span className="text-xs text-[var(--muted)]">Select all</span>
+            <span className="text-xs text-[var(--muted)]">All</span>
           </label>
+          <span className="text-[var(--border)] text-xs">|</span>
+          {FILTER_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => handleFilterChange(opt.value)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                activeFilter === opt.value
+                  ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                  : 'bg-[var(--surface)] text-[var(--text)] border-[var(--border)] hover:bg-[var(--surface-hover)]'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
-      )}
+        <button
+          onClick={() => setGroupByCategory(!groupByCategory)}
+          className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors flex items-center gap-1"
+          title={groupByCategory ? 'Show as flat list' : 'Group by category'}
+        >
+          {groupByCategory ? <LayoutList size={14} /> : <LayoutGrid size={14} />}
+          {groupByCategory ? 'Flat' : 'Group'}
+        </button>
+      </div>
 
       {/* Loading state */}
       {loading && (
@@ -487,9 +423,9 @@ export default function LinksTab() {
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-12 text-center">
           <Link2 size={32} className="mx-auto text-[var(--muted)] mb-3" />
           <p className="text-[var(--muted)]">
-            {search || activeFilter !== 'all' || activeKind !== 'all'
-              ? 'No items match your search or filter'
-              : 'No items found yet. Links and receipts will appear here as dumplings are processed.'}
+            {search || activeFilter !== 'all'
+              ? 'No links match your search or filter'
+              : 'No links found yet.'}
           </p>
         </div>
       )}
@@ -511,28 +447,18 @@ export default function LinksTab() {
                 </div>
                 <div className="space-y-2">
                   {group.items.map(link => (
-                    link.kind === 'receipt'
-                      ? <ReceiptCard
-                          key={link.url}
-                          link={link}
-                          onDelete={handleDeleteLink}
-                          onUpdateReceiptMeta={handleUpdateReceiptMeta}
-                          onTogglePin={handleTogglePin}
-                          selected={selected.has(link.url)}
-                          onSelect={toggleSelectItem}
-                        />
-                      : <LinkCard
-                          key={link.url}
-                          link={link}
-                          onDelete={handleDeleteLink}
-                          onUpdateLabel={handleUpdateLabel}
-                          onTogglePin={handleTogglePin}
-                          onHideEntity={handleHideEntity}
-                          selected={selected.has(link.url)}
-                          onSelect={toggleSelectItem}
-                          projectEntities={projectEntities}
-                          onSetProject={() => fetchLinks(search, activeFilter, activeKind)}
-                        />
+                    <LinkCard
+                      key={link.url}
+                      link={link}
+                      onDelete={handleDeleteLink}
+                      onUpdateLabel={handleUpdateLabel}
+                      onTogglePin={handleTogglePin}
+                      onHideEntity={handleHideEntity}
+                      selected={selected.has(link.url)}
+                      onSelect={toggleSelectItem}
+                      projectEntities={projectEntities}
+                      onSetProject={() => fetchLinks(search, activeFilter)}
+                    />
                   ))}
                 </div>
               </div>
@@ -555,28 +481,18 @@ export default function LinksTab() {
                 </div>
                 <div className="space-y-2">
                   {pinnedLinks.map(link => (
-                    link.kind === 'receipt'
-                      ? <ReceiptCard
-                          key={link.url}
-                          link={link}
-                          onDelete={handleDeleteLink}
-                          onUpdateReceiptMeta={handleUpdateReceiptMeta}
-                          onTogglePin={handleTogglePin}
-                          selected={selected.has(link.url)}
-                          onSelect={toggleSelectItem}
-                        />
-                      : <LinkCard
-                          key={link.url}
-                          link={link}
-                          onDelete={handleDeleteLink}
-                          onUpdateLabel={handleUpdateLabel}
-                          onTogglePin={handleTogglePin}
-                          onHideEntity={handleHideEntity}
-                          selected={selected.has(link.url)}
-                          onSelect={toggleSelectItem}
-                          projectEntities={projectEntities}
-                          onSetProject={() => fetchLinks(search, activeFilter, activeKind)}
-                        />
+                    <LinkCard
+                      key={link.url}
+                      link={link}
+                      onDelete={handleDeleteLink}
+                      onUpdateLabel={handleUpdateLabel}
+                      onTogglePin={handleTogglePin}
+                      onHideEntity={handleHideEntity}
+                      selected={selected.has(link.url)}
+                      onSelect={toggleSelectItem}
+                      projectEntities={projectEntities}
+                      onSetProject={() => fetchLinks(search, activeFilter)}
+                    />
                   ))}
                 </div>
               </div>
@@ -584,28 +500,18 @@ export default function LinksTab() {
             {unpinnedLinks.length > 0 && (
               <div className="space-y-2">
                 {unpinnedLinks.map(link => (
-                  link.kind === 'receipt'
-                    ? <ReceiptCard
-                        key={link.url}
-                        link={link}
-                        onDelete={handleDeleteLink}
-                        onUpdateReceiptMeta={handleUpdateReceiptMeta}
-                        onTogglePin={handleTogglePin}
-                        selected={selected.has(link.url)}
-                        onSelect={toggleSelectItem}
-                      />
-                    : <LinkCard
-                        key={link.url}
-                        link={link}
-                        onDelete={handleDeleteLink}
-                        onUpdateLabel={handleUpdateLabel}
-                        onTogglePin={handleTogglePin}
-                        onHideEntity={handleHideEntity}
-                        selected={selected.has(link.url)}
-                        onSelect={toggleSelectItem}
-                        projectEntities={projectEntities}
-                        onSetProject={() => fetchLinks(search, activeFilter, activeKind)}
-                      />
+                  <LinkCard
+                    key={link.url}
+                    link={link}
+                    onDelete={handleDeleteLink}
+                    onUpdateLabel={handleUpdateLabel}
+                    onTogglePin={handleTogglePin}
+                    onHideEntity={handleHideEntity}
+                    selected={selected.has(link.url)}
+                    onSelect={toggleSelectItem}
+                    projectEntities={projectEntities}
+                    onSetProject={() => fetchLinks(search, activeFilter)}
+                  />
                 ))}
               </div>
             )}
@@ -944,305 +850,6 @@ function LinkCard({
               ))}
             </select>
           )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ReceiptCard({
-  link,
-  onDelete,
-  onUpdateReceiptMeta,
-  onTogglePin,
-  selected,
-  onSelect,
-}: {
-  link: LinkItem
-  onDelete: (id: string) => void
-  onUpdateReceiptMeta: (url: string, receipt_meta: LinkItem['receipt_meta']) => Promise<void>
-  onTogglePin: (url: string, pinned: boolean) => void
-  selected: boolean
-  onSelect: (url: string) => void
-}) {
-  const meta = link.receipt_meta
-  const [editing, setEditing] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [editVendor, setEditVendor] = useState(meta?.vendor ?? '')
-  const [editAmount, setEditAmount] = useState(meta?.amount != null ? String(meta.amount) : '')
-  const [editDate, setEditDate] = useState(meta?.date ?? '')
-  const [editBrand, setEditBrand] = useState(meta?.brand ?? '')
-  const [editCategory, setEditCategory] = useState(meta?.category ?? '')
-  const [editPaymentMethod, setEditPaymentMethod] = useState(meta?.payment_method ?? '')
-
-  const isPdf = link.file_type?.toLowerCase().includes('pdf') || link.file_url?.toLowerCase().endsWith('.pdf')
-  const isImage = link.file_type?.toLowerCase().startsWith('image/') ||
-    /\.(png|jpg|jpeg|gif|webp)$/i.test(link.file_url ?? '')
-
-  const handleStartEdit = () => {
-    setEditVendor(meta?.vendor ?? '')
-    setEditAmount(meta?.amount != null ? String(meta.amount) : '')
-    setEditDate(meta?.date ?? '')
-    setEditBrand(meta?.brand ?? '')
-    setEditCategory(meta?.category ?? '')
-    setEditPaymentMethod(meta?.payment_method ?? '')
-    setEditing(true)
-  }
-
-  const handleCancel = () => {
-    setEditing(false)
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    const updated: LinkItem['receipt_meta'] = {
-      vendor: editVendor.trim() || null,
-      amount: editAmount ? parseFloat(editAmount) : null,
-      date: editDate.trim() || null,
-      brand: editBrand.trim() || null,
-      category: editCategory.trim() || null,
-      payment_method: editPaymentMethod.trim() || null,
-    }
-    await onUpdateReceiptMeta(link.url, updated)
-    setEditing(false)
-    setSaving(false)
-  }
-
-  const vendorDisplay = meta?.vendor ?? link.display_name ?? 'Receipt'
-  const amountDisplay = meta?.amount != null
-    ? `$${meta.amount.toFixed(2)}`
-    : null
-  const dateDisplay = meta?.date ? formatDateET(meta.date) : null
-
-  return (
-    <div className="group bg-[var(--surface)] border border-[var(--border)] rounded-xl px-5 py-5
-                    hover:border-[var(--accent)]/30 transition-colors">
-      <div className="flex items-start gap-3">
-        {/* Checkbox */}
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={() => onSelect(link.url)}
-          className="mt-1 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
-        />
-
-        {/* Receipt icon */}
-        <div className="mt-0.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
-          <FileText size={16} className="text-amber-700" />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {editing ? (
-            /* Edit mode */
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-medium text-[var(--muted)] mb-1 uppercase tracking-wide">Vendor</label>
-                  <input
-                    type="text"
-                    value={editVendor}
-                    onChange={e => setEditVendor(e.target.value)}
-                    placeholder="Vendor name"
-                    className="w-full px-2.5 py-1.5 text-sm bg-white border border-[var(--border)] rounded-lg
-                               text-[var(--text)] placeholder:text-[var(--muted)]
-                               focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-medium text-[var(--muted)] mb-1 uppercase tracking-wide">Amount</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={editAmount}
-                    onChange={e => setEditAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 text-sm bg-white border border-[var(--border)] rounded-lg
-                               text-[var(--text)] placeholder:text-[var(--muted)]
-                               focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-medium text-[var(--muted)] mb-1 uppercase tracking-wide">Date</label>
-                  <input
-                    type="date"
-                    value={editDate}
-                    onChange={e => setEditDate(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-sm bg-white border border-[var(--border)] rounded-lg
-                               text-[var(--text)] placeholder:text-[var(--muted)]
-                               focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-medium text-[var(--muted)] mb-1 uppercase tracking-wide">Brand</label>
-                  <input
-                    type="text"
-                    value={editBrand}
-                    onChange={e => setEditBrand(e.target.value)}
-                    placeholder="Brand"
-                    className="w-full px-2.5 py-1.5 text-sm bg-white border border-[var(--border)] rounded-lg
-                               text-[var(--text)] placeholder:text-[var(--muted)]
-                               focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-medium text-[var(--muted)] mb-1 uppercase tracking-wide">Category</label>
-                  <input
-                    type="text"
-                    value={editCategory}
-                    onChange={e => setEditCategory(e.target.value)}
-                    placeholder="e.g. Advertising"
-                    className="w-full px-2.5 py-1.5 text-sm bg-white border border-[var(--border)] rounded-lg
-                               text-[var(--text)] placeholder:text-[var(--muted)]
-                               focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-medium text-[var(--muted)] mb-1 uppercase tracking-wide">Payment Method</label>
-                  <input
-                    type="text"
-                    value={editPaymentMethod}
-                    onChange={e => setEditPaymentMethod(e.target.value)}
-                    placeholder="e.g. Amex"
-                    className="w-full px-2.5 py-1.5 text-sm bg-white border border-[var(--border)] rounded-lg
-                               text-[var(--text)] placeholder:text-[var(--muted)]
-                               focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-3 py-1.5 text-xs font-medium bg-[var(--accent)] text-white rounded-lg
-                             hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
-                <button
-                  onClick={handleCancel}
-                  disabled={saving}
-                  className="px-3 py-1.5 text-xs font-medium border border-[var(--border)] text-[var(--text)] rounded-lg
-                             hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* View mode */
-            <>
-              {/* Vendor + Amount row */}
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <span className="text-sm font-semibold text-[var(--text)] truncate">
-                  {vendorDisplay}
-                </span>
-                {amountDisplay && (
-                  <span className="text-sm font-bold text-[var(--accent)] shrink-0">
-                    {amountDisplay}
-                  </span>
-                )}
-              </div>
-
-              {/* Date + Brand badge */}
-              <div className="flex items-center flex-wrap gap-2 mb-2">
-                {dateDisplay && (
-                  <span className="text-xs text-[var(--muted)]">{dateDisplay}</span>
-                )}
-                {meta?.brand && (
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_PILL_STYLES.brand}`}>
-                    {meta.brand}
-                  </span>
-                )}
-                {meta?.category && (
-                  <span className="text-xs px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
-                    {meta.category}
-                  </span>
-                )}
-                {meta?.payment_method && (
-                  <span className="text-[10px] text-[var(--muted)]">{meta.payment_method}</span>
-                )}
-              </div>
-
-              {/* File preview / attachment */}
-              <div className="flex items-center gap-2 mt-1">
-                {link.file_url ? (
-                  isImage ? (
-                    <img
-                      src={link.file_url}
-                      alt="Receipt"
-                      className="h-10 w-auto rounded border border-[var(--border)] object-cover"
-                    />
-                  ) : isPdf ? (
-                    <span className="flex items-center gap-1 text-xs text-[var(--muted)]">
-                      <FileText size={14} className="text-amber-600" />
-                      PDF
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-xs text-[var(--muted)]">
-                      <FileText size={14} />
-                      File attached
-                    </span>
-                  )
-                ) : (
-                  <span className="text-xs text-[var(--muted)] italic">No file attached</span>
-                )}
-                {link.file_url && (
-                  <a
-                    href={link.file_url}
-                    download
-                    className="flex items-center gap-1 text-xs text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
-                    title="Download receipt"
-                  >
-                    <Download size={13} />
-                    Download
-                  </a>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Edit + Pin + Delete + Block buttons */}
-        <div className="flex flex-col gap-1 shrink-0 mt-1 opacity-0 group-hover:opacity-100">
-          {!editing && (
-            <button
-              onClick={handleStartEdit}
-              className="text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
-              title="Edit receipt"
-            >
-              <Pencil size={14} />
-            </button>
-          )}
-          <button
-            onClick={() => onTogglePin(link.url, !link.pinned)}
-            className={`transition-colors ${link.pinned ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-[var(--accent)]'}`}
-            title={link.pinned ? 'Unpin from Kitchen' : 'Pin to Kitchen'}
-          >
-            📌
-          </button>
-          <button
-            onClick={() => link.saved_link_id ? onDelete(link.saved_link_id) : onDelete(link.url)}
-            className="text-[var(--muted)] hover:text-[var(--danger)] transition-colors"
-            title="Remove receipt"
-          >
-            <X size={14} />
-          </button>
-          <button
-            onClick={async () => {
-              if (!confirm('Block this item permanently?')) return
-              await fetch('/api/blocklist', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pattern: link.url, type: 'url' }),
-              })
-              onDelete(link.saved_link_id ? link.saved_link_id : link.url)
-            }}
-            className="text-[var(--muted)] hover:text-red-600 transition-colors"
-            title="Permanently remove (block)"
-          >
-            <Ban size={14} />
-          </button>
         </div>
       </div>
     </div>
