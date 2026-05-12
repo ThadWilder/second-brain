@@ -13,11 +13,14 @@ Items dumped into the app are called **dumplings**. The morning briefing email i
 - **Auth**: Google OAuth via Supabase Auth — access gated by `ALLOWED_EMAILS` env var (comma-separated, lowercase). Enforced in `src/lib/allowed-emails.ts`, consumed by middleware + `hasValidSession()`. Set in Vercel and `.env.local` before first login or every sign-in bounces to `/login`.
 
 ## Key IDs
-- **Supabase**: project `duohzmiicitrskitmsgo`
-- **Vercel**: project `prj_alea21zo0mlDm6VKxShnxF2AJWob`
-- **Postmark**: server `second-brain`, inbound hash `8887764d`
-- **Managed Agent**: `agent_011CZv7UFycAxkYUM9MrxSXv`, env `env_01WfxP2sgGKrqLTDkTG1p2Eb`
-- **Org ID**: `00000000-0000-0000-0000-000000000001` (single-org, hardcoded)
+Real values live in `.env.local` and Vercel project settings — placeholders below
+so this doc is safe to share. Look up actual IDs in the respective dashboards.
+
+- **Supabase**: project `<supabase-project-ref>` (see Supabase dashboard → Project Settings → General)
+- **Vercel**: project `<vercel-project-id>` (Vercel dashboard → project Settings → General)
+- **Postmark**: server `second-brain`, inbound hash `<postmark-inbound-hash>` (Postmark dashboard → Servers → Inbound stream). **Note**: this hash was rotated after the repo was briefly public — old hash `8887764d` is dead.
+- **Managed Agent**: `<managed-agent-id>`, env `<managed-environment-id>` (Anthropic console → Managed Agents)
+- **Org ID**: `00000000-0000-0000-0000-000000000001` (single-org, hardcoded — not sensitive)
 
 ## Team & Entities
 - **Owner**: Brandy Murch (bmurch@thresholdbrands.com, brandymurch@gmail.com)
@@ -178,11 +181,11 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Blocklist**: checked during email ingest only, RLS enabled
 
 ## Deploy
-GitHub auto-deploy is wired up — pushes to `master` trigger a production build automatically. Manual deploy via Vercel API (fallback):
+GitHub auto-deploy is wired up — pushes to `master` trigger a production build automatically. Manual deploy via Vercel API (fallback), substituting your IDs:
 ```bash
 curl -sk -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
   "https://api.vercel.com/v13/deployments" \
-  -d '{"name":"second-brain","project":"prj_alea21zo0mlDm6VKxShnxF2AJWob","gitSource":{"type":"github","repoId":1204368059,"ref":"master"},"target":"production"}'
+  -d "{\"name\":\"second-brain\",\"project\":\"$VERCEL_PROJECT_ID\",\"gitSource\":{\"type\":\"github\",\"repoId\":$GITHUB_REPO_ID,\"ref\":\"master\"},\"target\":\"production\"}"
 ```
 
 ## Migrations
