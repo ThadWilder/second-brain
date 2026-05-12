@@ -10,7 +10,7 @@ Items dumped into the app are called **dumplings**. The morning briefing email i
 - **Email**: Postmark (inbound via `dump@dumpbox.app`, outbound from `briefing@dumpbox.app`)
 - **Hosting**: Vercel Pro plan
 - **Domain**: `dumpbox.app` (Cloudflare DNS)
-- **Auth**: Google OAuth via Supabase Auth
+- **Auth**: Google OAuth via Supabase Auth — access gated by `ALLOWED_EMAILS` env var (comma-separated, lowercase). Enforced in `src/lib/allowed-emails.ts`, consumed by middleware + `hasValidSession()`. Set in Vercel and `.env.local` before first login or every sign-in bounces to `/login`.
 
 ## Key IDs
 - **Supabase**: project `duohzmiicitrskitmsgo`

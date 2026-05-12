@@ -8,12 +8,7 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-
-const ALLOWED_EMAILS = [
-  'bmurch@thresholdbrands.com',
-  'brandymurch@gmail.com',
-  'mtipsword@thresholdbrands.com',
-]
+import { isAllowedEmail } from '@/lib/allowed-emails'
 
 /** Check if the current request has a valid session. Returns user email or null. */
 export async function hasValidSession(): Promise<string | null> {
@@ -41,6 +36,6 @@ export async function hasValidSession(): Promise<string | null> {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || !ALLOWED_EMAILS.includes(user.email ?? '')) return null
-  return user.email!
+  if (!isAllowedEmail(user?.email)) return null
+  return user!.email!
 }
