@@ -89,10 +89,12 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Opus 4.6** (`CLAUDE_MODEL_DEEP`): weekly digest (strategic analysis)
 
 ### Email Prefix Commands
-- `RECEIPT:` — triggers receipt-specific ingest path (skip tasks, extract receipt metadata, save to saved_links)
+- `FYI:` — no tasks created. Just classify entities, log decisions. Context-only for the wiki.
+- `TRACK:` — creates tasks with `waiting_on` set to the responsible person. Brandy is monitoring, not doing.
+- `RECEIPT:` — receipt-specific ingest path (skip tasks, extract receipt metadata, save to saved_links)
 - `NOTE:` — attaches user note to the dumpling, passed as context to Claude
 - `PROJECT:` — tags ingest with a project entity, auto-creates if new
-- Prefixes are case-insensitive, can appear anywhere in subject (survives Fwd:/Re:), and can be combined
+- Prefixes are case-insensitive, can appear anywhere in subject (survives Fwd:/Re:), and can be combined. Also detected in the first 3 lines of email body as a fallback.
 
 ### Projects (entity type)
 - `entities.type = 'project'`, metadata: `{status, description, target_date}`
@@ -119,9 +121,10 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - Deletes source entity after move
 
 ## Dashboard Features
-- **Stat cards**: clickable — "On Fire 🔥", "Waiting on You 👀", "Waiting on Them ⏳", "In the Steamer 🥟", "Plated This Week ✨", "Simmering ♨️" (tracked tasks)
-- **Priority sections**: Escalations, Needs Response, Overdue, Today's Tasks, The Basket (inbox grouped by brand), Simmering (tracked), Overdue Follow-ups, Stale Tracking
-- **The Basket**: tasks grouped by brand with health dots (🔴🟡🟢), search filter, bulk dismiss/merge checkboxes, task age labels
+- **Stat cards**: clickable, link to `/tasks` — "Escalated 🔥", "Waiting on You 👀", "Waiting on Them ⏳", "Open Tasks 📋", "Completed This Week ✅", "Watching 👁️". (Food-metaphor labels were retired — see commit a97e175.)
+- **Priority sections**: Escalations, Needs Response, Overdue, Today's Tasks, **Inbox** (new/unreviewed tasks grouped by source entry), Watching (tracked), merged Overdue Follow-ups + Stale Tracking section grouped by person
+- **Inbox**: replaces "The Basket". Shows new tasks (no due date, no waiting, no project), grouped by source dumpling. "Inbox Empty!" message when clear. Tasks leave the inbox once reviewed/scheduled.
+- **Backlog**: separate section for tasks that have been reviewed but have no due date
 - **Ask the Chef**: chat drawer (right slide-out) for querying wiki/tasks/decisions via Managed Agents
 - **Dump box**: dedicated ingest input (top of page), separate from chat. Supports FYI:/TRACK:/RECEIPT:/NOTE:/PROJECT: prefixes
 - **Smart ingest**: AI detects task intent (your task vs tracking vs FYI). Creates fewer, higher-level tasks
@@ -136,19 +139,24 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Heatmap**: 10-day activity, hidden on mobile, Eastern time
 - **Mobile**: hamburger menu, floating chat button, viewport meta, favicon, add-to-homescreen
 - **"Brandy Murch"** displayed as "You" in waiting_on labels
-- **Resource Library**: Filter tabs (All/Links/Receipts), receipt cards with metadata editing + download, bulk selection with floating action bar, "Permanently Remove" with blocklist, icon/favicon/logo URL filtering
+- **Resource Library** (`/resources`): links only (receipts moved out — commit b2fadef). Pin to Kitchen, hide, delete, project association via dropdown. Bulk selection with floating action bar, "Permanently Remove" adds URL/sender to blocklist, icon/favicon/logo URL filtering at ingest + display
 
 ## Pages
-- `/` — Dashboard (The Basket, priorities, stats, entity cards)
-- `/tracking` — **The Kitchen** 🍳 (initiatives, pinned resources, data sources)
+- `/` — Dashboard overview (Inbox, priorities, stats, entity cards)
+- `/tasks` — All filed tasks (view toggle: By Status / By Project / By Due Date, collapsible groups)
+- `/board` — Kanban-style board view
+- `/projects` — Active projects with task counts
+- `/projects/[id]` — Project detail (clickable tasks with slide-out detail panel, status, wiki link)
 - `/wiki` — Wiki index + entity pages
 - `/history` — Dumpling history feed
-- `/links` — Resource Library (pin to Kitchen, hide/delete)
+- `/resources` — Resource Library (links only — receipts moved out). Pin to Kitchen, hide, delete, project association
+- `/links` — Legacy alias for the Resource Library (kept for inbound links)
+- `/tags` + `/tags/[tag]` — Tag browsing
+- `/tracking` — **The Kitchen** 🍳 (initiatives, pinned resources, data sources)
 - `/kpis` — KPI dashboard (linked from Kitchen)
 - `/audits` — Franchise audit tracking
 - `/reviews` — NiceJob review tracking
-- `/projects` — Projects list (active projects with task counts)
-- `/projects/[id]` — Project detail (tasks, status, wiki link)
+- `/login` — Google OAuth sign-in
 - `/public/watching?token=X` — Public read-only board (team can add items)
 
 ## Design
@@ -161,7 +169,7 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Hero dump input**: amber left border accent
 
 ## Security
-- **All 14 API routes** require `hasValidSession()` auth check
+- **Page + API auth** enforced by middleware (`src/lib/supabase/middleware.ts`). Server-only routes use `hasValidSession()` from `src/lib/auth.ts` when middleware exempts them (e.g., `/api/ingest` for Postmark webhooks)
 - **Inbound webhook**: Postmark payload field validation (not signature — Postmark inbound doesn't sign)
 - **Cron routes**: `CRON_SECRET` header
 - **Auth callback**: redirect path validated (no open redirect)
@@ -170,15 +178,15 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Blocklist**: checked during email ingest only, RLS enabled
 
 ## Deploy
+GitHub auto-deploy is wired up — pushes to `master` trigger a production build automatically. Manual deploy via Vercel API (fallback):
 ```bash
 curl -sk -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
   "https://api.vercel.com/v13/deployments" \
   -d '{"name":"second-brain","project":"prj_alea21zo0mlDm6VKxShnxF2AJWob","gitSource":{"type":"github","repoId":1204368059,"ref":"master"},"target":"production"}'
 ```
-GitHub auto-deploy is NOT linked -- deploys are manual via Vercel API.
 
 ## Migrations
-Located in `supabase/migrations/`. Applied: 001-029.
+Located in `supabase/migrations/`. Applied: 001-030. Apply in order against a fresh Supabase project before first run.
 - 001: initial schema
 - 002: wiki
 - 003: clarifications
@@ -189,10 +197,32 @@ Located in `supabase/migrations/`. Applied: 001-029.
 - 008: merge entities RPC
 - 009: pg_trgm indexes
 - 010: wiki queue
+- 021: task_entities related role
+- 022: task `is_public` flag
+- 023: saved_links hidden
+- 024: saved_links pinned
+- 025: task tags
+- 026: task comments
+- 027: task owner
 - 028: receipts (saved_links columns), blocklist table, task_entities project role, saved_links RLS
 - 029: hidden entity IDs on saved_links
+- 030: link → project association
 
-Seed data: `supabase/seed.sql` (10 brands, 2 internal team, 4 contacts, 2 vendors, 1 vendor team + aliases + relationships)
+Seed data: `supabase/seed.sql` (10 brands, 2 internal team, 4 contacts, 2 vendors, 1 vendor team + aliases + relationships). Replace the seeded names/emails with your own team before deploying.
+
+## Forking / Fresh Setup
+First-time setup gotchas — read this before debugging "why won't it let me in":
+
+1. **Supabase project**: create a new project. Enable the `pg_trgm` extension (Dashboard → Database → Extensions). Run every migration in `supabase/migrations/` in order. Replace `supabase/seed.sql` with your own team's emails/brands before running it.
+2. **Google OAuth provider**: configure in Supabase → Authentication → Providers → Google. Add your callback URL (`https://your-domain/auth/callback` and the Supabase default).
+3. **`ALLOWED_EMAILS` env var** — required, comma-separated lowercase. **If unset or your email isn't in it, every successful Google sign-in still bounces to `/login`.** Set in Vercel (all targets you use) and in `.env.local`.
+4. **Single-org assumption**: `ORG_ID` is hardcoded to `00000000-0000-0000-0000-000000000001`. Everything is scoped to this one org. Don't try to remove it without rewriting auth + RLS.
+5. **Postmark inbound**: webhook is unsigned (Postmark doesn't sign inbound) — we validate payload field presence only. If you're worried, add IP allowlisting. Inbound address routes to `/api/ingest`.
+6. **Anthropic Managed Agents** (chat): you'll need your own `MANAGED_AGENT_ID` and `MANAGED_ENVIRONMENT_ID`. The agent must be configured with the write tools listed under Chat above.
+7. **Cron jobs**: defined in `vercel.json`. They call routes protected by `CRON_SECRET` — set this env var or every cron call will 401.
+8. **All env vars**: see `.env.example`. None of them have meaningful defaults.
+
+Old/stale references to "Render" in the codebase are not active — hosting is Vercel (commit 23d5b8a reverted the Render move).
 
 ## Known Issues
 - Postmark account pending approval — outbound to non-`@dumpbox.app` addresses blocked
