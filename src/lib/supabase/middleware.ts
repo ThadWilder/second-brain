@@ -1,11 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
-const ALLOWED_EMAILS = [
-  'bmurch@thresholdbrands.com',
-  'brandymurch@gmail.com',
-  'mtipsword@thresholdbrands.com',
-]
+import { isAllowedEmail } from '@/lib/allowed-emails'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -40,7 +35,7 @@ export async function updateSession(request: NextRequest) {
   // Allow /login and /auth/callback without auth
   if (pathname === '/login' || pathname.startsWith('/auth/callback')) {
     // If already logged in and on /login, redirect to dashboard
-    if (user && ALLOWED_EMAILS.includes(user.email ?? '') && pathname === '/login') {
+    if (user && isAllowedEmail(user.email) && pathname === '/login') {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
@@ -64,7 +59,7 @@ export async function updateSession(request: NextRequest) {
       return supabaseResponse
     }
 
-    if (!user || !ALLOWED_EMAILS.includes(user.email ?? '')) {
+    if (!isAllowedEmail(user?.email)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return supabaseResponse
@@ -76,7 +71,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Page routes — redirect to login if not authenticated
-  if (!user || !ALLOWED_EMAILS.includes(user.email ?? '')) {
+  if (!isAllowedEmail(user?.email)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
