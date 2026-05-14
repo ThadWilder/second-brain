@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 const ALLOWED_ORIGINS = [
   'https://dumpbox.app',
   'https://second-brain-delta-eight.vercel.app',
+  'https://second-brain-eight-bay.vercel.app',
 ]
 
 function setCorsHeaders(response: NextResponse, origin: string | null) {
