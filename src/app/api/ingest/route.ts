@@ -111,7 +111,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const OWNER_MAP: Record<string, string> = {
     'bmurch@thresholdbrands.com': 'bmurch@thresholdbrands.com',
     'brandymurch@gmail.com': 'bmurch@thresholdbrands.com',
-    'mtipsword@thresholdbrands.com': 'mtipsword@thresholdbrands.com',
+    'mtipsword@thresholdbrands.com': 'mtipsword@thresholdbrands.com','stephen.palmer.c@gmail.com': 'stephen.palmer.c@gmail.com',
+  'spalmer@thresholdbrands.com': 'stephen.palmer.c@gmail.com',
   }
 
   let ownerEmail: string | null = null
