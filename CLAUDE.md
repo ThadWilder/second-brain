@@ -123,6 +123,29 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - Handles duplicate prevention, self-referencing cleanup, first_seen/last_seen merge
 - Deletes source entity after move
 
+### External Data Sync
+
+**Franchise Audits** (`/api/audits`, `/api/audits/sync`)
+- Syncs from a Google Sheet (TMS audit data) every Monday 8am ET
+- Stores scores in `franchise_audits` + `franchise_audit_snapshots` tables
+- `/audits` page shows brand-level summary; `/audits/[brandEntityId]` shows per-franchisee scores
+- Uses `xlsx` package for spreadsheet parsing
+
+**NiceJob Reviews** (`/api/reviews`, `/api/reviews/sync`)
+- Syncs from a Google Sheet every Monday 8am ET
+- Stored in `nicejob_reviews` table with anomaly detection logic
+- `/reviews` page visualizes review trends per brand
+
+**KPIs** (`/api/kpis`, `/api/kpis/upload`)
+- Brand-level KPI data uploaded via CSV/Excel file
+- Stored with monthly/yearly aggregation; visualized via Recharts
+- `/kpis` page (linked from Kitchen); `/kpis/[entityId]` per-brand detail with trend charts
+
+### Kitchen / Tracking (`/tracking`)
+- `tracking_items` table: pinned initiatives, data sources, and watched items
+- `/tracking` page ("The Kitchen 🍳") shows pinned resources, initiatives, and links to `/kpis`
+- Items can be pinned from the Resource Library
+
 ## Dashboard Features
 - **Stat cards**: clickable, link to `/tasks` — "Escalated 🔥", "Waiting on You 👀", "Waiting on Them ⏳", "Open Tasks 📋", "Completed This Week ✅", "Watching 👁️". (Food-metaphor labels were retired — see commit a97e175.)
 - **Priority sections**: Escalations, Needs Response, Overdue, Today's Tasks, **Inbox** (new/unreviewed tasks grouped by source entry), Watching (tracked), merged Overdue Follow-ups + Stale Tracking section grouped by person
@@ -133,6 +156,7 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Smart ingest**: AI detects task intent (your task vs tracking vs FYI). Creates fewer, higher-level tasks
 - **Public/private toggle** on any task — 🌐/🔒 in Actions. Public tasks visible at shared team URL
 - **Task detail**: editable description (click to edit), due date picker, draft email generator, public toggle, tracking with auto-clear waiting_on
+- **Task comments**: threaded discussion on each task via `task_comments` table. Accessible from detail panel.
 - **Pending response dedup**: hidden from Needs Response if matching task exists, shown as "needs reply" badge on task instead. Auto-resolved on plate
 - **Convert to task**: button on pending response detail
 - **Entity cards**: team labels (blue badges), company dropdown (entities), franchisee assignment
@@ -148,19 +172,184 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - `/` — Dashboard overview (Inbox, priorities, stats, entity cards)
 - `/tasks` — All filed tasks (view toggle: By Status / By Project / By Due Date, collapsible groups)
 - `/board` — Kanban-style board view
+- `/brand/[id]` — Individual brand detail (entities, wiki section, task list)
 - `/projects` — Active projects with task counts
 - `/projects/[id]` — Project detail (clickable tasks with slide-out detail panel, status, wiki link)
 - `/wiki` — Wiki index + entity pages
+- `/wiki/[slug]` — Wiki page view/edit
 - `/history` — Dumpling history feed
 - `/resources` — Resource Library (links only — receipts moved out). Pin to Kitchen, hide, delete, project association
 - `/links` — Legacy alias for the Resource Library (kept for inbound links)
 - `/tags` + `/tags/[tag]` — Tag browsing
 - `/tracking` — **The Kitchen** 🍳 (initiatives, pinned resources, data sources)
 - `/kpis` — KPI dashboard (linked from Kitchen)
-- `/audits` — Franchise audit tracking
+- `/kpis/[entityId]` — Per-brand KPI detail with trend charts
+- `/audits` — Franchise audit tracking (brand-level summary)
+- `/audits/[brandEntityId]` — Per-brand franchise audit detail (franchisee scores)
 - `/reviews` — NiceJob review tracking
 - `/login` — Google OAuth sign-in
-- `/public/watching?token=X` — Public read-only board (team can add items)
+- `/public/watching?token=X` — Public read-only board (team can add items + comments)
+
+## Source Layout
+```
+src/
+├── app/                  # Next.js App Router (pages + API routes)
+│   ├── api/              # 40+ API routes (see API Routes section below)
+│   └── [pages]/          # Page components (one directory per route above)
+├── components/
+│   ├── ui/               # Shared: Header, Toast, StatusBadge, TaskCheckbox, AutoLinkText, LinkChips
+│   ├── dashboard/        # BrandCards, EntityCards, DetailPanel, TaskDetail, Heatmap,
+│   │                     #   MergeModal, EditEntityModal, Priorities, StatusSummary,
+│   │                     #   PendingResponseDetail
+│   ├── brand/            # BrandDetail, EntityList, WikiSection, CombineTasksModal
+│   ├── chat/             # ChatPanel, ChatMessage, ChatInput
+│   ├── kpi/              # TrendChart, BrandKpiDetail
+│   ├── resources/        # LinksTab, WikiTab
+│   └── Providers.tsx     # Client-side context provider
+├── lib/
+│   ├── ingest/           # index.ts, extract.ts, process.ts, resolve.ts,
+│   │                     #   prefixes.ts, receipt.ts, urls.ts, compat.ts
+│   ├── supabase/         # server.ts, browser.ts, middleware.ts
+│   ├── auth.ts           # hasValidSession()
+│   ├── allowed-emails.ts # ALLOWED_EMAILS enforcement
+│   ├── claude.ts         # Direct API helpers
+│   ├── managed-agents.ts # Managed Agents (chat) integration
+│   ├── entities.ts       # Entity resolution + fuzzy matching
+│   ├── postmark.ts       # Email sending
+│   ├── email-html.ts     # Email templates
+│   ├── wiki.ts           # Wiki generation
+│   ├── wiki-queue.ts     # Wiki queue processing
+│   ├── blocklist.ts      # Blocklist matching
+│   ├── kpi-parser.ts     # KPI spreadsheet parsing
+│   ├── escalation.ts     # Escalation logic
+│   ├── rate-limit.ts     # Rate limiting
+│   └── __tests__/        # Unit tests (Vitest)
+├── hooks/
+│   └── useChat.ts        # Chat state hook
+├── types/
+│   └── index.ts          # Core types: Entry, Task, Entity, IngestResult, etc.
+└── middleware.ts          # Next.js auth middleware
+```
+
+## API Routes
+
+**Ingest & Entries**
+- `GET/POST /api/ingest` — Postmark webhook + paste/chat ingest
+- `GET /api/entries/[id]` — Entry detail
+- `POST /api/upload` — Attachment upload to Supabase Storage
+- `GET /api/history` — Entry history feed
+
+**Tasks**
+- `GET/POST /api/tasks` — Task list + creation
+- `GET/PATCH/DELETE /api/tasks/[id]` — Task detail
+- `GET/POST /api/tasks/[id]/comments` — Task comment thread
+- `GET/PATCH/DELETE /api/tasks/[id]/comments/[commentId]` — Comment detail
+- `POST /api/tasks/merge` — Merge duplicate tasks
+- `POST /api/tasks/draft-email` — AI email draft for a task
+
+**Entities**
+- `GET/POST /api/entities` — Entity list + creation
+- `GET/PATCH /api/entities/[id]` — Entity detail
+- `POST /api/entities/merge` — Atomic merge via Postgres RPC
+- `POST /api/entities/link` — Create entity relationship
+- `POST /api/entities/update` — Bulk update
+
+**Chat**
+- `POST /api/chat/session` — Create Managed Agent session
+- `GET /api/chat/events` — Poll for session events
+
+**Wiki**
+- `GET /api/wiki` — Wiki index
+- `GET/PATCH /api/wiki/[slug]` — Wiki page
+- `POST /api/wiki/[slug]/instruct` — Add instruction to wiki page
+- `POST /api/wiki/process` — Process wiki queue (also called by cron)
+
+**Pending Responses**
+- `GET /api/pending-responses` — Pending response list
+- `PATCH /api/pending-responses/[id]` — Resolve/update
+
+**Projects**
+- `GET /api/projects` — Project list
+- `GET/PATCH /api/projects/[id]` — Project detail
+
+**Resources & Links**
+- `GET /api/links` — Resource library
+- `POST /api/blocklist` — Add to blocklist
+
+**External Data**
+- `GET /api/audits` — Franchise audit data
+- `POST /api/audits/sync` — Google Sheets audit sync (also Vercel Cron)
+- `GET /api/kpis` — Brand KPI data
+- `POST /api/kpis/upload` — KPI file upload
+- `GET /api/reviews` — NiceJob review data
+- `POST /api/reviews/sync` — Google Sheets review sync (also Vercel Cron)
+
+**Tracking / Kitchen**
+- `GET/POST/DELETE /api/tracking` — Tracked item CRUD
+- `GET /api/tracking/[id]` — Tracked item detail
+
+**Dashboard & Misc**
+- `GET /api/dashboard` — Dashboard aggregated data
+- `GET /api/tags` — Tag list
+- `GET /api/tags/[tag]` — Tag detail
+- `GET /api/clarify` — AI clarification suggestions
+- `POST /api/consolidation` — Consolidation suggestions
+
+**Public**
+- `GET /api/public/watching` — Public board
+- `GET/POST /api/public/watching/comments` — Public board comments
+
+**Cron (Vercel, GET)**
+- `GET /api/cron/briefing` — Daily 7am ET
+- `GET /api/cron/nudge` — Daily 2pm ET
+- `GET /api/cron/digest` — Sunday 8pm ET
+- `GET /api/cron/wiki` — Every 4 hours
+
+**Auth**
+- `GET /api/auth/callback` — Google OAuth callback
+
+## Database Tables
+
+**Core**
+- `entries` — Raw dumps (email, paste, chat, meeting notes). Has `source`, `message_id`, `org_id`.
+- `entities` — Brands, contacts, vendors, etc. Has `type`, `normalized_name`, `archived`, `metadata` (JSONB).
+- `entity_aliases` — Alternate names / email addresses per entity
+- `entity_relationships` — Typed links between entities (`member_of`, `works_on`, etc.)
+- `entry_entities` — Many-to-many: dumps ↔ entities
+
+**Tasks**
+- `tasks` — Action items. Has `status`, `due_date`, `waiting_on`, `escalation`, `owner`, `is_public`, `tags` (array).
+- `task_entities` — Links tasks to entities with `role` (`brand`, `assigned_to`, `vendor`, `topic`, `project`, `related`)
+- `task_events` — Activity log (created, status_change, escalated, due_date_changed, nudged)
+- `task_comments` — Threaded comments per task
+
+**Decisions & Responses**
+- `decisions` — Extracted decisions from entries
+- `decision_entities` — Decision ↔ entity links
+- `pending_responses` — Things needing a reply
+- `pending_response_entities` — Response ↔ entity links
+
+**Wiki & Resources**
+- `wiki_pages` — Auto-generated entity pages. Has `pinned_sections` (JSONB) for human-written content.
+- `wiki_queue` — Async wiki update queue (entry_id nullable for non-entry triggers)
+- `saved_links` — Resource library. Has `pinned`, `hidden`, `project_id`, receipt metadata columns.
+- `entry_links` — Links extracted from entries
+
+**Email & Chat**
+- `nudge_messages` — Nudge email log
+- `nudge_message_tasks` — Nudge ↔ task links
+- `conversations` — Chat sessions
+- `messages` — Chat message history
+
+**External Data**
+- `nicejob_reviews` — NiceJob review data per brand (with anomaly detection)
+- `franchise_audits` — Franchise audit fields (synced from Google Sheets)
+- `franchise_audit_snapshots` — Historical audit scores per franchisee
+
+**Config & Operations**
+- `blocklist` — URL or sender patterns to ignore at ingest
+- `tracking_items` — Kitchen pinned initiatives + data sources
+- `clarifications` — AI-generated clarification suggestions
 
 ## Design
 - **Theme**: Warm "dumpling vibes" — parchment background (`#faf6f1`) with warm radial gradients, cream cards (`#fff8f0`), amber accent (`#d4943a`), deep brown text (`#3d2c1e`)
@@ -170,6 +359,7 @@ Entities can be archived (`archived` boolean column) — hidden from dashboard b
 - **Logo**: Dumpling-in-box line art — `/public/logo-icon.png` (warm brown), `/public/logo-icon-white.png` (white for dark header)
 - **Section headers**: bold with amber underline
 - **Hero dump input**: amber left border accent
+- **Charts**: Recharts (KPI trend lines)
 
 ## Security
 - **Page + API auth** enforced by middleware (`src/lib/supabase/middleware.ts`). Server-only routes use `hasValidSession()` from `src/lib/auth.ts` when middleware exempts them (e.g., `/api/ingest` for Postmark webhooks)
@@ -190,26 +380,35 @@ curl -sk -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: appl
 
 ## Migrations
 Located in `supabase/migrations/`. Applied: 001-030. Apply in order against a fresh Supabase project before first run.
-- 001: initial schema
-- 002: wiki
-- 003: clarifications
-- 004: entity relationships
+- 001: initial schema (entries, entities, tasks, decisions, pending_responses, wiki_pages)
+- 002: wiki tables
+- 003: clarifications table
+- 004: entity_relationships
 - 005: attachments
-- 006: RLS
-- 007: wiki pinned sections
-- 008: merge entities RPC
-- 009: pg_trgm indexes
-- 010: wiki queue
-- 021: task_entities related role
+- 006: RLS policies
+- 007: wiki pinned_sections column
+- 008: merge_entities RPC function
+- 009: pg_trgm GIN indexes
+- 010: wiki_queue table
+- 011: consolidation_suggestions table
+- 012: wiki_queue entry_id nullable (supports non-entry wiki triggers)
+- 013: waiting_on column on tasks
+- 015: nicejob_reviews table
+- 016: entry_links table
+- 017: saved_links table (resource library)
+- 018: tracking_status / tracking_items
+- 019: wiki edit tracking
+- 020: tracked_items updates
+- 021: task_entities `related` role
 - 022: task `is_public` flag
-- 023: saved_links hidden
-- 024: saved_links pinned
-- 025: task tags
-- 026: task comments
-- 027: task owner
+- 023: saved_links `hidden` column
+- 024: saved_links `pinned` column
+- 025: task tags (array column)
+- 026: task_comments table
+- 027: task `owner` column
 - 028: receipts (saved_links columns), blocklist table, task_entities project role, saved_links RLS
 - 029: hidden entity IDs on saved_links
-- 030: link → project association
+- 030: saved_links → project association
 
 Seed data: `supabase/seed.sql` (10 brands, 2 internal team, 4 contacts, 2 vendors, 1 vendor team + aliases + relationships). Replace the seeded names/emails with your own team before deploying.
 
@@ -254,3 +453,4 @@ Old/stale references to "Render" in the codebase are not active — hosting is V
 - Entity types: `brand`, `department`, `franchisee`, `contact`, `vendor`, `vendor_team`, `freelancer`
 - Relationship types: `member_of`, `works_on`, `works_at`, `franchisee_of`, `manages`, `reports_to`, `works_for`, `works_with`, `contracted_by`, `supplies`
 - All dashboard dates use Eastern time (`America/New_York`)
+- Tests: Vitest (`src/lib/__tests__/`), run with `npm test`
