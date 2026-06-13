@@ -1,38 +1,90 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useStripe } from '@stripe/stripe-react-native';
 import { supabase } from '@/lib/supabase';
+import { createPaymentIntent, initiateSubPayout } from '@/lib/stripe';
+import { notify } from '@/lib/notifications';
 import RatingStars from '@/components/RatingStars';
+import ChangeOrderCard from '@/components/ChangeOrderCard';
+import PhotoUpload from '@/components/PhotoUpload';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
-import type { Job } from '@/lib/types';
+import type { Job, ChangeOrder, JobMedia } from '@/lib/types';
 
 export default function ContractorJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { confirmPayment } = useStripe();
   const [job, setJob] = useState<Job | null>(null);
+  const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>([]);
+  const [media, setMedia] = useState<JobMedia[]>([]);
+  const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
 
-  useEffect(() => { fetchJob(); }, [id]);
-
-  async function fetchJob() {
-    const { data } = await supabase
-      .from('jobs')
-      .select('*, claimed_sub:sub_profiles!claimed_by(*)')
-      .eq('id', id)
-      .single();
-    setJob(data);
+  const fetchAll = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUserId(user!.id);
+    const [{ data: j }, { data: co }, { data: m }] = await Promise.all([
+      supabase.from('jobs').select('*, claimed_sub:sub_profiles!claimed_by(*)').eq('id', id).single(),
+      supabase.from('change_orders').select('*').eq('job_id', id).order('created_at', { ascending: false }),
+      supabase.from('job_media').select('*').eq('job_id', id).order('created_at'),
+    ]);
+    setJob(j);
+    setChangeOrders(co ?? []);
+    setMedia(m ?? []);
     setLoading(false);
+  }, [id]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  async function handleReleasePayment() {
+    Alert.alert(
+      'Release Payment?',
+      `This will charge your card and send ${formatCurrency(job!.sub_payout)} to the subcontractor.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Release Payment', onPress: async () => {
+            setPaying(true);
+            try {
+              const clientSecret = await createPaymentIntent(id);
+              const { error } = await confirmPayment(clientSecret);
+              if (error) throw new Error(error.message);
+              await initiateSubPayout(id);
+              await notify.paymentReleased(job!.claimed_by!, job!.sub_payout);
+              fetchAll();
+              Alert.alert('Payment Released', 'The subcontractor has been paid.');
+            } catch (err) {
+              Alert.alert('Payment Failed', (err as Error).message);
+            } finally {
+              setPaying(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleRating(stars: number) {
+    await supabase.from('ratings').insert({
+      job_id: id,
+      rater_id: userId,
+      ratee_id: job!.claimed_by,
+      stars,
+      rehire: stars >= 4,
+    });
+    Alert.alert('Thanks!', 'Your rating has been submitted.');
   }
 
   async function handleCancel() {
-    Alert.alert('Cancel Job?', 'This will remove the listing. Subs who were watching it will be notified.', [
-      { text: 'Keep Job', style: 'cancel' },
+    Alert.alert('Cancel Job?', 'This will remove the listing from the board.', [
+      { text: 'Keep', style: 'cancel' },
       {
-        text: 'Cancel Job', style: 'destructive',
-        onPress: async () => {
+        text: 'Cancel Job', style: 'destructive', onPress: async () => {
           await supabase.from('jobs').update({ status: 'draft' }).eq('id', id);
           router.back();
         },
@@ -43,71 +95,154 @@ export default function ContractorJobDetailScreen() {
   if (loading) return <ActivityIndicator style={styles.loader} color={colors.primary} />;
   if (!job) return <Text style={styles.notFound}>Job not found.</Text>;
 
+  const sub = job.claimed_sub as any;
+  const openChangeOrders = changeOrders.filter(co => co.status === 'open');
+  const mediaByPhase = (phase: JobMedia['phase']) => media.filter(m => m.phase === phase);
+
+  const isPendingReview = job.status === 'pending_review';
+  const isComplete = job.status === 'complete';
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>{job.title}</Text>
-        <StatusPill status={job.status} />
-      </View>
-
-      <Text style={styles.location}>📍 {job.address}, {job.city}, {job.state}</Text>
-      <Text style={styles.payout}>
-        Sub payout: <Text style={styles.payoutAmount}>${job.sub_payout.toLocaleString()}</Text>
-      </Text>
-
-      {job.claimed_sub && (
-        <View style={styles.subCard}>
-          <Text style={styles.subCardLabel}>Claimed by</Text>
-          <Text style={styles.subName}>{job.claimed_sub.name}</Text>
-          <RatingStars value={job.claimed_sub.rating} count={job.claimed_sub.rating_count} size="sm" />
-          <TouchableOpacity style={styles.messageButton}>
-            <Text style={styles.messageText}>💬 Message Sub</Text>
-          </TouchableOpacity>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Title + status */}
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>{job.title}</Text>
+          <StatusPill status={job.status} />
         </View>
-      )}
+        <Text style={styles.location}>📍 {job.address}, {job.city}, {job.state}</Text>
+        <Text style={styles.payout}>
+          Sub payout: <Text style={styles.payoutAmount}>{formatCurrency(job.sub_payout)}</Text>
+        </Text>
 
-      <Section title="Scope">
-        <Text style={styles.body}>{job.scope_of_work}</Text>
-      </Section>
+        {/* Change orders alert */}
+        {openChangeOrders.length > 0 && (
+          <View style={styles.alertBanner}>
+            <Text style={styles.alertText}>⚠️ {openChangeOrders.length} open change order{openChangeOrders.length > 1 ? 's' : ''} need your approval</Text>
+          </View>
+        )}
 
-      <Section title="Materials">
-        <InfoRow label="Supplier" value={job.material_supplier} />
-        <InfoRow label="Status" value={job.material_status.replace('_', ' ')} />
-      </Section>
+        {/* Sub info */}
+        {sub && (
+          <View style={styles.subCard}>
+            <Text style={styles.subCardLabel}>Claimed by</Text>
+            <Text style={styles.subName}>{sub.name}</Text>
+            <RatingStars value={sub.rating} count={sub.rating_count} size="sm" />
+            {sub.verified && <Text style={styles.verified}>✓ Verified</Text>}
+          </View>
+        )}
 
-      <Section title="Schedule">
-        <InfoRow label="Start Window" value={`${job.start_window_start} → ${job.start_window_end}`} />
-        <InfoRow label="Duration" value={`${job.estimated_days} days`} />
-      </Section>
+        <Divider />
 
-      {job.status === 'posted' && (
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Text style={styles.cancelText}>Cancel Job</Text>
-        </TouchableOpacity>
-      )}
-    </ScrollView>
+        <Section title="Scope">
+          <Text style={styles.body}>{job.scope_of_work}</Text>
+        </Section>
+
+        <Section title="Materials">
+          <InfoRow label="Supplier" value={job.material_supplier} />
+          <InfoRow label="Status" value={job.material_status.replace('_', ' ')} />
+        </Section>
+
+        <Section title="Schedule">
+          <InfoRow label="Start Window" value={`${job.start_window_start} → ${job.start_window_end}`} />
+          <InfoRow label="Duration" value={`${job.estimated_days} days`} />
+        </Section>
+
+        {/* Photos */}
+        {sub && (
+          <>
+            <Divider />
+            <Section title="Job Photos">
+              <PhotoUpload jobId={id} phase="before" existing={mediaByPhase('before')} onUploaded={() => fetchAll()} disabled />
+              <PhotoUpload jobId={id} phase="during" existing={mediaByPhase('during')} onUploaded={() => fetchAll()} disabled />
+              <PhotoUpload jobId={id} phase="after" existing={mediaByPhase('after')} onUploaded={() => fetchAll()} disabled />
+            </Section>
+          </>
+        )}
+
+        {/* Change orders */}
+        {changeOrders.length > 0 && (
+          <>
+            <Divider />
+            <Section title={`Change Orders (${changeOrders.length})`}>
+              {changeOrders.map(co => (
+                <ChangeOrderCard
+                  key={co.id}
+                  changeOrder={co}
+                  role="contractor"
+                  contractorId={userId}
+                  subId={job.claimed_by ?? ''}
+                  jobTitle={job.title}
+                  onUpdated={fetchAll}
+                />
+              ))}
+            </Section>
+          </>
+        )}
+
+        {/* Rating — after completion */}
+        {isComplete && sub && (
+          <>
+            <Divider />
+            <Section title="Rate This Sub">
+              <RatingStars value={0} interactive onRate={handleRating} size="lg" />
+            </Section>
+          </>
+        )}
+
+        {/* Cancel (open jobs only) */}
+        {job.status === 'posted' && (
+          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+            <Text style={styles.cancelText}>Cancel Job</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Footer actions */}
+      <View style={styles.footer}>
+        {job.status === 'in_progress' && (
+          <View style={styles.footerRow}>
+            <TouchableOpacity
+              style={[styles.secondaryButton]}
+              onPress={() => router.push({ pathname: '/(contractor)/change-order', params: { jobId: id } })}
+            >
+              <Text style={styles.secondaryButtonText}>File Change Order</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {isPendingReview && (
+          <View style={styles.reviewBox}>
+            <Text style={styles.reviewTitle}>Sub has marked this job complete</Text>
+            <Text style={styles.reviewSub}>Review photos and sign-off, then release payment.</Text>
+            <TouchableOpacity style={styles.payButton} onPress={handleReleasePayment} disabled={paying}>
+              {paying
+                ? <ActivityIndicator color={colors.white} />
+                : <Text style={styles.payButtonText}>Release Payment — {formatCurrency(job.sub_payout)}</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
   );
 }
 
 function StatusPill({ status }: { status: string }) {
   const colors_map: Record<string, string> = {
-    posted: '#3b82f6', claimed: '#f59e0b', in_progress: '#8b5cf6', complete: '#22c55e',
+    posted: '#3b82f6', claimed: '#f59e0b', in_progress: '#8b5cf6',
+    pending_review: '#f59e0b', complete: '#22c55e', disputed: '#ef4444',
   };
-  const bg = colors_map[status] ?? colors.textLight;
+  const color = colors_map[status] ?? colors.textLight;
   return (
-    <View style={[styles.pill, { backgroundColor: bg + '20' }]}>
-      <Text style={[styles.pillText, { color: bg }]}>{status.replace('_', ' ')}</Text>
+    <View style={[styles.pill, { backgroundColor: color + '20' }]}>
+      <Text style={[styles.pillText, { color }]}>{status.replace('_', ' ')}</Text>
     </View>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
+  return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</View>;
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -119,11 +254,17 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function Divider() { return <View style={styles.divider} />; }
+
+function formatCurrency(n: number) {
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   loader: { marginTop: spacing.xxl },
   notFound: { textAlign: 'center', marginTop: spacing.xxl, color: colors.textMuted },
-  content: { padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxl },
+  content: { padding: spacing.xl, gap: spacing.lg },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   title: { flex: 1, fontSize: fontSize.xl, fontWeight: '700', color: colors.text },
   pill: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 999 },
@@ -131,18 +272,20 @@ const styles = StyleSheet.create({
   location: { fontSize: fontSize.sm, color: colors.textMuted },
   payout: { fontSize: fontSize.md, color: colors.textMuted },
   payoutAmount: { color: colors.accent, fontWeight: '700' },
+  alertBanner: {
+    backgroundColor: '#fef3c7', borderRadius: radius.md,
+    padding: spacing.md, borderLeftWidth: 3, borderLeftColor: colors.warning,
+  },
+  alertText: { fontSize: fontSize.sm, color: '#92400e', fontWeight: '600' },
   subCard: {
     backgroundColor: colors.surface, borderRadius: radius.md,
-    padding: spacing.md, gap: spacing.sm,
+    padding: spacing.md, gap: spacing.xs,
     borderLeftWidth: 3, borderLeftColor: colors.accent,
   },
   subCardLabel: { fontSize: fontSize.xs, color: colors.textMuted, textTransform: 'uppercase' },
   subName: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  messageButton: {
-    backgroundColor: colors.primary, borderRadius: radius.md,
-    padding: spacing.sm, alignItems: 'center', marginTop: spacing.xs,
-  },
-  messageText: { color: colors.white, fontWeight: '600', fontSize: fontSize.sm },
+  verified: { fontSize: fontSize.xs, color: colors.accent, fontWeight: '700' },
+  divider: { height: 1, backgroundColor: colors.border },
   section: { gap: spacing.sm },
   sectionTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
   body: { fontSize: fontSize.md, color: colors.text, lineHeight: 22 },
@@ -154,4 +297,23 @@ const styles = StyleSheet.create({
     padding: spacing.md, alignItems: 'center',
   },
   cancelText: { color: colors.error, fontWeight: '600' },
+  footer: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    padding: spacing.md, backgroundColor: colors.background,
+    borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  footerRow: { flexDirection: 'row', gap: spacing.sm },
+  secondaryButton: {
+    flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md,
+    padding: spacing.sm, alignItems: 'center',
+  },
+  secondaryButtonText: { color: colors.primary, fontWeight: '600', fontSize: fontSize.sm },
+  reviewBox: { gap: spacing.sm },
+  reviewTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
+  reviewSub: { fontSize: fontSize.sm, color: colors.textMuted },
+  payButton: {
+    backgroundColor: colors.accent, borderRadius: radius.md,
+    padding: spacing.md, alignItems: 'center',
+  },
+  payButtonText: { color: colors.white, fontSize: fontSize.md, fontWeight: '700' },
 });

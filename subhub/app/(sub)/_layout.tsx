@@ -15,22 +15,17 @@ export default function SubLayout() {
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{ title: 'Job Board', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, opacity: color === colors.accent ? 1 : 0.5 }}>🔍</Text> }}
-      />
-      <Tabs.Screen
-        name="my-jobs"
-        options={{ title: 'My Jobs', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, opacity: color === colors.accent ? 1 : 0.5 }}>🔨</Text> }}
-      />
-      <Tabs.Screen
-        name="jobs/[id]"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{ title: 'Profile', tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, opacity: color === colors.accent ? 1 : 0.5 }}>👤</Text> }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Job Board', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
+      <Tabs.Screen name="my-jobs" options={{ title: 'My Jobs', tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
+      {/* Hidden routes — no tab */}
+      <Tabs.Screen name="jobs/[id]" options={{ href: null }} />
+      <Tabs.Screen name="change-order" options={{ href: null, title: 'Change Order' }} />
+      <Tabs.Screen name="connect-stripe" options={{ href: null, title: 'Payout Account' }} />
     </Tabs>
   );
+}
+
+function Icon({ e, c }: { e: string; c: string }) {
+  return <Text style={{ fontSize: 20, opacity: c === colors.accent ? 1 : 0.4 }}>{e}</Text>;
 }

@@ -37,6 +37,21 @@
           "photosPermission": "SubHub uses your photos to document job progress.",
           "cameraPermission": "SubHub uses your camera to capture job photos."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1a3c5e",
+          "sounds": []
+        }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.subhub.app",
+          "enableGooglePay": true
+        }
       ]
     ],
     "experiments": {

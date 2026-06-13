@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { Text } from 'react-native';
 import { colors, fontSize } from '@/lib/theme';
 
 export default function ContractorLayout() {
@@ -14,28 +15,17 @@ export default function ContractorLayout() {
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{ title: 'My Jobs', tabBarIcon: ({ color }) => <TabIcon emoji="📋" color={color} /> }}
-      />
-      <Tabs.Screen
-        name="post-job"
-        options={{ title: 'Post Job', tabBarIcon: ({ color }) => <TabIcon emoji="➕" color={color} /> }}
-      />
-      <Tabs.Screen
-        name="jobs/[id]"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{ title: 'Profile', tabBarIcon: ({ color }) => <TabIcon emoji="👤" color={color} /> }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'My Jobs', tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
+      <Tabs.Screen name="post-job" options={{ title: 'Post Job', tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
+      {/* Hidden routes — no tab */}
+      <Tabs.Screen name="jobs/[id]" options={{ href: null }} />
+      <Tabs.Screen name="change-order" options={{ href: null, title: 'Change Order' }} />
+      <Tabs.Screen name="add-payment" options={{ href: null, title: 'Payment Method' }} />
     </Tabs>
   );
 }
 
-function TabIcon({ emoji, color }: { emoji: string; color: string }) {
-  return <Text style={{ fontSize: 20, opacity: color === colors.primary ? 1 : 0.5 }}>{emoji}</Text>;
+function Icon({ e, c }: { e: string; c: string }) {
+  return <Text style={{ fontSize: 20, opacity: c === colors.primary ? 1 : 0.4 }}>{e}</Text>;
 }
-
-import { Text } from 'react-native';

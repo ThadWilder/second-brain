@@ -95,14 +95,30 @@ draft → posted → claimed → in_progress → pending_review → complete
 - **Job cards**: white tiles, shadow, payout in large green type
 - Sub-side accent is green throughout; contractor-side accent is navy
 
-## What's not built yet (Phase 2+)
-- In-app VoIP calling (Twilio)
-- Stripe Connect payout integration
-- Push notifications (Expo Notifications)
-- Photo upload to Supabase Storage (UI hooks exist, upload logic TBD)
-- Change order UI (data model + RLS in DB, screens not yet built)
-- Rating flow post-completion
+## Feature status
+
+### Built
+- Full auth flow (login, signup with role, onboarding)
+- Job card builder (3-step: scope → logistics → closeout)
+- Job board with sort/filter/search
+- Job claim, start, complete, pending review lifecycle
+- **Change orders** — either party files; pre-agreed rate schedule auto-applies; both parties approve; `ChangeOrderCard` component with approve/dispute
+- **Photo upload** — before/during/after phases; Supabase Storage; `PhotoUpload` component; required before job close
+- **Push notifications** — Expo push tokens registered on login; `lib/notifications.ts` helpers for all key events; `send-notification` Edge Function
+- **Stripe Connect** — sub payout account onboarding via Connect Express; contractor payment method via PaymentSheet; `create-payment-intent` and `payout-sub` Edge Functions; `connect-stripe` Edge Function
+- Customer digital sign-off before job close
+- 5-star ratings (both directions, post-completion)
+- Profile screens with payment status + action CTAs
+- `PaymentStatus` and `ChangeOrderCard` shared components
+
+### Not yet built
+- In-app VoIP calling (Twilio masked numbers)
+- In-app text messaging UI (DB schema exists, no screen yet)
 - Admin dashboard
+- Instant pay (float model — Phase 2)
+- Stripe webhook handler for payment confirmations
+- `setup-payment-method` Edge Function (contractor card setup — stub in `add-payment.tsx`)
+- Push notification delivery from DB triggers (currently client-side initiated)
 
 ## Conventions
 - All Supabase queries use the anon client — RLS enforces access
