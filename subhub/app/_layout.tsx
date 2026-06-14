@@ -14,19 +14,11 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) {
-        router.replace('/(auth)/login');
-      } else {
-        const role = await getUserRole();
-        redirectToRole(role);
-        // Register push token after confirming session
-        registerForPushNotifications().catch(() => {});
-      }
-      setReady(true);
-    });
+    const DEMO = process.env.EXPO_PUBLIC_DEMO === '1';
+    let bootstrapTimer: ReturnType<typeof setTimeout>;
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (DEMO) return;
       if (event === 'SIGNED_OUT' || !session) {
         router.replace('/(auth)/login');
       } else if (event === 'SIGNED_IN') {
@@ -36,11 +28,9 @@ export default function RootLayout() {
       }
     });
 
-    // Handle notification taps while app is in background/killed
     const sub = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data as any;
       if (data?.jobId) {
-        // Navigate to relevant job detail — role determines route
         getUserRole().then(role => {
           if (role === 'contractor') router.push(`/(contractor)/jobs/${data.jobId}`);
           else if (role === 'subcontractor') router.push(`/(sub)/jobs/${data.jobId}`);
@@ -48,7 +38,26 @@ export default function RootLayout() {
       }
     });
 
+    // Small delay lets Expo Router mount the Stack before first navigation
+    bootstrapTimer = setTimeout(async () => {
+      // Demo mode: skip auth check (used for screenshots / design review)
+      if (process.env.EXPO_PUBLIC_DEMO === '1') {
+        setReady(true);
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/(auth)/login');
+      } else {
+        const role = await getUserRole();
+        redirectToRole(role);
+        registerForPushNotifications().catch(() => {});
+      }
+      setReady(true);
+    }, 50);
+
     return () => {
+      clearTimeout(bootstrapTimer);
       listener.subscription.unsubscribe();
       sub.remove();
     };
@@ -59,8 +68,6 @@ export default function RootLayout() {
     else if (role === 'subcontractor') router.replace('/(sub)/');
     else router.replace('/(auth)/signup');
   }
-
-  if (!ready) return null;
 
   return (
     <StripeProvider publishableKey={STRIPE_PK} merchantIdentifier="merchant.com.subhub.app">
