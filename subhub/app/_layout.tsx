@@ -20,7 +20,7 @@ export default function RootLayout() {
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (DEMO) return;
       if (event === 'SIGNED_OUT' || !session) {
-        router.replace('/(auth)/login');
+        router.replace('/(auth)/');
       } else if (event === 'SIGNED_IN') {
         const role = await getUserRole();
         redirectToRole(role);
@@ -47,7 +47,7 @@ export default function RootLayout() {
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.replace('/(auth)/login');
+        router.replace('/(auth)/');
       } else {
         const role = await getUserRole();
         redirectToRole(role);

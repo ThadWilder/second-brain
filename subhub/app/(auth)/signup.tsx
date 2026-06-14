@@ -3,14 +3,19 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { signUp } from '@/lib/auth';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { UserRole } from '@/lib/types';
 
 export default function SignupScreen() {
   const router = useRouter();
-  const [role, setRole] = useState<UserRole | null>(null);
+  const params = useLocalSearchParams<{ role?: string }>();
+  const [role, setRole] = useState<UserRole | null>(
+    params.role === 'contractor' ? 'contractor'
+    : params.role === 'subcontractor' ? 'subcontractor'
+    : null
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
