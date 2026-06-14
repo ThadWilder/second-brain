@@ -241,7 +241,12 @@ export default function SubJobDetailScreen() {
           <>
             <Divider />
             <Section title="Rate This Contractor">
-              <RatingStars value={0} interactive onRate={handleRating} size="lg" />
+              <TouchableOpacity
+                style={styles.reviewButton}
+                onPress={() => router.push(`/(sub)/rate/${job.id}`)}
+              >
+                <Text style={styles.reviewButtonText}>⭐ Leave a Review</Text>
+              </TouchableOpacity>
             </Section>
           </>
         )}
@@ -385,4 +390,9 @@ const styles = StyleSheet.create({
     padding: spacing.md, alignItems: 'center',
   },
   pendingText: { fontSize: fontSize.sm, color: '#92400e', fontWeight: '600' },
+  reviewButton: {
+    borderWidth: 2, borderColor: colors.accent, borderRadius: radius.md,
+    padding: spacing.md, alignItems: 'center',
+  },
+  reviewButtonText: { color: colors.accent, fontSize: fontSize.md, fontWeight: '700' },
 });

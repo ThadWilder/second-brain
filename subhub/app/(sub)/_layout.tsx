@@ -17,9 +17,12 @@ export default function SubLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Job Board', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
       <Tabs.Screen name="my-jobs" options={{ title: 'My Jobs', tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
+      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
       {/* Hidden routes — no tab */}
       <Tabs.Screen name="jobs/[id]" options={{ href: null }} />
+      <Tabs.Screen name="chat/[jobId]" options={{ href: null, title: 'Chat' }} />
+      <Tabs.Screen name="rate/[jobId]" options={{ href: null, title: 'Leave a Review' }} />
       <Tabs.Screen name="change-order" options={{ href: null, title: 'Change Order' }} />
       <Tabs.Screen name="connect-stripe" options={{ href: null, title: 'Payout Account' }} />
     </Tabs>

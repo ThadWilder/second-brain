@@ -17,9 +17,12 @@ export default function ContractorLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'My Jobs', tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
       <Tabs.Screen name="post-job" options={{ title: 'Post Job', tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
+      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
+      <Tabs.Screen name="subs" options={{ title: 'Find Subs', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
       {/* Hidden routes — no tab */}
       <Tabs.Screen name="jobs/[id]" options={{ href: null }} />
+      <Tabs.Screen name="chat/[jobId]" options={{ href: null, title: 'Chat' }} />
       <Tabs.Screen name="change-order" options={{ href: null, title: 'Change Order' }} />
       <Tabs.Screen name="add-payment" options={{ href: null, title: 'Payment Method' }} />
     </Tabs>
