@@ -24,8 +24,26 @@ Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
 ## Supabase setup
 1. Create a new Supabase project
-2. Run `supabase/migrations/001_initial_schema.sql` in the SQL editor
-3. Copy the project URL and anon key into `.env`
+2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `005`)
+3. Enable the `pg_trgm` extension: Dashboard → Database → Extensions → search "pg_trgm" → enable
+4. Copy the project URL and anon key into `.env`
+
+## Deploying Edge Functions
+```bash
+cd subhub
+supabase login
+supabase link --project-ref <your-project-ref>
+
+# Set secrets (run once)
+supabase secrets set STRIPE_SECRET_KEY=sk_live_...
+
+# Deploy all functions
+supabase functions deploy create-payment-intent
+supabase functions deploy payout-sub
+supabase functions deploy connect-stripe
+supabase functions deploy setup-payment-method
+supabase functions deploy send-notification
+```
 
 ## Project structure
 ```
@@ -105,7 +123,7 @@ draft → posted → claimed → in_progress → pending_review → complete
 - **Change orders** — either party files; pre-agreed rate schedule auto-applies; both parties approve; `ChangeOrderCard` component with approve/dispute
 - **Photo upload** — before/during/after phases; Supabase Storage; `PhotoUpload` component; required before job close
 - **Push notifications** — Expo push tokens registered on login; `lib/notifications.ts` helpers for all key events; `send-notification` Edge Function
-- **Stripe Connect** — sub payout account onboarding via Connect Express; contractor payment method via PaymentSheet; `create-payment-intent` and `payout-sub` Edge Functions; `connect-stripe` Edge Function
+- **Stripe Connect** — sub payout account onboarding via Connect Express; contractor payment method via PaymentSheet; `create-payment-intent`, `payout-sub`, `connect-stripe`, and `setup-payment-method` Edge Functions
 - Customer digital sign-off before job close
 - 5-star ratings (both directions, post-completion)
 - Profile screens with payment status + action CTAs
@@ -117,7 +135,6 @@ draft → posted → claimed → in_progress → pending_review → complete
 - Admin dashboard
 - Instant pay (float model — Phase 2)
 - Stripe webhook handler for payment confirmations
-- `setup-payment-method` Edge Function (contractor card setup — stub in `add-payment.tsx`)
 - Push notification delivery from DB triggers (currently client-side initiated)
 
 ## Conventions
