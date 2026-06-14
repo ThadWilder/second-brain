@@ -32,9 +32,11 @@ export default function OnboardContractorScreen() {
     }
     setLoading(true);
     setError('');
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    if (!user) { setError('Session expired. Please sign in again.'); setLoading(false); return; }
     const { error: err } = await supabase.from('contractor_profiles').insert({
-      user_id: user!.id,
+      user_id: user.id,
       ...form,
       service_area_miles: parseInt(form.service_area_miles, 10) || 50,
       scope_of_work: ['fencing'],
