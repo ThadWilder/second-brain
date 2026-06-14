@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Alert,
@@ -18,6 +18,7 @@ export default function PostJobScreen() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
+  const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
@@ -40,6 +41,20 @@ export default function PostJobScreen() {
     homeowner_phone: '',
     homeowner_email: '',
   });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase
+        .from('contractor_profiles')
+        .select('stripe_customer_id')
+        .eq('user_id', session.user.id)
+        .single()
+        .then(({ data }) => {
+          setHasPaymentMethod(!!data?.stripe_customer_id);
+        });
+    });
+  }, []);
 
   function set(key: keyof typeof form) {
     return (val: string) => setForm(f => ({ ...f, [key]: val }));
@@ -86,6 +101,27 @@ export default function PostJobScreen() {
     Alert.alert('Job Posted!', 'Subcontractors in your area can now see and claim this job.', [
       { text: 'View My Jobs', onPress: () => router.replace('/(contractor)/') },
     ]);
+  }
+
+  if (hasPaymentMethod === false) {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.paymentGate}>
+          <Text style={styles.paymentGateTitle}>Payment Method Required</Text>
+          <Text style={styles.paymentGateBody}>
+            You need to add a payment method before you can post jobs.
+            SubHub holds payment in escrow when a sub claims your job — we
+            need your card on file first.
+          </Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.navigate('/(contractor)/profile')}
+          >
+            <Text style={styles.buttonText}>Add Payment Method →</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
   }
 
   return (
@@ -280,4 +316,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   backButtonText: { color: colors.text, fontSize: fontSize.md },
+  paymentGate: {
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+    gap: spacing.lg, padding: spacing.xl, marginTop: spacing.xxl,
+  },
+  paymentGateTitle: { fontSize: fontSize.xl, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  paymentGateBody: {
+    fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center', lineHeight: 24,
+  },
 });
