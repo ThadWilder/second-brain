@@ -64,14 +64,21 @@ export default function PostJobScreen() {
     if (!form.homeowner_name || !form.homeowner_phone) {
       setError('Homeowner name and phone are required.'); return;
     }
+    const subPayout = parseFloat(form.sub_payout);
+    const installPrice = parseFloat(form.install_price);
+    if (isNaN(subPayout) || subPayout <= 0) {
+      setError('Sub payout is required. Go back to Logistics and enter a dollar amount.'); return;
+    }
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    if (!user) { setError('Session expired. Please sign in again.'); setLoading(false); return; }
     const { error: err } = await supabase.from('jobs').insert({
-      contractor_id: user!.id,
+      contractor_id: user.id,
       ...form,
       estimated_days: parseInt(form.estimated_days, 10),
-      install_price: parseFloat(form.install_price),
-      sub_payout: parseFloat(form.sub_payout),
+      install_price: isNaN(installPrice) ? null : installPrice,
+      sub_payout: subPayout,
       status: 'posted',
     });
     setLoading(false);
