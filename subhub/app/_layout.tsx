@@ -3,7 +3,6 @@ import { Stack, useRouter } from 'expo-router';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
-import { getUserRole } from '@/lib/auth';
 import { registerForPushNotifications } from '@/lib/notifications';
 import type { UserRole } from '@/lib/types';
 
@@ -17,12 +16,14 @@ export default function RootLayout() {
     const DEMO = process.env.EXPO_PUBLIC_DEMO === '1';
     let bootstrapTimer: ReturnType<typeof setTimeout>;
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (DEMO) return;
       if (event === 'SIGNED_OUT' || !session) {
         router.replace('/(auth)/');
       } else if (event === 'SIGNED_IN') {
-        const role = await getUserRole();
+        // Read role from session directly — avoids calling getUser() inside the
+        // auth lock callback which deadlocks on web via the Web Locks API.
+        const role = (session.user.user_metadata?.role as UserRole) ?? null;
         redirectToRole(role);
         registerForPushNotifications().catch(() => {});
       }
@@ -49,7 +50,7 @@ export default function RootLayout() {
       if (!session) {
         router.replace('/(auth)/');
       } else {
-        const role = await getUserRole();
+        const role = (session.user.user_metadata?.role as UserRole) ?? null;
         redirectToRole(role);
         registerForPushNotifications().catch(() => {});
       }
