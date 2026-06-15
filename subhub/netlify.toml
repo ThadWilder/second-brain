@@ -1,0 +1,13 @@
+[build]
+  base    = "subhub"
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Serve the SPA for all routes
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SubHub — QA Testing Guide</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+
+    header {
+      background: #1a3c5e;
+      color: white;
+      padding: 28px 32px;
+    }
+    header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+    header p { font-size: 14px; opacity: 0.75; margin-top: 4px; }
+    .header-meta { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
+    .badge {
+      font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+      display: inline-block;
+    }
+    .badge-blue { background: rgba(255,255,255,0.15); color: white; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-yellow { background: #fef9c3; color: #854d0e; }
+    .badge-red { background: #fee2e2; color: #b91c1c; }
+
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
+
+    .alert {
+      background: #fef3c7; border-left: 4px solid #f59e0b;
+      padding: 14px 18px; border-radius: 8px; margin-bottom: 28px;
+      font-size: 14px; color: #78350f;
+    }
+    .alert strong { font-weight: 700; }
+
+    h2 {
+      font-size: 18px; font-weight: 700; color: #1a3c5e;
+      margin-bottom: 14px; padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .section { margin-bottom: 36px; }
+
+    /* Credentials */
+    .creds { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .cred-card {
+      background: white; border-radius: 12px; padding: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .cred-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .cred-card h3.contractor { color: #1a3c5e; }
+    .cred-card h3.sub { color: #16a34a; }
+    .cred-row { font-size: 13px; margin-bottom: 6px; }
+    .cred-label { color: #64748b; display: inline-block; width: 70px; }
+    .cred-value {
+      font-family: monospace; background: #f8fafc;
+      border: 1px solid #e2e8f0; border-radius: 4px;
+      padding: 2px 8px; font-size: 12px; cursor: pointer;
+      user-select: all;
+    }
+    .cred-value:hover { background: #eff6ff; }
+    .cred-note { font-size: 12px; color: #94a3b8; margin-top: 10px; font-style: italic; }
+
+    /* Feature status */
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .feature {
+      background: white; border-radius: 8px; padding: 12px 14px;
+      font-size: 13px; border: 1px solid #e2e8f0;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .feature-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .feature-label { font-weight: 600; }
+    .feature-sub { color: #64748b; font-size: 12px; }
+    .done { border-left: 3px solid #22c55e; }
+    .partial { border-left: 3px solid #f59e0b; }
+    .todo { border-left: 3px solid #94a3b8; }
+
+    /* Scenarios */
+    .scenarios { display: flex; flex-direction: column; gap: 16px; }
+    .scenario {
+      background: white; border-radius: 12px; padding: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .scenario-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+    .scenario-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #1a3c5e; color: white;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .scenario-num.green { background: #16a34a; }
+    .scenario-title { font-size: 15px; font-weight: 700; }
+    .scenario-role { font-size: 11px; }
+    ol.steps { padding-left: 20px; }
+    ol.steps li {
+      font-size: 13px; color: #374151; margin-bottom: 6px; padding-left: 4px;
+    }
+    ol.steps li strong { color: #1a3c5e; }
+    .expect {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;
+      padding: 10px 14px; margin-top: 10px; font-size: 12px; color: #166534;
+    }
+    .expect strong { font-weight: 700; }
+
+    /* Known issues */
+    .issues { display: flex; flex-direction: column; gap: 10px; }
+    .issue {
+      background: white; border-radius: 8px; padding: 14px 16px;
+      border-left: 3px solid #f59e0b; font-size: 13px;
+      border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
+    }
+    .issue strong { display: block; font-weight: 700; color: #374151; margin-bottom: 3px; }
+    .issue span { color: #64748b; }
+
+    /* Bug report */
+    .report-box {
+      background: #1a3c5e; color: white; border-radius: 12px;
+      padding: 24px; text-align: center;
+    }
+    .report-box p { font-size: 14px; opacity: 0.8; margin-bottom: 16px; }
+    .report-form { display: flex; flex-direction: column; gap: 10px; max-width: 480px; margin: 0 auto; }
+    .report-form textarea, .report-form input {
+      border-radius: 8px; padding: 10px 14px; font-size: 14px;
+      border: none; background: rgba(255,255,255,0.12); color: white;
+      font-family: inherit; resize: vertical;
+    }
+    .report-form textarea::placeholder, .report-form input::placeholder { color: rgba(255,255,255,0.45); }
+    .report-form textarea:focus, .report-form input:focus {
+      outline: 2px solid #22c55e; background: rgba(255,255,255,0.18);
+    }
+    .btn-submit {
+      background: #22c55e; color: white; border: none; border-radius: 8px;
+      padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .btn-submit:hover { background: #16a34a; }
+
+    .copied {
+      position: fixed; bottom: 20px; right: 20px;
+      background: #1a3c5e; color: white; border-radius: 8px;
+      padding: 10px 16px; font-size: 13px; font-weight: 600;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .copied.show { opacity: 1; }
+
+    footer {
+      text-align: center; font-size: 12px; color: #94a3b8;
+      padding: 24px; margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+    <div>
+      <h1>SubHub — QA Testing Guide</h1>
+      <p>Two-sided marketplace for fencing franchise operators and subcontractors</p>
+    </div>
+    <a href="/" style="display:inline-block;background:#22c55e;color:white;font-weight:700;font-size:15px;
+       padding:10px 22px;border-radius:8px;text-decoration:none;white-space:nowrap;margin-top:4px;">
+      Open App →
+    </a>
+  </div>
+  <div class="header-meta">
+    <span class="badge badge-blue">🌐 Web (Expo)</span>
+    <span class="badge badge-yellow">⚠️ Test Environment — Stripe in Test Mode</span>
+    <span class="badge badge-green">✓ Supabase Live</span>
+  </div>
+</header>
+
+<main>
+
+  <div class="alert">
+    <strong>Before you start:</strong> This is a test environment.
+    Use the credentials below — do not use real personal info or real credit cards.
+    Payments are handled by Stripe in test mode and no real charges occur.
+  </div>
+
+  <!-- ── Credentials ───────────────────────────────────────── -->
+  <div class="section">
+    <h2>Test Credentials</h2>
+    <div class="creds">
+      <div class="cred-card">
+        <h3 class="contractor">🏗️ Contractor Account</h3>
+        <div class="cred-row">
+          <span class="cred-label">Email</span>
+          <span class="cred-value" onclick="copy(this)">subhub_test@gmail.com</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">Password</span>
+          <span class="cred-value" onclick="copy(this)">SubHubQA2026!</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">Role</span>
+          <span class="cred-value">Contractor (posts jobs)</span>
+        </div>
+        <p class="cred-note">Click any value to copy it to clipboard.</p>
+      </div>
+      <div class="cred-card">
+        <h3 class="sub">🔨 Subcontractor Account</h3>
+        <div class="cred-row">
+          <span class="cred-label">Email</span>
+          <span class="cred-value" onclick="copy(this)">subhub_sub@gmail.com</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">Password</span>
+          <span class="cred-value" onclick="copy(this)">SubHubQA2026!</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">Role</span>
+          <span class="cred-value">Subcontractor (claims jobs)</span>
+        </div>
+        <p class="cred-note">Use a separate browser or incognito window for each role.</p>
+      </div>
+      <div class="cred-card">
+        <h3 style="color:#7c3aed;">💳 Stripe Test Card</h3>
+        <div class="cred-row">
+          <span class="cred-label">Card #</span>
+          <span class="cred-value" onclick="copy(this)">4242 4242 4242 4242</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">Expiry</span>
+          <span class="cred-value" onclick="copy(this)">12/34</span>
+        </div>
+        <div class="cred-row">
+          <span class="cred-label">CVC</span>
+          <span class="cred-value" onclick="copy(this)">123</span>
+        </div>
+        <p class="cred-note">Only works on native iOS/Android builds — web mocks payment.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Feature Status ───────────────────────────────────── -->
+  <div class="section">
+    <h2>Feature Status</h2>
+    <div class="feature-grid">
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Auth &amp; Sign-up</div><div class="feature-sub">Email/password, role selection</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Contractor Onboarding</div><div class="feature-sub">Business profile, credentials</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Post a Job</div><div class="feature-sub">3-step builder: Scope → Logistics → Closeout</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Job Board</div><div class="feature-sub">Sort by pay / duration / newest</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Claim &amp; Job Lifecycle</div><div class="feature-sub">Claim → In Progress → Complete</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Messaging</div><div class="feature-sub">Real-time per-job chat, both sides</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Sub Directory</div><div class="feature-sub">Contractors browse &amp; search subs</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Contractor Reviews</div><div class="feature-sub">Sub rates contractor with tags</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Change Orders</div><div class="feature-sub">Pre-agreed fee schedule, both parties</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Photo Upload</div><div class="feature-sub">Before / during / after phases</div></div>
+      </div>
+      <div class="feature done">
+        <span class="feature-icon">✅</span>
+        <div><div class="feature-label">Customer Sign-off</div><div class="feature-sub">Homeowner name before job closes</div></div>
+      </div>
+      <div class="feature partial">
+        <span class="feature-icon">⚠️</span>
+        <div><div class="feature-label">Stripe Payments</div><div class="feature-sub">Works on native only — mocked on web</div></div>
+      </div>
+      <div class="feature partial">
+        <span class="feature-icon">⚠️</span>
+        <div><div class="feature-label">Push Notifications</div><div class="feature-sub">Native only — no browser support</div></div>
+      </div>
+      <div class="feature todo">
+        <span class="feature-icon">🔜</span>
+        <div><div class="feature-label">VoIP Calling</div><div class="feature-sub">Twilio — Phase 2</div></div>
+      </div>
+      <div class="feature todo">
+        <span class="feature-icon">🔜</span>
+        <div><div class="feature-label">Admin Dashboard</div><div class="feature-sub">Phase 2</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Test Scenarios ───────────────────────────────────── -->
+  <div class="section">
+    <h2>Test Scenarios</h2>
+    <div class="scenarios">
+
+      <div class="scenario">
+        <div class="scenario-header">
+          <div class="scenario-num">1</div>
+          <div>
+            <div class="scenario-title">Contractor Sign-up &amp; Profile</div>
+            <div class="scenario-role"><span class="badge badge-blue">Contractor role</span></div>
+          </div>
+        </div>
+        <ol class="steps">
+          <li>Go to the app and tap <strong>Post a Job</strong> on the landing page</li>
+          <li>Enter a new email (e.g. <code>yourname+contractor@gmail.com</code>) and password</li>
+          <li>Complete the Business Profile form (use fake data — license #, insurance #, etc.)</li>
+          <li>Verify you land on the <strong>My Jobs</strong> dashboard</li>
+          <li>Tap <strong>Profile</strong> tab and confirm your business info is shown</li>
+        </ol>
+        <div class="expect"><strong>✓ Expected:</strong> Profile saved, pre-agreed fee schedule visible, "Add Payment Method" prompt shown.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-header">
+          <div class="scenario-num">2</div>
+          <div>
+            <div class="scenario-title">Post a Job (3-Step Flow)</div>
+            <div class="scenario-role"><span class="badge badge-blue">Contractor role</span></div>
+          </div>
+        </div>
+        <ol class="steps">
+          <li>Tap <strong>Post Job</strong> tab</li>
+          <li><strong>Step 1 — Scope:</strong> enter job title, scope, material supplier, select material status</li>
+          <li><strong>Step 2 — Logistics:</strong> enter address, start window, install price (e.g. <code>2500</code>), sub payout (e.g. <code>1200</code>)</li>
+          <li><strong>Step 3 — Closeout:</strong> enter homeowner name, phone, email → tap Post Job</li>
+          <li>Confirm the success alert and navigate to <strong>My Jobs</strong></li>
+        </ol>
+        <div class="expect"><strong>✓ Expected:</strong> Job appears in My Jobs with status "Posted". Homeowner contact info is hidden from the sub's view.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-header">
+          <div class="scenario-num green">3</div>
+          <div>
+            <div class="scenario-title">Sub Sign-up &amp; Claim a Job</div>
+            <div class="scenario-role"><span class="badge badge-green">Sub role</span></div>
+          </div>
+        </div>
+        <ol class="steps">
+          <li>Open a new browser tab / incognito window and go to the app</li>
+          <li>Tap <strong>Find Work</strong> on the landing page</li>
+          <li>Sign up with a different email and complete the Pro Profile form</li>
+          <li>Tap the <strong>Job Board</strong> tab — you should see the job posted in step 2</li>
+          <li>Tap the job card → tap <strong>Claim Job</strong></li>
+        </ol>
+        <div class="expect"><strong>✓ Expected:</strong> Job moves to "Claimed" status. Contractor's My Jobs shows the updated status.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-header">
+          <div class="scenario-num green">4</div>
+          <div>
+            <div class="scenario-title">Messaging Between Parties</div>
+            <div class="scenario-role"><span class="badge badge-blue">Both roles</span></div>
+          </div>
+        </div>
+        <ol class="steps">
+          <li>In the sub view: tap <strong>Messages</strong> tab → tap the claimed job</li>
+          <li>Send a message: "Ready to start Monday, confirming materials are on-site?"</li>
+          <li>Switch to contractor view: tap <strong>Messages</strong> tab → open same job</li>
+          <li>Verify the sub's message appears → reply back</li>
+          <li>Switch back to sub view and confirm the reply appeared in real-time</li>
+        </ol>
+        <div class="expect"><strong>✓ Expected:</strong> Messages appear in real-time without refresh. Blue bubbles = your messages, grey = other party.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-header">
+          <div class="scenario-num green">5</div>
+          <div>
+            <div class="scenario-title">Complete a Job &amp; Leave a Review</div>
+            <div class="scenario-role"><span class="badge badge-blue">Both roles</span></div>
+          </div>
+        </div>
+        <ol class="steps">
+          <li>Sub: in My Jobs, open the claimed job → tap <strong>Start Work</strong></li>
+          <li>Sub: tap <strong>Submit Job Complete</strong> → enter customer name for sign-off</li>
+          <li>Contractor: open the job → review and release</li>
+          <li>Sub: from My Jobs, open the completed job → tap <strong>Leave a Review</strong></li>
+          <li>Select 4–5 stars, select applicable tags (Fast Payment, Clear Communication, etc.), add a comment → Submit</li>
+        </ol>
+        <div class="expect"><strong>✓ Expected:</strong> Review submitted. Contractor's profile shows updated average rating.</div>
+      </div>
+
+      <div class="scenario">
+        <div class="scenario-header">
+          <div class="scenario-num">6</div>
+          <div>
+            <div class="scenario-title">Sub Directory Search</div>
+            <div class="scenario-role"><span class="badge badge-blue">Contractor role</span></div>
+          </div>
+        </div>
+        <ol class="steps">
+          <li>Tap <strong>Find Subs</strong> tab</li>
+          <li>Verify the sub you created appears in the list</li>
+          <li>Search by the sub's ZIP code — confirm filtering works</li>
+          <li>Tap <strong>View Reviews</strong> — confirm the review from step 5 shows with tags</li>
+        </ol>
+        <div class="expect"><strong>✓ Expected:</strong> Sub card shows name, rating, service area, verified badge (if set). Reviews expand inline.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Known Limitations ────────────────────────────────── -->
+  <div class="section">
+    <h2>Known Limitations (Web Preview)</h2>
+    <div class="issues">
+      <div class="issue">
+        <strong>💳 Payment entry is mocked on web</strong>
+        <span>Stripe's PaymentSheet is native-only. Clicking "Add Payment Method" completes immediately without a card form. Real card entry requires the iOS/Android native build.</span>
+      </div>
+      <div class="issue">
+        <strong>🔔 Push notifications don't work in browser</strong>
+        <span>Expo push tokens only register on native devices. Notification flows (job claimed, payment failed, etc.) will be silent on web.</span>
+      </div>
+      <div class="issue">
+        <strong>📸 Photo upload may behave differently on web</strong>
+        <span>Expo ImagePicker uses the browser file picker on web. Uploads should still work but the UI is less polished than native.</span>
+      </div>
+      <div class="issue">
+        <strong>📱 Designed for mobile screen sizes</strong>
+        <span>The layout is built for phone screens. On desktop browsers, it renders narrow. This is expected for the current phase.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Bug Report ───────────────────────────────────────── -->
+  <div class="section">
+    <h2>Report a Bug</h2>
+    <div class="report-box">
+      <p>Found something broken? Describe what happened, what you expected, and the steps to reproduce.</p>
+      <div class="report-form">
+        <input type="text" id="bug-screen" placeholder="Which screen? (e.g. Post Job Step 2)" />
+        <textarea id="bug-desc" rows="4" placeholder="What happened vs. what you expected..."></textarea>
+        <button class="btn-submit" onclick="copyBugReport()">📋 Copy Bug Report</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>SubHub · QA Testing Guide · Test environment only — no real data</footer>
+
+<div class="copied" id="copied">Copied!</div>
+
+<script>
+  function copy(el) {
+    navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+      const tip = document.getElementById('copied');
+      tip.classList.add('show');
+      setTimeout(() => tip.classList.remove('show'), 1500);
+    });
+  }
+
+  function copyBugReport() {
+    const screen = document.getElementById('bug-screen').value.trim();
+    const desc = document.getElementById('bug-desc').value.trim();
+    if (!desc) { alert('Please describe the bug first.'); return; }
+    const report = [
+      '🐛 Bug Report — SubHub QA',
+      '─────────────────────────',
+      screen ? `Screen: ${screen}` : '',
+      '',
+      desc,
+      '',
+      `Reported: ${new Date().toLocaleString()}`,
+    ].filter(l => l !== undefined).join('\n');
+    navigator.clipboard.writeText(report).then(() => {
+      const tip = document.getElementById('copied');
+      tip.classList.add('show');
+      setTimeout(() => tip.classList.remove('show'), 1500);
+    });
+  }
+</script>
+
+</body>
+</html>
