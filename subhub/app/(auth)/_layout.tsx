@@ -10,7 +10,7 @@ export default function AuthLayout() {
         headerTitleStyle: { fontWeight: '600' },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'SubHub', headerShown: false }} />
+      <Stack.Screen name="index" options={{ title: 'SubHub: Where Work Meets Workforce', headerShown: false }} />
       <Stack.Screen name="login" options={{ title: 'Sign In', headerShown: false }} />
       <Stack.Screen name="signup" options={{ title: 'Create Account', headerShown: false }} />
       <Stack.Screen name="onboard-contractor" options={{ title: 'Business Profile' }} />
