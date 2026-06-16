@@ -242,6 +242,7 @@ export default function PostJobScreen() {
                 This is what the sub earns. The platform fee is deducted from this amount before release.
               </Text>
             </View>
+            <LFBenchmark industry={form.industry} payout={form.sub_payout} />
           </Section>
           <NavRow onBack={back} onNext={next} nextLabel="Next: Review →" />
         </>
@@ -370,6 +371,44 @@ function Field({ label, value, onChangeText, placeholder, keyboardType, multilin
   );
 }
 
+const LF_BENCHMARKS: Record<string, { min: number; max: number; unit: string; note: string }> = {
+  'Fencing':         { min: 8,   max: 18,  unit: 'LF',   note: '6ft cedar/vinyl privacy fence' },
+  'Decking':         { min: 12,  max: 22,  unit: 'SF',   note: 'Pressure-treated or composite' },
+  'Pergola / Shade': { min: 15,  max: 35,  unit: 'LF',   note: 'Freestanding or attached' },
+  'Gates':           { min: 250, max: 700, unit: 'unit',  note: 'Per gate, swing or sliding' },
+  'Retaining Walls': { min: 20,  max: 50,  unit: 'LF',   note: 'Block or timber wall' },
+  'General':         { min: 10,  max: 25,  unit: 'LF',   note: 'Varies by scope' },
+};
+
+function LFBenchmark({ industry, payout }: { industry: string; payout: string }) {
+  const bm = LF_BENCHMARKS[industry];
+  if (!bm) return null;
+  const p = parseFloat(payout);
+  const midpoint = (bm.min + bm.max) / 2;
+  const rating = !isNaN(p) && p > 0
+    ? p / 100 >= bm.max ? 'high' : p / 100 >= midpoint ? 'fair' : 'low'
+    : null;
+
+  return (
+    <View style={styles.benchmarkCard}>
+      <Text style={styles.benchmarkTitle}>Market average · {industry}</Text>
+      <Text style={styles.benchmarkRange}>
+        ${bm.min}–${bm.max} / {bm.unit} <Text style={styles.benchmarkNote}>({bm.note})</Text>
+      </Text>
+      {rating && (
+        <Text style={[
+          styles.benchmarkRating,
+          rating === 'high' && styles.ratingHigh,
+          rating === 'fair' && styles.ratingFair,
+          rating === 'low' && styles.ratingLow,
+        ]}>
+          {rating === 'high' ? '🟢 Above market — strong offer' : rating === 'fair' ? '🟡 Near market rate' : '🔴 Below market — may attract fewer bids'}
+        </Text>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxl },
@@ -462,4 +501,15 @@ const styles = StyleSheet.create({
   paymentGateBody: {
     fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center', lineHeight: 24,
   },
+  benchmarkCard: {
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.md,
+    padding: spacing.md, gap: spacing.xs, borderLeftWidth: 3, borderLeftColor: colors.primary,
+  },
+  benchmarkTitle: { fontSize: fontSize.xs, fontWeight: '700', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.3 },
+  benchmarkRange: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
+  benchmarkNote: { fontSize: fontSize.sm, fontWeight: '400', color: colors.textMuted },
+  benchmarkRating: { fontSize: fontSize.sm, fontWeight: '600' },
+  ratingHigh: { color: '#15803d' },
+  ratingFair: { color: '#92400e' },
+  ratingLow: { color: colors.error },
 });
