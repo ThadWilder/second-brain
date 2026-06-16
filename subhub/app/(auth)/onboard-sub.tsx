@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { signOut } from '@/lib/auth';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 const SKILLS = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
@@ -131,6 +132,10 @@ export default function OnboardSubScreen() {
           ? <ActivityIndicator color={colors.white} />
           : <Text style={styles.buttonText}>Create Profile & Browse Jobs</Text>}
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -177,6 +182,8 @@ const styles = StyleSheet.create({
   button: { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.sm },
   buttonText: { color: colors.white, fontSize: fontSize.md, fontWeight: '600' },
   buttonDisabled: { opacity: 0.4 },
+  signOutButton: { alignItems: 'center', paddingVertical: spacing.sm },
+  signOutText: { fontSize: fontSize.sm, color: colors.textMuted },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   chipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },

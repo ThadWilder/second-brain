@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { signOut } from '@/lib/auth';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 const PAYMENT_TERMS = [
@@ -127,6 +128,10 @@ export default function OnboardContractorScreen() {
 
           <TouchableOpacity style={styles.button} onPress={() => { if (validateStep1()) setStep(2); }}>
             <Text style={styles.buttonText}>Next: Fee Schedule →</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+            <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
         </>
       )}
@@ -277,4 +282,6 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '500' },
   chipTextSelected: { color: colors.white },
+  signOutButton: { alignItems: 'center', paddingVertical: spacing.sm },
+  signOutText: { fontSize: fontSize.sm, color: colors.textMuted },
 });
