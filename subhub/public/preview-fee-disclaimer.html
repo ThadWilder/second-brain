@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fee Disclaimer Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc; display: flex; justify-content: center;
+      padding: 40px 20px;
+    }
+    .phone {
+      background: white; border-radius: 16px; width: 420px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12); overflow: hidden;
+    }
+    .header {
+      background: #1a3c5e; color: white; padding: 16px 20px;
+      font-size: 17px; font-weight: 700;
+    }
+    .body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Step indicator */
+    .steps { display: flex; justify-content: center; gap: 32px; }
+    .step { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid #e2e8f0; display: flex; align-items: center;
+      justify-content: center; font-size: 12px; font-weight: 700; color: #94a3b8;
+    }
+    .dot.done { background: #22c55e; border-color: #22c55e; color: white; }
+    .dot.active { background: #1a3c5e; border-color: #1a3c5e; color: white; }
+    .step-label { font-size: 11px; color: #94a3b8; }
+    .step-label.active { color: #1a3c5e; font-weight: 600; }
+
+    /* Section */
+    .section-title { font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 12px; }
+
+    /* Notice */
+    .notice {
+      background: #f1f5f9; border-radius: 10px; padding: 14px;
+      border-left: 3px solid #1a3c5e;
+      font-size: 13px; color: #64748b; line-height: 1.5;
+    }
+
+    /* Fields */
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 13px; font-weight: 600; color: #1e293b; }
+    .field input {
+      border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 12px; font-size: 15px; color: #1e293b; background: #f8fafc;
+      outline: none;
+    }
+
+    /* Fee disclaimer */
+    .fee-box {
+      display: flex; gap: 14px; align-items: flex-start;
+      background: #fef3c7; border-radius: 10px; padding: 16px;
+      border-left: 4px solid #f59e0b; cursor: pointer;
+      user-select: none;
+    }
+    .fee-box:hover { background: #fde68a; }
+    .checkbox {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 2px solid #f59e0b; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; margin-top: 2px;
+      background: white; transition: all 0.15s;
+    }
+    .checkbox.checked { background: #f59e0b; border-color: #f59e0b; }
+    .checkmark { color: white; font-size: 16px; font-weight: 800; display: none; }
+    .checkbox.checked .checkmark { display: block; }
+    .fee-text { font-size: 15px; color: #78350f; line-height: 1.6; flex: 1; }
+
+    /* Buttons */
+    .button-row { display: flex; gap: 10px; }
+    .back-btn {
+      border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 14px 20px; font-size: 15px; color: #1e293b;
+      background: white; cursor: pointer; font-weight: 500;
+    }
+    .post-btn {
+      flex: 1; background: #1a3c5e; border: none; border-radius: 10px;
+      padding: 14px; font-size: 15px; color: white; font-weight: 600;
+      cursor: pointer; opacity: 0.4; transition: opacity 0.2s;
+    }
+    .post-btn.enabled { opacity: 1; }
+  </style>
+</head>
+<body>
+<div class="phone">
+  <div class="header">Post Job</div>
+  <div class="body">
+
+    <!-- Step indicator -->
+    <div class="steps">
+      <div class="step">
+        <div class="dot done">✓</div>
+        <span class="step-label">Scope</span>
+      </div>
+      <div class="step">
+        <div class="dot done">✓</div>
+        <span class="step-label">Logistics</span>
+      </div>
+      <div class="step">
+        <div class="dot active">3</div>
+        <span class="step-label active">Closeout</span>
+      </div>
+    </div>
+
+    <!-- Section -->
+    <div>
+      <div class="section-title">Homeowner & Closeout</div>
+      <div class="notice">
+        Homeowner contact info is masked in the app. Subcontractors communicate through SubHub only.
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Homeowner Name</label>
+      <input type="text" value="Jane Smith" readonly />
+    </div>
+    <div class="field">
+      <label>Homeowner Phone</label>
+      <input type="text" value="(555) 867-5309" readonly />
+    </div>
+
+    <!-- Fee disclaimer -->
+    <div class="fee-box" onclick="toggle()">
+      <div class="checkbox" id="cb">
+        <span class="checkmark">✓</span>
+      </div>
+      <p class="fee-text">
+        I understand that SubHub charges a platform fee on this job. The fee covers payment
+        processing, escrow, dispute resolution, and platform maintenance. The fee is deducted
+        from the sub payout before release — no additional charge to me.
+      </p>
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-row">
+      <button class="back-btn">← Back</button>
+      <button class="post-btn" id="postBtn">Post Job</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function toggle() {
+    const cb = document.getElementById('cb');
+    const btn = document.getElementById('postBtn');
+    cb.classList.toggle('checked');
+    btn.classList.toggle('enabled');
+  }
+</script>
+</body>
+</html>
