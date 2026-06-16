@@ -22,6 +22,10 @@ export default function SubJobDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
 
+  // AI analysis
+  const [analysis, setAnalysis] = useState<{ score: string; headline: string; bullets: string[]; watch_out: string | null } | null>(null);
+  const [analyzingJob, setAnalyzingJob] = useState(false);
+
   // Closeout state
   const [signeeName, setSigneeName] = useState('');
   const [submittingSignoff, setSubmittingSignoff] = useState(false);
@@ -41,6 +45,19 @@ export default function SubJobDetailScreen() {
   }, [id]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  async function analyzeJob() {
+    setAnalyzingJob(true);
+    const { data, error } = await supabase.functions.invoke('analyze-job', {
+      body: { jobId: id },
+    });
+    setAnalyzingJob(false);
+    if (error || data?.error) {
+      Alert.alert('Analysis failed', error?.message ?? data?.error);
+      return;
+    }
+    setAnalysis(data);
+  }
 
   async function handleClaim() {
     Alert.alert(
@@ -151,6 +168,44 @@ export default function SubJobDetailScreen() {
               <RateChip label="Max delay liability" value={`$${(job.contractor as any).delay_liability_cap ?? 500}`} />
               <RateChip label="Payment terms" value={`${(job.contractor as any).payment_terms_days ?? 14} days`} />
             </View>
+          </View>
+        )}
+
+        {/* AI job analysis */}
+        {!analysis && (
+          <TouchableOpacity
+            style={[styles.analyzeButton, analyzingJob && styles.analyzeButtonDisabled]}
+            onPress={analyzeJob}
+            disabled={analyzingJob}
+          >
+            {analyzingJob
+              ? <ActivityIndicator color={colors.primary} size="small" />
+              : <Text style={styles.analyzeButtonText}>✨ Analyze This Job</Text>}
+          </TouchableOpacity>
+        )}
+        {analysis && (
+          <View style={[
+            styles.analysisCard,
+            analysis.score === 'great' && styles.analysisGreat,
+            analysis.score === 'low' && styles.analysisLow,
+          ]}>
+            <View style={styles.analysisHeader}>
+              <Text style={styles.analysisBadge}>
+                {analysis.score === 'great' ? '🟢 Great' : analysis.score === 'fair' ? '🟡 Fair' : '🔴 Low'}
+              </Text>
+              <TouchableOpacity onPress={() => setAnalysis(null)}>
+                <Text style={styles.analysisDismiss}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.analysisHeadline}>{analysis.headline}</Text>
+            {analysis.bullets.map((b, i) => (
+              <Text key={i} style={styles.analysisBullet}>• {b}</Text>
+            ))}
+            {analysis.watch_out && (
+              <View style={styles.analysisWatchOut}>
+                <Text style={styles.analysisWatchOutText}>⚠️ {analysis.watch_out}</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -458,6 +513,27 @@ const styles = StyleSheet.create({
     padding: spacing.sm, alignItems: 'center', marginTop: spacing.sm,
   },
   messageButtonText: { color: colors.accent, fontSize: fontSize.sm, fontWeight: '600' },
+  analyzeButton: {
+    borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md,
+    padding: spacing.sm, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: spacing.xs,
+  },
+  analyzeButtonDisabled: { opacity: 0.5 },
+  analyzeButtonText: { color: colors.primary, fontSize: fontSize.sm, fontWeight: '600' },
+  analysisCard: {
+    backgroundColor: '#f0fdf4', borderRadius: radius.md, padding: spacing.md,
+    gap: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.accent,
+  },
+  analysisGreat: { backgroundColor: '#f0fdf4', borderLeftColor: '#16a34a' },
+  analysisLow: { backgroundColor: '#fef2f2', borderLeftColor: colors.error },
+  analysisHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  analysisBadge: { fontSize: fontSize.sm, fontWeight: '700', color: colors.text },
+  analysisDismiss: { fontSize: fontSize.md, color: colors.textMuted, paddingHorizontal: spacing.xs },
+  analysisHeadline: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
+  analysisBullet: { fontSize: fontSize.sm, color: colors.text, lineHeight: 20 },
+  analysisWatchOut: {
+    backgroundColor: '#fef3c7', borderRadius: radius.sm, padding: spacing.sm, marginTop: spacing.xs,
+  },
+  analysisWatchOutText: { fontSize: fontSize.xs, color: '#78350f', fontWeight: '600' },
   disputedBanner: {
     backgroundColor: '#fef2f2', borderRadius: radius.md, padding: spacing.md,
     gap: spacing.xs, borderLeftWidth: 3, borderLeftColor: colors.error,

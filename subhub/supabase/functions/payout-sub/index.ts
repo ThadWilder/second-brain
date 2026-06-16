@@ -34,15 +34,40 @@ serve(async (req) => {
     if (payment.contractor_id !== user.id) throw new Error('Not your job');
     if (payment.status !== 'held') throw new Error('Payment not in held state');
 
-    // Transfer net payout to sub's Connect account
-    const netPayout = Math.round((payment.sub_payout - payment.platform_fee_sub) * 100);
+    // Check sub's payout preference
+    const { data: subProfile } = await supabase
+      .from('sub_profiles')
+      .select('payout_type')
+      .eq('user_id', payment.sub_id)
+      .single();
+
+    const isInstant = subProfile?.payout_type === 'instant';
+
+    // Instant pay deducts an additional 1.5% fee from the sub's net
+    const basePayout = Math.round((payment.sub_payout - payment.platform_fee_sub) * 100);
+    const instantFee = isInstant ? Math.round(basePayout * 0.015) : 0;
+    const netPayout = basePayout - instantFee;
 
     const transfer = await stripe.transfers.create({
       amount: netPayout,
       currency: 'usd',
       destination: payment.stripe_sub_account_id,
-      metadata: { jobId },
+      metadata: { jobId, payout_type: subProfile?.payout_type ?? 'bank' },
     });
+
+    // For instant subs, immediately push funds to their debit card
+    if (isInstant) {
+      await stripe.payouts.create(
+        {
+          amount: netPayout,
+          currency: 'usd',
+          method: 'instant',
+          description: `SubHub instant payout — job ${jobId}`,
+          metadata: { jobId },
+        },
+        { stripeAccount: payment.stripe_sub_account_id }
+      );
+    }
 
     await supabase
       .from('payment_records')
@@ -50,6 +75,7 @@ serve(async (req) => {
         stripe_transfer_id: transfer.id,
         status: 'released',
         paid_out_at: new Date().toISOString(),
+        ...(isInstant ? { instant_fee: instantFee / 100 } : {}),
       })
       .eq('job_id', jobId);
 
@@ -72,8 +98,10 @@ serve(async (req) => {
         body: JSON.stringify(subTokens.map(({ token }) => ({
           to: token,
           sound: 'default',
-          title: 'Payment Released',
-          body: `$${(netPayout / 100).toLocaleString()} has been sent to your account.`,
+          title: isInstant ? '⚡ Instant Payment Sent' : 'Payment Released',
+          body: isInstant
+            ? `$${(netPayout / 100).toLocaleString()} is on its way to your debit card.`
+            : `$${(netPayout / 100).toLocaleString()} has been sent to your account.`,
           data: { type: 'payment_released', jobId },
         }))),
       });

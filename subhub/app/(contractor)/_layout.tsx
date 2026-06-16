@@ -1,8 +1,10 @@
-import { Platform, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { Platform, View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 const SIDEBAR_W = 240;
+const BREAKPOINT = 768;
 
 const TABS = [
   { segment: '',         icon: '📋', label: 'My Jobs'   },
@@ -12,14 +14,19 @@ const TABS = [
   { segment: 'profile',  icon: '👤', label: 'Profile'   },
 ];
 
-function ContractorSidebar() {
+function ContractorSidebar({ onCollapse }: { onCollapse: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const current = pathname.split('/').filter(Boolean)[0] ?? '';
 
   return (
     <View style={s.sidebar}>
-      <Text style={s.logo}>SubHub</Text>
+      <View style={s.logoRow}>
+        <Text style={s.logo}>SubHub</Text>
+        <TouchableOpacity onPress={onCollapse} style={s.collapseBtn}>
+          <Text style={s.collapseBtnText}>◀</Text>
+        </TouchableOpacity>
+      </View>
       {TABS.map(t => {
         const active = t.segment === current;
         return (
@@ -38,20 +45,30 @@ function ContractorSidebar() {
 }
 
 export default function ContractorLayout() {
-  const web = Platform.OS === 'web';
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === 'web';
+  const isWide = isWeb && width >= BREAKPOINT;
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const showSidebar = isWide && sidebarOpen;
+
   return (
-    <View style={{ flex: 1, flexDirection: web ? 'row' : 'column' }}>
-      {web && <ContractorSidebar />}
+    <View style={{ flex: 1, flexDirection: isWide ? 'row' : 'column' }}>
+      {showSidebar && <ContractorSidebar onCollapse={() => setSidebarOpen(false)} />}
       <View style={{ flex: 1 }}>
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.textLight,
             tabBarLabelStyle: { fontSize: fontSize.xs, fontWeight: '600' },
-            tabBarStyle: web ? { display: 'none' } : { borderTopColor: colors.border },
+            tabBarStyle: isWide ? { display: 'none' } : { borderTopColor: colors.border },
             headerStyle: { backgroundColor: colors.primary },
             headerTintColor: colors.white,
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
+            headerLeft: (isWide && !sidebarOpen) ? () => (
+              <TouchableOpacity onPress={() => setSidebarOpen(true)} style={{ paddingLeft: spacing.md }}>
+                <Text style={{ fontSize: 22, color: colors.white }}>☰</Text>
+              </TouchableOpacity>
+            ) : undefined,
           }}
         >
           <Tabs.Screen name="index"    options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
@@ -83,15 +100,27 @@ const s = StyleSheet.create({
     paddingBottom: spacing.xl,
     gap: 2,
   },
-  logo: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: colors.primary,
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     marginBottom: spacing.md,
+  },
+  logo: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  collapseBtn: {
+    padding: spacing.sm,
+  },
+  collapseBtnText: {
+    fontSize: 18,
+    color: colors.textMuted,
   },
   item: {
     flexDirection: 'row',
