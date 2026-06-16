@@ -102,7 +102,8 @@ export default function PostJobScreen() {
     if (!user) { setError('Session expired. Please sign in again.'); setLoading(false); return; }
     const subPayout = parseFloat(form.sub_payout);
     const installPrice = parseFloat(form.install_price);
-    const { error: err } = await supabase.from('jobs').insert({
+
+    const { data: newJob, error: err } = await supabase.from('jobs').insert({
       contractor_id: user.id,
       title: form.title,
       industry: form.industry,
@@ -123,10 +124,24 @@ export default function PostJobScreen() {
       homeowner_phone: form.homeowner_phone,
       homeowner_email: form.homeowner_email,
       status: 'posted',
+    }).select('id').single();
+
+    if (err || !newJob) { setError(err?.message ?? 'Failed to post job.'); setLoading(false); return; }
+
+    // Place $1,000 authorization hold on contractor's card
+    const { data: holdData, error: holdErr } = await supabase.functions.invoke('hold-payment', {
+      body: { jobId: newJob.id },
     });
+
+    if (holdErr || holdData?.error) {
+      await supabase.from('jobs').delete().eq('id', newJob.id);
+      setError(holdData?.error ?? holdErr?.message ?? 'Card authorization failed. Check your payment method and try again.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(false);
-    if (err) { setError(err.message); return; }
-    Alert.alert('Job Posted!', 'Subcontractors in your area can now see and claim this job.', [
+    Alert.alert('Job Posted!', 'A $1,000 hold has been placed on your card. Subs can now claim this job — the hold is released when the job is cancelled or replaced by full payment.', [
       { text: 'View My Jobs', onPress: () => router.replace('/(contractor)/') },
     ]);
   }

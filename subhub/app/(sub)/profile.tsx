@@ -20,6 +20,7 @@ export default function SubProfileScreen() {
     phone_number: '',
     service_area_zip: '',
     service_area_miles: '',
+    payout_type: 'bank' as 'bank' | 'instant',
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
@@ -34,6 +35,7 @@ export default function SubProfileScreen() {
         phone_number: (data as any).phone_number ?? '',
         service_area_zip: data.service_area_zip ?? '',
         service_area_miles: String(data.service_area_miles ?? 75),
+        payout_type: data.payout_type ?? 'bank',
       });
       setSelectedSkills(data.skills ?? ['Fencing']);
     }
@@ -56,6 +58,7 @@ export default function SubProfileScreen() {
         service_area_zip: fields.service_area_zip,
         service_area_miles: parseInt(fields.service_area_miles, 10) || 75,
         skills: selectedSkills,
+        payout_type: fields.payout_type,
       })
       .eq('id', profile.id);
     setSaving(false);
@@ -144,6 +147,27 @@ export default function SubProfileScreen() {
               );
             })}
           </View>
+          {profile?.stripe_account_id && (
+            <View style={styles.payoutToggleSection}>
+              <Text style={styles.editLabel}>Payout speed</Text>
+              <View style={styles.payoutToggleRow}>
+                <TouchableOpacity
+                  style={[styles.payoutOption, fields.payout_type === 'bank' && styles.payoutOptionActive]}
+                  onPress={() => setFields(f => ({ ...f, payout_type: 'bank' }))}
+                >
+                  <Text style={[styles.payoutOptionText, fields.payout_type === 'bank' && styles.payoutOptionTextActive]}>🏦 Bank Transfer</Text>
+                  <Text style={styles.payoutOptionSub}>1–2 business days</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.payoutOption, fields.payout_type === 'instant' && styles.payoutOptionActive]}
+                  onPress={() => setFields(f => ({ ...f, payout_type: 'instant' }))}
+                >
+                  <Text style={[styles.payoutOptionText, fields.payout_type === 'instant' && styles.payoutOptionTextActive]}>⚡ Instant Pay</Text>
+                  <Text style={styles.payoutOptionSub}>~1.5% fee, same day</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           <TouchableOpacity style={styles.saveButton} onPress={save} disabled={saving}>
             {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveButtonText}>Save Changes</Text>}
           </TouchableOpacity>
@@ -234,6 +258,16 @@ const styles = StyleSheet.create({
   chipTextSelected: { color: colors.white },
   saveButton: { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   saveButtonText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
+  payoutToggleSection: { gap: spacing.sm },
+  payoutToggleRow: { flexDirection: 'row', gap: spacing.sm },
+  payoutOption: {
+    flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm,
+    padding: spacing.sm, gap: 2, backgroundColor: colors.background,
+  },
+  payoutOptionActive: { borderColor: colors.accent, backgroundColor: colors.accentLight },
+  payoutOptionText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textMuted },
+  payoutOptionTextActive: { color: colors.accent },
+  payoutOptionSub: { fontSize: 10, color: colors.textMuted },
   signOutButton: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.md },
   signOutText: { color: colors.textMuted, fontWeight: '600' },
 });
