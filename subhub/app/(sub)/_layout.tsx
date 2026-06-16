@@ -50,7 +50,7 @@ export default function SubLayout() {
             tabBarStyle: web ? { display: 'none' } : { borderTopColor: colors.border },
             headerStyle: { backgroundColor: colors.primary },
             headerTintColor: colors.white,
-            headerTitleStyle: { fontWeight: '700' },
+            headerTitleStyle: { fontWeight: '700', fontSize: 20 },
           }}
         >
           <Tabs.Screen name="index"      options={{ title: 'Job Board', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
@@ -106,7 +106,7 @@ const s = StyleSheet.create({
   },
   icon: { fontSize: 26 },
   label: {
-    fontSize: 33,
+    fontSize: 20,
     color: colors.text,
     fontWeight: '500',
   },
