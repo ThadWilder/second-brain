@@ -5,10 +5,11 @@ import { colors, spacing, fontSize, radius } from '@/lib/theme';
 const SIDEBAR_W = 240;
 
 const TABS = [
-  { segment: '',         icon: '🔍', label: 'Job Board' },
-  { segment: 'my-jobs',  icon: '🔨', label: 'My Jobs'   },
-  { segment: 'messages', icon: '💬', label: 'Messages'  },
-  { segment: 'profile',  icon: '👤', label: 'Profile'   },
+  { segment: '',            icon: '🔍', label: 'Job Board'   },
+  { segment: 'my-jobs',     icon: '🔨', label: 'My Jobs'     },
+  { segment: 'contractors', icon: '🏗️', label: 'Contractors' },
+  { segment: 'messages',    icon: '💬', label: 'Messages'    },
+  { segment: 'profile',     icon: '👤', label: 'Profile'     },
 ];
 
 function SubSidebar() {
@@ -53,10 +54,11 @@ export default function SubLayout() {
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
           }}
         >
-          <Tabs.Screen name="index"      options={{ title: 'Job Board', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
-          <Tabs.Screen name="my-jobs"    options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
-          <Tabs.Screen name="messages"   options={{ title: 'Messages',  tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
-          <Tabs.Screen name="profile"    options={{ title: 'Profile',   tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
+          <Tabs.Screen name="index"        options={{ title: 'Job Board',   tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
+          <Tabs.Screen name="my-jobs"      options={{ title: 'My Jobs',     tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
+          <Tabs.Screen name="contractors"  options={{ title: 'Contractors', tabBarIcon: ({ color }) => <Icon e="🏗️" c={color} /> }} />
+          <Tabs.Screen name="messages"     options={{ title: 'Messages',    tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
+          <Tabs.Screen name="profile"      options={{ title: 'Profile',     tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
           <Tabs.Screen name="jobs/[id]"      options={{ href: null }} />
           <Tabs.Screen name="chat/[jobId]"   options={{ href: null, title: 'Chat' }} />
           <Tabs.Screen name="rate/[jobId]"   options={{ href: null, title: 'Leave a Review' }} />
