@@ -8,15 +8,19 @@ import { supabase } from '@/lib/supabase';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { MaterialStatus } from '@/lib/types';
 
+const INDUSTRIES = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
+
 const MATERIAL_OPTIONS: { label: string; value: MaterialStatus; desc: string }[] = [
   { label: 'On-site', value: 'on_site', desc: 'Material is already at the job site' },
   { label: 'Local pickup', value: 'local', desc: 'Within ~25 miles of job site' },
   { label: 'Distant', value: 'distant', desc: 'Outside local radius — delivery required' },
 ];
 
+const STEPS = ['Basics', 'Scope', 'Materials', 'Payout', 'Review'];
+
 export default function PostJobScreen() {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [loading, setLoading] = useState(false);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [error, setError] = useState('');
@@ -26,6 +30,9 @@ export default function PostJobScreen() {
     title: '',
     industry: 'Fencing',
     scope_of_work: '',
+    estimated_days: '1',
+    start_window_start: '',
+    start_window_end: '',
     material_supplier: '',
     material_supplier_address: '',
     material_status: 'on_site' as MaterialStatus,
@@ -33,9 +40,6 @@ export default function PostJobScreen() {
     city: '',
     state: '',
     zip: '',
-    estimated_days: '1',
-    start_window_start: '',
-    start_window_end: '',
     install_price: '',
     sub_payout: '',
     homeowner_name: '',
@@ -61,40 +65,63 @@ export default function PostJobScreen() {
     return (val: string) => setForm(f => ({ ...f, [key]: val }));
   }
 
-  function validateStep() {
+  function validateStep(): boolean {
     if (step === 1) {
-      if (!form.title || !form.scope_of_work || !form.material_supplier) {
-        setError('Fill in all scope fields.'); return false;
-      }
+      if (!form.title) { setError('Job title is required.'); return false; }
     }
     if (step === 2) {
-      if (!form.address || !form.city || !form.state || !form.zip || !form.sub_payout || !form.estimated_days) {
-        setError('Fill in all logistics fields.'); return false;
+      if (!form.scope_of_work || !form.estimated_days) {
+        setError('Scope of work and estimated days are required.'); return false;
       }
+    }
+    if (step === 3) {
+      if (!form.material_supplier) { setError('Material supplier is required.'); return false; }
+    }
+    if (step === 4) {
+      if (!form.address || !form.city || !form.state || !form.zip || !form.sub_payout) {
+        setError('All location and payout fields are required.'); return false;
+      }
+      const sp = parseFloat(form.sub_payout);
+      if (isNaN(sp) || sp <= 0) { setError('Sub payout must be a dollar amount greater than zero.'); return false; }
     }
     setError('');
     return true;
   }
 
+  function next() { if (validateStep()) setStep(s => (s + 1) as any); }
+  function back() { setError(''); setStep(s => (s - 1) as any); }
+
   async function handleSubmit() {
     if (!form.homeowner_name || !form.homeowner_phone) {
       setError('Homeowner name and phone are required.'); return;
     }
-    const subPayout = parseFloat(form.sub_payout);
-    const installPrice = parseFloat(form.install_price);
-    if (isNaN(subPayout) || subPayout <= 0) {
-      setError('Sub payout is required. Go back to Logistics and enter a dollar amount.'); return;
-    }
+    if (!feeAgreed) { setError('You must acknowledge the platform fee to post.'); return; }
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
     if (!user) { setError('Session expired. Please sign in again.'); setLoading(false); return; }
+    const subPayout = parseFloat(form.sub_payout);
+    const installPrice = parseFloat(form.install_price);
     const { error: err } = await supabase.from('jobs').insert({
       contractor_id: user.id,
-      ...form,
+      title: form.title,
+      industry: form.industry,
+      scope_of_work: form.scope_of_work,
       estimated_days: parseInt(form.estimated_days, 10),
+      start_window_start: form.start_window_start || null,
+      start_window_end: form.start_window_end || null,
+      material_supplier: form.material_supplier,
+      material_supplier_address: form.material_supplier_address,
+      material_status: form.material_status,
+      address: form.address,
+      city: form.city,
+      state: form.state,
+      zip: form.zip,
       install_price: isNaN(installPrice) ? null : installPrice,
       sub_payout: subPayout,
+      homeowner_name: form.homeowner_name,
+      homeowner_phone: form.homeowner_phone,
+      homeowner_email: form.homeowner_email,
       status: 'posted',
     });
     setLoading(false);
@@ -111,13 +138,9 @@ export default function PostJobScreen() {
           <Text style={styles.paymentGateTitle}>Payment Method Required</Text>
           <Text style={styles.paymentGateBody}>
             You need to add a payment method before you can post jobs.
-            SubHub holds payment in escrow when a sub claims your job — we
-            need your card on file first.
+            SubHub holds payment in escrow when a sub claims your job.
           </Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.navigate('/(contractor)/profile')}
-          >
+          <TouchableOpacity style={styles.button} onPress={() => router.navigate('/(contractor)/profile')}>
             <Text style={styles.buttonText}>Add Payment Method →</Text>
           </TouchableOpacity>
         </View>
@@ -131,13 +154,55 @@ export default function PostJobScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
+      {/* ── Step 1: Basics ── */}
       {step === 1 && (
         <>
-          <Section title="Scope & Materials">
+          <Section title="Job Basics">
             <Field label="Job Title" value={form.title} onChangeText={set('title')} placeholder="e.g. 6ft Cedar Privacy Fence — 150 LF" />
-            <Field label="Scope of Work" value={form.scope_of_work} onChangeText={set('scope_of_work')} placeholder="Describe exactly what needs to be installed..." multiline />
-            <Field label="Material Supplier" value={form.material_supplier} onChangeText={set('material_supplier')} placeholder="e.g. Home Depot, Sherwood Lumber" />
-            <Field label="Supplier Address" value={form.material_supplier_address} onChangeText={set('material_supplier_address')} placeholder="123 Main St, City, ST" />
+            <Text style={styles.label}>Industry</Text>
+            <View style={styles.industryGrid}>
+              {INDUSTRIES.map(ind => (
+                <TouchableOpacity
+                  key={ind}
+                  style={[styles.industryChip, form.industry === ind && styles.industryChipSelected]}
+                  onPress={() => setForm(f => ({ ...f, industry: ind }))}
+                >
+                  <Text style={[styles.industryChipText, form.industry === ind && styles.industryChipTextSelected]}>
+                    {ind}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Section>
+          <TouchableOpacity style={styles.button} onPress={next}>
+            <Text style={styles.buttonText}>Next: Scope →</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {/* ── Step 2: Scope ── */}
+      {step === 2 && (
+        <>
+          <Section title="Scope of Work">
+            <Field
+              label="Describe the job in full"
+              value={form.scope_of_work}
+              onChangeText={set('scope_of_work')}
+              placeholder="Describe exactly what needs to be installed. Be specific — a sub should be able to say yes without calling you."
+              multiline
+            />
+            <Field label="Estimated Days to Complete" value={form.estimated_days} onChangeText={set('estimated_days')} keyboardType="number-pad" />
+            <Field label="Earliest Start Date" value={form.start_window_start} onChangeText={set('start_window_start')} placeholder="MM/DD/YYYY" />
+            <Field label="Latest Start Date" value={form.start_window_end} onChangeText={set('start_window_end')} placeholder="MM/DD/YYYY" />
+          </Section>
+          <NavRow onBack={back} onNext={next} nextLabel="Next: Materials →" />
+        </>
+      )}
+
+      {/* ── Step 3: Materials ── */}
+      {step === 3 && (
+        <>
+          <Section title="Materials">
             <Text style={styles.label}>Material Status</Text>
             <View style={styles.optionGroup}>
               {MATERIAL_OPTIONS.map(opt => (
@@ -153,42 +218,50 @@ export default function PostJobScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+            <Field label="Material Supplier" value={form.material_supplier} onChangeText={set('material_supplier')} placeholder="e.g. Home Depot, Sherwood Lumber" />
+            <Field label="Supplier Address" value={form.material_supplier_address} onChangeText={set('material_supplier_address')} placeholder="123 Main St, City, ST" />
           </Section>
-          <TouchableOpacity style={styles.button} onPress={() => { if (validateStep()) setStep(2); }}>
-            <Text style={styles.buttonText}>Next: Logistics →</Text>
-          </TouchableOpacity>
+          <NavRow onBack={back} onNext={next} nextLabel="Next: Payout →" />
         </>
       )}
 
-      {step === 2 && (
+      {/* ── Step 4: Payout & Location ── */}
+      {step === 4 && (
         <>
-          <Section title="Job Logistics">
+          <Section title="Payout & Location">
             <Field label="Street Address" value={form.address} onChangeText={set('address')} />
             <View style={styles.row}>
               <View style={styles.flex}><Field label="City" value={form.city} onChangeText={set('city')} /></View>
               <View style={styles.w80}><Field label="State" value={form.state} onChangeText={set('state')} placeholder="TX" /></View>
               <View style={styles.w80}><Field label="ZIP" value={form.zip} onChangeText={set('zip')} keyboardType="number-pad" /></View>
             </View>
-            <Field label="Estimated Days to Complete" value={form.estimated_days} onChangeText={set('estimated_days')} keyboardType="number-pad" />
-            <Field label="Start Window — Earliest Date" value={form.start_window_start} onChangeText={set('start_window_start')} placeholder="MM/DD/YYYY" />
-            <Field label="Start Window — Latest Date" value={form.start_window_end} onChangeText={set('start_window_end')} placeholder="MM/DD/YYYY" />
             <Field label="Total Install Price ($)" value={form.install_price} onChangeText={set('install_price')} keyboardType="decimal-pad" placeholder="0.00" />
-            <Field label="Sub Payout ($)" value={form.sub_payout} onChangeText={set('sub_payout')} keyboardType="decimal-pad" placeholder="0.00" />
+            <View style={styles.payoutBox}>
+              <Field label="Sub Payout ($)" value={form.sub_payout} onChangeText={set('sub_payout')} keyboardType="decimal-pad" placeholder="0.00" />
+              <Text style={styles.payoutNote}>
+                This is what the sub earns. The platform fee is deducted from this amount before release.
+              </Text>
+            </View>
           </Section>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.backButton} onPress={() => setStep(1)}>
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.flex]} onPress={() => { if (validateStep()) setStep(3); }}>
-              <Text style={styles.buttonText}>Next: Closeout →</Text>
-            </TouchableOpacity>
-          </View>
+          <NavRow onBack={back} onNext={next} nextLabel="Next: Review →" />
         </>
       )}
 
-      {step === 3 && (
+      {/* ── Step 5: Review & Homeowner ── */}
+      {step === 5 && (
         <>
-          <Section title="Homeowner & Closeout">
+          <View style={styles.reviewCard}>
+            <Text style={styles.reviewTitle}>{form.title || 'Untitled Job'}</Text>
+            <Text style={styles.reviewLocation}>{[form.city, form.state].filter(Boolean).join(', ')}</Text>
+            <View style={styles.reviewChips}>
+              {form.sub_payout ? <Chip>${parseFloat(form.sub_payout).toFixed(0)} payout</Chip> : null}
+              {form.estimated_days ? <Chip>{form.estimated_days} day{form.estimated_days !== '1' ? 's' : ''}</Chip> : null}
+              <Chip>{form.industry}</Chip>
+              <Chip>{MATERIAL_OPTIONS.find(m => m.value === form.material_status)?.label ?? ''}</Chip>
+            </View>
+          </View>
+
+          <Section title="Homeowner Contact">
             <View style={styles.notice}>
               <Text style={styles.noticeText}>
                 Homeowner contact info is masked in the app. Subcontractors communicate through SubHub only.
@@ -198,7 +271,7 @@ export default function PostJobScreen() {
             <Field label="Homeowner Phone" value={form.homeowner_phone} onChangeText={set('homeowner_phone')} keyboardType="phone-pad" />
             <Field label="Homeowner Email" value={form.homeowner_email} onChangeText={set('homeowner_email')} keyboardType="email-address" />
           </Section>
-          {/* Fee disclaimer + required checkbox */}
+
           <TouchableOpacity style={styles.feeBox} onPress={() => setFeeAgreed(v => !v)} activeOpacity={0.85}>
             <View style={[styles.checkbox, feeAgreed && styles.checkboxOn]}>
               {feeAgreed && <Text style={styles.checkmark}>✓</Text>}
@@ -211,7 +284,7 @@ export default function PostJobScreen() {
           </TouchableOpacity>
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.backButton} onPress={() => setStep(2)}>
+            <TouchableOpacity style={styles.backButton} onPress={back}>
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -228,6 +301,27 @@ export default function PostJobScreen() {
   );
 }
 
+function NavRow({ onBack, onNext, nextLabel }: { onBack: () => void; onNext: () => void; nextLabel: string }) {
+  return (
+    <View style={styles.buttonRow}>
+      <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <Text style={styles.backButtonText}>← Back</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.button, styles.flex]} onPress={onNext}>
+        <Text style={styles.buttonText}>{nextLabel}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <View style={styles.chip}>
+      <Text style={styles.chipText}>{children}</Text>
+    </View>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -240,7 +334,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function StepIndicator({ current }: { current: number }) {
   return (
     <View style={styles.steps}>
-      {['Scope', 'Logistics', 'Closeout'].map((label, i) => (
+      {STEPS.map((label, i) => (
         <View key={label} style={styles.stepItem}>
           <View style={[styles.stepDot, current === i + 1 && styles.stepDotActive, current > i + 1 && styles.stepDotDone]}>
             <Text style={[styles.stepNum, (current === i + 1 || current > i + 1) && styles.stepNumActive]}>
@@ -304,6 +398,19 @@ const styles = StyleSheet.create({
     padding: spacing.md, fontSize: fontSize.md, color: colors.text, backgroundColor: colors.surface,
   },
   inputMultiline: { height: 100 },
+  industryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  industryChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  industryChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  industryChipText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '500' },
+  industryChipTextSelected: { color: colors.white },
+  payoutBox: { gap: spacing.xs },
+  payoutNote: { fontSize: fontSize.xs, color: colors.textMuted, fontStyle: 'italic' },
+  reviewCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, gap: spacing.sm },
+  reviewTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
+  reviewLocation: { fontSize: fontSize.sm, color: colors.textMuted },
+  reviewChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs },
+  chip: { backgroundColor: colors.surfaceAlt, borderRadius: 999, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  chipText: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '500' },
   row: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1 },
   w80: { width: 80 },

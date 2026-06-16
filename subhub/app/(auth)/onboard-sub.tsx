@@ -18,6 +18,7 @@ export default function OnboardSubScreen() {
     service_area_zip: '',
     service_area_miles: '75',
   });
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,6 +31,7 @@ export default function OnboardSubScreen() {
     for (const field of required) {
       if (!form[field]) { setError(`${field.replace(/_/g, ' ')} is required.`); return; }
     }
+    if (!termsAgreed) { setError('You must agree to the platform terms to continue.'); return; }
     setLoading(true);
     setError('');
     const { data: { session } } = await supabase.auth.getSession();
@@ -65,13 +67,33 @@ export default function OnboardSubScreen() {
       <Field label="How far will you travel? (miles)" value={form.service_area_miles} onChangeText={set('service_area_miles')} keyboardType="number-pad" />
 
       <View style={styles.notice}>
+        <Text style={styles.noticeTitle}>How SubHub works</Text>
         <Text style={styles.noticeText}>
-          SubHub takes a percentage of your payout when you get paid. All payments flow through
-          the app — no direct cash deals. Off-platform work is a Terms of Service violation.
+          SubHub takes a percentage of your payout when you get paid. The payout is locked when you
+          claim the job — no negotiation on site. All payments flow through the app. Contractors can't
+          pay you directly, and you can't request off-platform payment.
+        </Text>
+        <Text style={[styles.noticeText, { marginTop: spacing.xs }]}>
+          All communication with contractors happens through SubHub. Sharing contact info or taking
+          work directly is a Terms of Service violation and results in account suspension.
         </Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
+      <TouchableOpacity style={styles.agreeBox} onPress={() => setTermsAgreed(v => !v)} activeOpacity={0.85}>
+        <View style={[styles.checkbox, termsAgreed && styles.checkboxOn]}>
+          {termsAgreed && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={styles.agreeText}>
+          I understand SubHub takes a platform fee from my payout. I will not accept or solicit
+          off-platform payments. All communication with contractors happens through SubHub.
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.button, !termsAgreed && styles.buttonDisabled]}
+        onPress={handleSubmit}
+        disabled={loading || !termsAgreed}
+      >
         {loading
           ? <ActivityIndicator color={colors.white} />
           : <Text style={styles.buttonText}>Create Profile & Browse Jobs</Text>}
@@ -106,25 +128,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.xl, gap: spacing.md, paddingBottom: spacing.xxl },
   heading: { fontSize: fontSize.xxl, fontWeight: '700', color: colors.text },
-  subheading: { fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
-  error: {
-    color: colors.error, fontSize: fontSize.sm, backgroundColor: '#fef2f2',
-    padding: spacing.sm, borderRadius: radius.sm,
-  },
+  subheading: { fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 22 },
+  error: { color: colors.error, fontSize: fontSize.sm, backgroundColor: '#fef2f2', padding: spacing.sm, borderRadius: radius.sm },
   field: { gap: spacing.xs },
   label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
-  input: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
-    padding: spacing.md, fontSize: fontSize.md, color: colors.text, backgroundColor: colors.surface,
-  },
-  notice: {
-    backgroundColor: colors.surfaceAlt, borderRadius: radius.md,
-    padding: spacing.md, borderLeftWidth: 3, borderLeftColor: colors.accent,
-  },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, fontSize: fontSize.md, color: colors.text, backgroundColor: colors.surface },
+  notice: { backgroundColor: colors.accentLight, borderRadius: radius.md, padding: spacing.md, borderLeftWidth: 3, borderLeftColor: colors.accent, gap: spacing.xs },
+  noticeTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.accent },
   noticeText: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
-  button: {
-    backgroundColor: colors.accent, borderRadius: radius.md,
-    padding: spacing.md, alignItems: 'center', marginTop: spacing.sm,
-  },
+  agreeBox: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, backgroundColor: '#fef3c7', borderRadius: radius.md, padding: spacing.md, borderLeftWidth: 4, borderLeftColor: colors.warning },
+  agreeText: { flex: 1, fontSize: fontSize.sm, color: '#78350f', lineHeight: 22 },
+  checkbox: { width: 24, height: 24, borderRadius: 5, borderWidth: 2, borderColor: colors.warning, alignItems: 'center', justifyContent: 'center', marginTop: 2, flexShrink: 0, backgroundColor: colors.white },
+  checkboxOn: { backgroundColor: colors.warning, borderColor: colors.warning },
+  checkmark: { color: colors.white, fontSize: 14, fontWeight: '800' },
+  button: { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.sm },
   buttonText: { color: colors.white, fontSize: fontSize.md, fontWeight: '600' },
+  buttonDisabled: { opacity: 0.4 },
 });
