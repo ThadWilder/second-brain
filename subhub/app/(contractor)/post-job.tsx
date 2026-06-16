@@ -20,6 +20,7 @@ export default function PostJobScreen() {
   const [loading, setLoading] = useState(false);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [error, setError] = useState('');
+  const [feeAgreed, setFeeAgreed] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -197,11 +198,27 @@ export default function PostJobScreen() {
             <Field label="Homeowner Phone" value={form.homeowner_phone} onChangeText={set('homeowner_phone')} keyboardType="phone-pad" />
             <Field label="Homeowner Email" value={form.homeowner_email} onChangeText={set('homeowner_email')} keyboardType="email-address" />
           </Section>
+          {/* Fee disclaimer + required checkbox */}
+          <TouchableOpacity style={styles.feeBox} onPress={() => setFeeAgreed(v => !v)} activeOpacity={0.85}>
+            <View style={[styles.checkbox, feeAgreed && styles.checkboxOn]}>
+              {feeAgreed && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.feeText}>
+              I understand that SubHub charges a platform fee on this job. The fee covers payment
+              processing, escrow, dispute resolution, and platform maintenance. The fee is deducted
+              from the sub payout before release — no additional charge to me.
+            </Text>
+          </TouchableOpacity>
+
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.backButton} onPress={() => setStep(2)}>
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.flex]} onPress={handleSubmit} disabled={loading}>
+            <TouchableOpacity
+              style={[styles.button, styles.flex, !feeAgreed && styles.buttonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading || !feeAgreed}
+            >
               {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Post Job</Text>}
             </TouchableOpacity>
           </View>
@@ -316,6 +333,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   backButtonText: { color: colors.text, fontSize: fontSize.md },
+  feeBox: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md,
+    backgroundColor: '#fef3c7', borderRadius: radius.md,
+    padding: spacing.md, borderLeftWidth: 4, borderLeftColor: colors.warning,
+  },
+  feeText: { flex: 1, fontSize: fontSize.md, color: '#78350f', lineHeight: 26 },
+  checkbox: {
+    width: 28, height: 28, borderRadius: 6, borderWidth: 2,
+    borderColor: colors.warning, alignItems: 'center', justifyContent: 'center',
+    marginTop: 2, flexShrink: 0, backgroundColor: colors.white,
+  },
+  checkboxOn: { backgroundColor: colors.warning, borderColor: colors.warning },
+  checkmark: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  buttonDisabled: { opacity: 0.4 },
   paymentGate: {
     flex: 1, justifyContent: 'center', alignItems: 'center',
     gap: spacing.lg, padding: spacing.xl, marginTop: spacing.xxl,
