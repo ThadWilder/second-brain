@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
 import { supabase } from '@/lib/supabase';
@@ -59,7 +59,7 @@ export default function AddPaymentScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.heading}>Payment Method</Text>
       <Text style={styles.subheading}>
         SubHub charges your card when a job is complete and a subcontractor is paid out.
@@ -97,12 +97,13 @@ export default function AddPaymentScreen() {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.xl, gap: spacing.lg },
+  container: { flex: 1, backgroundColor: colors.background },
+  contentContainer: { padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxl },
   heading: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.text },
   subheading: { fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20 },
   doneBox: { alignItems: 'center', gap: spacing.md, padding: spacing.xl },
