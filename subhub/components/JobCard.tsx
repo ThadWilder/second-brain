@@ -26,9 +26,10 @@ interface JobCardProps {
   job: Job;
   onPress: () => void;
   variant?: 'board' | 'manage';
+  onMessage?: () => void;
 }
 
-export default function JobCard({ job, onPress, variant = 'board' }: JobCardProps) {
+export default function JobCard({ job, onPress, variant = 'board', onMessage }: JobCardProps) {
   const payout = job.sub_payout.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
   return (
@@ -59,6 +60,15 @@ export default function JobCard({ job, onPress, variant = 'board' }: JobCardProp
 
       {variant === 'board' && (
         <Text style={styles.scope} numberOfLines={2}>{job.scope_of_work}</Text>
+      )}
+      {variant === 'manage' && onMessage && job.claimed_by && (
+        <TouchableOpacity
+          style={styles.messageRow}
+          onPress={(e) => { e.stopPropagation?.(); onMessage(); }}
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+        >
+          <Text style={styles.messageRowText}>💬 Message Sub</Text>
+        </TouchableOpacity>
       )}
     </TouchableOpacity>
   );
@@ -111,4 +121,9 @@ const styles = StyleSheet.create({
   statusBadge: { borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3 },
   statusText: { fontSize: fontSize.xs, fontWeight: '600' },
   scope: { fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 18 },
+  messageRow: {
+    borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  messageRowText: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '600' },
 });

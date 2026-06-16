@@ -63,6 +63,7 @@ export default function ContractorDashboard() {
               job={item}
               variant="manage"
               onPress={() => router.push(`/(contractor)/jobs/${item.id}`)}
+              onMessage={item.claimed_by ? () => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: item.id } }) : undefined}
             />
           )}
           ListEmptyComponent={<EmptyState filter={filter} />}

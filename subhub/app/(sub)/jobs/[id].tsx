@@ -156,6 +156,19 @@ export default function SubJobDetailScreen() {
 
         <Divider />
 
+        {/* Dispute banner */}
+        {job.status === 'disputed' && (
+          <View style={styles.disputedBanner}>
+            <Text style={styles.disputedTitle}>⚠️ Dispute Filed</Text>
+            {(job as any).dispute_reason && (
+              <Text style={styles.disputedReason}>Contractor's concern: "{(job as any).dispute_reason}"</Text>
+            )}
+            <Text style={styles.disputedNote}>
+              SubHub has been notified. Use the message thread to work toward a resolution with your contractor.
+            </Text>
+          </View>
+        )}
+
         {/* Change orders alert */}
         {openChangeOrders.length > 0 && (
           <View style={styles.alertBanner}>
@@ -445,4 +458,11 @@ const styles = StyleSheet.create({
     padding: spacing.sm, alignItems: 'center', marginTop: spacing.sm,
   },
   messageButtonText: { color: colors.accent, fontSize: fontSize.sm, fontWeight: '600' },
+  disputedBanner: {
+    backgroundColor: '#fef2f2', borderRadius: radius.md, padding: spacing.md,
+    gap: spacing.xs, borderLeftWidth: 3, borderLeftColor: colors.error,
+  },
+  disputedTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.error },
+  disputedReason: { fontSize: fontSize.sm, color: colors.text, fontStyle: 'italic' },
+  disputedNote: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
 });

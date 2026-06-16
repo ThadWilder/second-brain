@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, TextInput,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -24,6 +24,9 @@ export default function ContractorJobDetailScreen() {
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [disputing, setDisputing] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [submittingDispute, setSubmittingDispute] = useState(false);
 
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -62,6 +65,52 @@ export default function ContractorJobDetailScreen() {
               Alert.alert('Payment Failed', (err as Error).message);
             } finally {
               setPaying(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleDispute() {
+    if (!disputeReason.trim()) { Alert.alert('Required', 'Please describe the issue before filing a dispute.'); return; }
+    setSubmittingDispute(true);
+    await supabase.from('jobs').update({ status: 'disputed', dispute_reason: disputeReason.trim() }).eq('id', id);
+    setSubmittingDispute(false);
+    setDisputing(false);
+    setDisputeReason('');
+    fetchAll();
+  }
+
+  async function handleResolveDispute(approve: boolean) {
+    Alert.alert(
+      approve ? 'Approve & Release Payment?' : 'Cancel Job?',
+      approve
+        ? 'This releases payment to the sub and closes the dispute.'
+        : 'This cancels the job. No payment will be released.',
+      [
+        { text: 'Back', style: 'cancel' },
+        {
+          text: approve ? 'Release Payment' : 'Cancel Job',
+          style: approve ? 'default' : 'destructive',
+          onPress: async () => {
+            if (approve) {
+              setPaying(true);
+              try {
+                const clientSecret = await createPaymentIntent(id);
+                const { error } = await confirmPayment(clientSecret);
+                if (error) throw new Error(error.message);
+                await initiateSubPayout(id);
+                await notify.paymentReleased(job!.claimed_by!, job!.sub_payout);
+                fetchAll();
+              } catch (err) {
+                Alert.alert('Payment Failed', (err as Error).message);
+              } finally {
+                setPaying(false);
+              }
+            } else {
+              await supabase.from('jobs').update({ status: 'draft', claimed_by: null, claimed_at: null }).eq('id', id);
+              router.back();
             }
           },
         },
@@ -205,22 +254,93 @@ export default function ContractorJobDetailScreen() {
         {job.status === 'in_progress' && (
           <View style={styles.footerRow}>
             <TouchableOpacity
-              style={[styles.secondaryButton]}
+              style={[styles.secondaryButton, styles.flex]}
               onPress={() => router.push({ pathname: '/(contractor)/change-order', params: { jobId: id } })}
             >
               <Text style={styles.secondaryButtonText}>File Change Order</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
+            >
+              <Text style={styles.messageButtonText}>💬 Message</Text>
+            </TouchableOpacity>
           </View>
         )}
-        {isPendingReview && (
+        {job.status === 'claimed' && sub && (
+          <TouchableOpacity
+            style={styles.messageButtonFull}
+            onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
+          >
+            <Text style={styles.messageButtonText}>💬 Message Sub</Text>
+          </TouchableOpacity>
+        )}
+        {isPendingReview && !disputing && (
           <View style={styles.reviewBox}>
             <Text style={styles.reviewTitle}>Sub has marked this job complete</Text>
-            <Text style={styles.reviewSub}>Review photos and sign-off, then release payment.</Text>
-            <TouchableOpacity style={styles.payButton} onPress={handleReleasePayment} disabled={paying}>
-              {paying
-                ? <ActivityIndicator color={colors.white} />
-                : <Text style={styles.payButtonText}>Release Payment — {formatCurrency(job.sub_payout)}</Text>}
+            <Text style={styles.reviewSub}>Review photos and sign-off, then release payment or file a dispute.</Text>
+            <View style={styles.footerRow}>
+              <TouchableOpacity style={[styles.payButton, styles.flex]} onPress={handleReleasePayment} disabled={paying}>
+                {paying
+                  ? <ActivityIndicator color={colors.white} />
+                  : <Text style={styles.payButtonText}>Release Payment — {formatCurrency(job.sub_payout)}</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.disputeButton} onPress={() => setDisputing(true)}>
+                <Text style={styles.disputeButtonText}>Dispute</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.messageButtonFull}
+              onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
+            >
+              <Text style={styles.messageButtonText}>💬 Message Sub</Text>
             </TouchableOpacity>
+          </View>
+        )}
+        {isPendingReview && disputing && (
+          <View style={styles.disputeForm}>
+            <Text style={styles.disputeFormTitle}>What's the issue?</Text>
+            <TextInput
+              style={styles.disputeInput}
+              value={disputeReason}
+              onChangeText={setDisputeReason}
+              placeholder="Describe the problem — missing work, wrong install, safety issue..."
+              placeholderTextColor={colors.textLight}
+              multiline
+              numberOfLines={3}
+              autoFocus
+            />
+            <View style={styles.footerRow}>
+              <TouchableOpacity style={[styles.secondaryButton, styles.flex]} onPress={() => setDisputing(false)}>
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.disputeSubmitButton, styles.flex]}
+                onPress={handleDispute}
+                disabled={submittingDispute || !disputeReason.trim()}
+              >
+                {submittingDispute
+                  ? <ActivityIndicator color={colors.white} />
+                  : <Text style={styles.disputeSubmitText}>File Dispute</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        {job.status === 'disputed' && (
+          <View style={styles.disputedBox}>
+            <Text style={styles.disputedTitle}>⚠️ Dispute in Progress</Text>
+            {(job as any).dispute_reason && (
+              <Text style={styles.disputedReason}>"{(job as any).dispute_reason}"</Text>
+            )}
+            <Text style={styles.disputedSub}>Choose how to resolve this job.</Text>
+            <View style={styles.footerRow}>
+              <TouchableOpacity style={[styles.payButton, styles.flex]} onPress={() => handleResolveDispute(true)} disabled={paying}>
+                {paying ? <ActivityIndicator color={colors.white} /> : <Text style={styles.payButtonText}>Approve & Pay</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.disputeButton]} onPress={() => handleResolveDispute(false)}>
+                <Text style={styles.disputeButtonText}>Cancel Job</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>
@@ -316,4 +436,38 @@ const styles = StyleSheet.create({
     padding: spacing.md, alignItems: 'center',
   },
   payButtonText: { color: colors.white, fontSize: fontSize.md, fontWeight: '700' },
+  flex: { flex: 1 },
+  messageButton: {
+    borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, padding: spacing.sm, alignItems: 'center', justifyContent: 'center',
+  },
+  messageButtonFull: {
+    borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md,
+    padding: spacing.sm, alignItems: 'center',
+  },
+  messageButtonText: { color: colors.primary, fontSize: fontSize.sm, fontWeight: '600' },
+  disputeButton: {
+    borderWidth: 1, borderColor: colors.error, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, padding: spacing.sm, alignItems: 'center', justifyContent: 'center',
+  },
+  disputeButtonText: { color: colors.error, fontSize: fontSize.sm, fontWeight: '600' },
+  disputeForm: { gap: spacing.sm },
+  disputeFormTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
+  disputeInput: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    padding: spacing.sm, fontSize: fontSize.sm, color: colors.text,
+    backgroundColor: colors.surface, minHeight: 72, textAlignVertical: 'top',
+  },
+  disputeSubmitButton: {
+    backgroundColor: colors.error, borderRadius: radius.md,
+    padding: spacing.sm, alignItems: 'center',
+  },
+  disputeSubmitText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
+  disputedBox: {
+    backgroundColor: '#fef2f2', borderRadius: radius.md, padding: spacing.md,
+    gap: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.error,
+  },
+  disputedTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.error },
+  disputedReason: { fontSize: fontSize.sm, color: colors.text, fontStyle: 'italic' },
+  disputedSub: { fontSize: fontSize.sm, color: colors.textMuted },
 });
