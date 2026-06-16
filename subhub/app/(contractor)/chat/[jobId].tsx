@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -30,7 +30,14 @@ export default function ContractorChat() {
       ]);
 
       setMessages(msgs ?? []);
-      if (job) navigation.setOptions({ title: job.title });
+      if (job) navigation.setOptions({
+        title: job.title,
+        headerRight: () => (
+          <TouchableOpacity onPress={handleCall} style={{ paddingHorizontal: 12 }}>
+            <Text style={{ fontSize: 22 }}>📞</Text>
+          </TouchableOpacity>
+        ),
+      });
       setLoading(false);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50);
 
@@ -48,6 +55,25 @@ export default function ContractorChat() {
 
     return () => { if (channel) supabase.removeChannel(channel); };
   }, [jobId]);
+
+  async function handleCall() {
+    Alert.alert(
+      'Call via SubHub',
+      'SubHub will call your phone and connect you to the subcontractor. Neither party will see the other\'s real number.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call Now',
+          onPress: async () => {
+            const { error } = await supabase.functions.invoke('call-connect', {
+              body: { jobId },
+            });
+            if (error) Alert.alert('Error', 'Could not connect the call. Make sure your phone number is set in your profile.');
+          },
+        },
+      ]
+    );
+  }
 
   async function send() {
     const body = text.trim();

@@ -7,6 +7,8 @@ import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
+const SKILLS = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
+
 export default function OnboardSubScreen() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -17,10 +19,18 @@ export default function OnboardSubScreen() {
     tax_id: '',
     service_area_zip: '',
     service_area_miles: '75',
+    phone_number: '',
   });
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(['Fencing']);
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  function toggleSkill(skill: string) {
+    setSelectedSkills(prev =>
+      prev.includes(skill) ? (prev.length > 1 ? prev.filter(s => s !== skill) : prev) : [...prev, skill]
+    );
+  }
 
   function set(key: keyof typeof form) {
     return (val: string) => setForm(f => ({ ...f, [key]: val }));
@@ -39,9 +49,15 @@ export default function OnboardSubScreen() {
     if (!user) { setError('Session expired. Please sign in again.'); setLoading(false); return; }
     const { error: err } = await supabase.from('sub_profiles').insert({
       user_id: user.id,
-      ...form,
+      name: form.name,
+      license_number: form.license_number,
+      insurance_number: form.insurance_number,
+      insurance_expiry: form.insurance_expiry,
+      tax_id: form.tax_id,
+      service_area_zip: form.service_area_zip,
       service_area_miles: parseInt(form.service_area_miles, 10) || 75,
-      skills: ['fencing'],
+      phone_number: form.phone_number || null,
+      skills: selectedSkills,
       payout_type: 'bank',
       verified: false,
     });
@@ -65,6 +81,23 @@ export default function OnboardSubScreen() {
       <Field label="Tax ID / EIN" value={form.tax_id} onChangeText={set('tax_id')} placeholder="XX-XXXXXXX" />
       <Field label="Home Zip Code" value={form.service_area_zip} onChangeText={set('service_area_zip')} keyboardType="number-pad" />
       <Field label="How far will you travel? (miles)" value={form.service_area_miles} onChangeText={set('service_area_miles')} keyboardType="number-pad" />
+      <Field label="Mobile Phone (for SubHub calls)" value={form.phone_number} onChangeText={set('phone_number')} keyboardType="phone-pad" placeholder="+1 (555) 000-0000" />
+
+      <Text style={styles.label}>Your skills / trades</Text>
+      <View style={styles.chipGrid}>
+        {SKILLS.map(skill => {
+          const selected = selectedSkills.includes(skill);
+          return (
+            <TouchableOpacity
+              key={skill}
+              style={[styles.chip, selected && styles.chipSelected]}
+              onPress={() => toggleSkill(skill)}
+            >
+              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{skill}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       <View style={styles.notice}>
         <Text style={styles.noticeTitle}>How SubHub works</Text>
@@ -144,4 +177,9 @@ const styles = StyleSheet.create({
   button: { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.sm },
   buttonText: { color: colors.white, fontSize: fontSize.md, fontWeight: '600' },
   buttonDisabled: { opacity: 0.4 },
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '500' },
+  chipTextSelected: { color: colors.white },
 });

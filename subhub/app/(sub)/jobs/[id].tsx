@@ -139,6 +139,21 @@ export default function SubJobDetailScreen() {
           </View>
         )}
 
+        {job.contractor && (
+          <View style={styles.rateCard}>
+            <Text style={styles.rateCardTitle}>Pre-Agreed Fee Schedule</Text>
+            <Text style={styles.rateCardNote}>These rates auto-apply to all change orders on this job.</Text>
+            <View style={styles.rateGrid}>
+              <RateChip label="Delay pay" value={`$${(job.contractor as any).delay_pay_rate_per_hour ?? 35}/hr`} />
+              <RateChip label="Add-on" value={`$${(job.contractor as any).addon_pay_rate_per_lf ?? 15}/LF`} />
+              <RateChip label="Return trip" value={`$${(job.contractor as any).return_trip_fee ?? 150}`} />
+              <RateChip label="Change order fee" value={`$${(job.contractor as any).change_order_fee ?? 75}`} />
+              <RateChip label="Max delay liability" value={`$${(job.contractor as any).delay_liability_cap ?? 500}`} />
+              <RateChip label="Payment terms" value={`${(job.contractor as any).payment_terms_days ?? 14} days`} />
+            </View>
+          </View>
+        )}
+
         <Divider />
 
         {/* Change orders alert */}
@@ -299,6 +314,14 @@ export default function SubJobDetailScreen() {
             <Text style={styles.pendingText}>⏳ Waiting for contractor to review and release payment</Text>
           </View>
         )}
+        {isMine && (
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={() => router.push({ pathname: '/(sub)/chat/[jobId]', params: { jobId: id } })}
+          >
+            <Text style={styles.messageButtonText}>💬 Message Contractor</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -318,6 +341,15 @@ function InfoRow({ label, value, highlight }: { label: string; value: string; hi
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={[styles.infoValue, highlight && styles.infoValueHighlight]}>{value}</Text>
+    </View>
+  );
+}
+
+function RateChip({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.rateChip}>
+      <Text style={styles.rateChipLabel}>{label}</Text>
+      <Text style={styles.rateChipValue}>{value}</Text>
     </View>
   );
 }
@@ -395,4 +427,22 @@ const styles = StyleSheet.create({
     padding: spacing.md, alignItems: 'center',
   },
   reviewButtonText: { color: colors.accent, fontSize: fontSize.md, fontWeight: '700' },
+  rateCard: {
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.md,
+    gap: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.primary,
+  },
+  rateCardTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.primary },
+  rateCardNote: { fontSize: fontSize.xs, color: colors.textMuted },
+  rateGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  rateChip: {
+    backgroundColor: colors.background, borderRadius: radius.sm, paddingHorizontal: spacing.sm,
+    paddingVertical: 4, borderWidth: 1, borderColor: colors.border,
+  },
+  rateChipLabel: { fontSize: 10, color: colors.textMuted },
+  rateChipValue: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
+  messageButton: {
+    borderWidth: 1, borderColor: colors.accent, borderRadius: radius.md,
+    padding: spacing.sm, alignItems: 'center', marginTop: spacing.sm,
+  },
+  messageButtonText: { color: colors.accent, fontSize: fontSize.sm, fontWeight: '600' },
 });
