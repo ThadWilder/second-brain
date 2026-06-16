@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, ActivityIndicator,
-  TouchableOpacity, TextInput,
+  TouchableOpacity, TextInput, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -17,11 +17,14 @@ const SORTS: { label: string; value: SortKey }[] = [
   { label: '🆕 Newest', value: 'newest' },
 ];
 
+const INDUSTRIES = ['All', 'Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
+
 export default function JobBoardScreen() {
   const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [sort, setSort] = useState<SortKey>('newest');
   const [search, setSearch] = useState('');
+  const [industry, setIndustry] = useState('All');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +42,10 @@ export default function JobBoardScreen() {
   }
 
   const filtered = jobs
-    .filter(j => !search || j.title.toLowerCase().includes(search.toLowerCase()) || j.city.toLowerCase().includes(search.toLowerCase()))
+    .filter(j =>
+      (!search || j.title.toLowerCase().includes(search.toLowerCase()) || j.city.toLowerCase().includes(search.toLowerCase())) &&
+      (industry === 'All' || j.industry === industry)
+    )
     .sort((a, b) => {
       if (sort === 'payout') return b.sub_payout - a.sub_payout;
       if (sort === 'duration') return a.estimated_days - b.estimated_days;
@@ -56,6 +62,19 @@ export default function JobBoardScreen() {
           value={search}
           onChangeText={setSearch}
         />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.industryScroll} contentContainerStyle={styles.industryRow}>
+          {INDUSTRIES.map(ind => (
+            <TouchableOpacity
+              key={ind}
+              style={[styles.industryChip, industry === ind && styles.industryChipActive]}
+              onPress={() => setIndustry(ind)}
+            >
+              <Text style={[styles.industryText, industry === ind && styles.industryTextActive]}>
+                {ind}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
         <View style={styles.sortRow}>
           <Text style={styles.sortLabel}>Sort:</Text>
           {SORTS.map(s => (
@@ -111,6 +130,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
     padding: spacing.sm, fontSize: fontSize.md, color: colors.text, backgroundColor: colors.surface,
   },
+  industryScroll: { marginHorizontal: -spacing.md },
+  industryRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md },
+  industryChip: { paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  industryChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  industryText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '500' },
+  industryTextActive: { color: colors.white },
   sortRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   sortLabel: { fontSize: 20, color: colors.textMuted },
   sortChip: {
