@@ -36,11 +36,11 @@ export const radius = {
 };
 
 export const fontSize = {
-  xs: 11,
-  sm: 13,
-  md: 15,
-  lg: 17,
-  xl: 20,
-  xxl: 24,
-  xxxl: 30,
+  xs: 16,
+  sm: 18,
+  md: 22,
+  lg: 26,
+  xl: 30,
+  xxl: 36,
+  xxxl: 42,
 };
