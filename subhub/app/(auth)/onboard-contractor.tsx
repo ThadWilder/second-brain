@@ -12,16 +12,20 @@ const PAYMENT_TERMS = [
   { label: '14 days', value: '14' },
 ];
 
+const INDUSTRIES = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
+
 export default function OnboardContractorScreen() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [feeAgreed, setFeeAgreed] = useState(false);
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['Fencing']);
 
   const [form, setForm] = useState({
     business_name: '',
     contact_name: '',
+    phone_number: '',
     license_number: '',
     insurance_number: '',
     insurance_expiry: '',
@@ -34,6 +38,12 @@ export default function OnboardContractorScreen() {
     delay_liability_cap: '500',
     payment_terms_days: '14',
   });
+
+  function toggleIndustry(ind: string) {
+    setSelectedIndustries(prev =>
+      prev.includes(ind) ? (prev.length > 1 ? prev.filter(i => i !== ind) : prev) : [...prev, ind]
+    );
+  }
 
   function set(key: keyof typeof form) {
     return (val: string) => setForm(f => ({ ...f, [key]: val }));
@@ -64,7 +74,8 @@ export default function OnboardContractorScreen() {
       insurance_expiry: form.insurance_expiry,
       service_area_zip: form.service_area_zip,
       service_area_miles: parseInt(form.service_area_miles, 10) || 50,
-      scope_of_work: ['fencing'],
+      scope_of_work: selectedIndustries,
+      phone_number: form.phone_number || null,
       delay_pay_rate_per_hour: parseFloat(form.delay_pay_rate_per_hour) || 35,
       addon_pay_rate_per_lf: parseFloat(form.addon_pay_rate_per_lf) || 15,
       return_trip_fee: parseFloat(form.return_trip_fee) || 150,
@@ -91,11 +102,28 @@ export default function OnboardContractorScreen() {
 
           <Field label="Business Name" value={form.business_name} onChangeText={set('business_name')} />
           <Field label="Your Name" value={form.contact_name} onChangeText={set('contact_name')} />
+          <Field label="Mobile Phone (for SubHub calls)" value={form.phone_number} onChangeText={set('phone_number')} keyboardType="phone-pad" placeholder="+1 (555) 000-0000" />
           <Field label="License Number" value={form.license_number} onChangeText={set('license_number')} />
           <Field label="Insurance Policy Number" value={form.insurance_number} onChangeText={set('insurance_number')} />
           <Field label="Insurance Expiry (MM/YYYY)" value={form.insurance_expiry} onChangeText={set('insurance_expiry')} placeholder="06/2027" keyboardType="numbers-and-punctuation" />
           <Field label="Home Zip Code" value={form.service_area_zip} onChangeText={set('service_area_zip')} keyboardType="number-pad" />
           <Field label="Service Radius (miles)" value={form.service_area_miles} onChangeText={set('service_area_miles')} keyboardType="number-pad" />
+
+          <Text style={styles.label}>Industries you work in</Text>
+          <View style={styles.chipGrid}>
+            {INDUSTRIES.map(ind => {
+              const selected = selectedIndustries.includes(ind);
+              return (
+                <TouchableOpacity
+                  key={ind}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleIndustry(ind)}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{ind}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
           <TouchableOpacity style={styles.button} onPress={() => { if (validateStep1()) setStep(2); }}>
             <Text style={styles.buttonText}>Next: Fee Schedule →</Text>
@@ -244,4 +272,9 @@ const styles = StyleSheet.create({
   backButtonText: { color: colors.text, fontSize: fontSize.md },
   flex: { flex: 1 },
   buttonDisabled: { opacity: 0.4 },
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '500' },
+  chipTextSelected: { color: colors.white },
 });

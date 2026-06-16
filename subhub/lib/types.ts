@@ -29,6 +29,10 @@ export interface ContractorProfile {
   change_order_fee: number;
   delay_liability_cap: number;
   payment_terms_days: 10 | 14;
+  delay_pay_rate_per_hour: number;
+  addon_pay_rate_per_lf: number;
+  return_trip_fee: number;
+  phone_number?: string;
   stripe_customer_id?: string;
   created_at: string;
 }
@@ -44,6 +48,7 @@ export interface SubProfile {
   skills: string[];
   service_area_miles: number;
   service_area_zip: string;
+  phone_number?: string;
   payout_type: 'bank' | 'instant';
   stripe_account_id?: string;
   rating: number;
