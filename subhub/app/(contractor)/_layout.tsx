@@ -105,7 +105,7 @@ const s = StyleSheet.create({
   itemOn: {
     backgroundColor: '#dbeafe',
   },
-  icon: { fontSize: 36 },
+  icon: { fontSize: 26 },
   label: {
     fontSize: 33,
     color: colors.text,
