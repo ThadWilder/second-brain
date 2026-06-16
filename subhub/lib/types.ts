@@ -1,4 +1,4 @@
-export type UserRole = 'contractor' | 'subcontractor';
+export type UserRole = 'contractor' | 'subcontractor' | 'admin';
 
 export type JobStatus =
   | 'draft'

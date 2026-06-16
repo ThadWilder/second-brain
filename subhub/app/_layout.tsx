@@ -67,6 +67,7 @@ export default function RootLayout() {
   function redirectToRole(role: UserRole | null) {
     if (role === 'contractor') router.replace('/(contractor)/');
     else if (role === 'subcontractor') router.replace('/(sub)/');
+    else if (role === 'admin') router.replace('/(admin)/');
     else router.replace('/(auth)/signup');
   }
 
@@ -76,6 +77,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(contractor)" />
         <Stack.Screen name="(sub)" />
+        <Stack.Screen name="(admin)" />
       </Stack>
     </StripeProvider>
   );
