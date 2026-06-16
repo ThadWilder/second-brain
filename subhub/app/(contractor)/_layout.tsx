@@ -84,7 +84,7 @@ const s = StyleSheet.create({
     gap: 2,
   },
   logo: {
-    fontSize: 26,
+    fontSize: 40,
     fontWeight: '800',
     color: colors.primary,
     paddingHorizontal: spacing.lg,
