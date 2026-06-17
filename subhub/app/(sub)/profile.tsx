@@ -6,6 +6,7 @@ import { signOut } from '@/lib/auth';
 import RatingStars from '@/components/RatingStars';
 import PaymentStatus from '@/components/PaymentStatus';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
+import { tierMeta, profileCompletion, scoreColor } from '@/lib/reputation';
 import type { SubProfile } from '@/lib/types';
 
 const SKILLS = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
@@ -22,6 +23,7 @@ export default function SubProfileScreen() {
     service_area_miles: '',
     payout_type: 'bank' as 'bank' | 'instant',
     bio: '',
+    availability: 'available' as 'available' | 'busy',
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
@@ -38,6 +40,7 @@ export default function SubProfileScreen() {
         service_area_miles: String(data.service_area_miles ?? 75),
         payout_type: data.payout_type ?? 'bank',
         bio: (data as any).bio ?? '',
+        availability: (data as any).availability ?? 'available',
       });
       setSelectedSkills(data.skills ?? ['Fencing']);
     }
@@ -62,6 +65,7 @@ export default function SubProfileScreen() {
         skills: selectedSkills,
         payout_type: fields.payout_type,
         bio: fields.bio || null,
+        availability: fields.availability,
       })
       .eq('id', profile.id);
     setSaving(false);
@@ -69,6 +73,21 @@ export default function SubProfileScreen() {
       Alert.alert('Error', error.message);
     } else {
       setEditing(false);
+      fetchProfile();
+    }
+  }
+
+  async function toggleAvailability() {
+    if (!profile) return;
+    const next = (profile as any).availability === 'available' ? 'busy' : 'available';
+    const { error } = await supabase
+      .from('sub_profiles')
+      .update({ availability: next })
+      .eq('id', profile.id);
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      setFields(f => ({ ...f, availability: next }));
       fetchProfile();
     }
   }
@@ -92,7 +111,70 @@ export default function SubProfileScreen() {
             <Text style={styles.verifiedText}>✓ Verified</Text>
           </View>
         )}
+
+        <View
+          style={[
+            styles.tierBadge,
+            { backgroundColor: tierMeta((profile as any).tier).color + '20' },
+          ]}
+        >
+          <Text style={[styles.tierBadgeText, { color: tierMeta((profile as any).tier).color }]}>
+            {tierMeta((profile as any).tier).emoji} {tierMeta((profile as any).tier).label}
+          </Text>
+        </View>
+
+        {(profile as any).job_success_score != null ? (
+          <View style={styles.jssRow}>
+            <Text style={[styles.jssNumber, { color: scoreColor((profile as any).job_success_score) }]}>
+              {(profile as any).job_success_score}
+            </Text>
+            <Text style={styles.jssLabel}>Job Success</Text>
+          </View>
+        ) : (
+          <Text style={styles.jssMuted}>Job Success Score available after 3 completed jobs</Text>
+        )}
+
+        <TouchableOpacity
+          onPress={toggleAvailability}
+          style={[
+            styles.availabilityBadge,
+            (profile as any).availability === 'busy' ? styles.availabilityBadgeBusy : styles.availabilityBadgeAvailable,
+          ]}
+        >
+          <Text
+            style={[
+              styles.availabilityBadgeText,
+              (profile as any).availability === 'busy' ? styles.availabilityBadgeTextBusy : styles.availabilityBadgeTextAvailable,
+            ]}
+          >
+            {(profile as any).availability === 'busy' ? '⏸️ Not available' : '🟢 Available for work'}
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {(() => {
+        const completion = profileCompletion(profile);
+        if (completion.percent === 100) return null;
+        return (
+          <View style={styles.completionCard}>
+            <Text style={styles.completionHeader}>Profile {completion.percent}% complete</Text>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${completion.percent}%`,
+                    backgroundColor: completion.percent === 100 ? colors.accent : colors.primary,
+                  },
+                ]}
+              />
+            </View>
+            {completion.missing.slice(0, 3).map(item => (
+              <Text key={item} style={styles.completionHint}>• {item}</Text>
+            ))}
+          </View>
+        );
+      })()}
 
       <PaymentStatus connected={!!profile.stripe_account_id} type="sub" />
       {!profile.stripe_account_id && (
@@ -107,6 +189,17 @@ export default function SubProfileScreen() {
       {profile && (profile as any).bio && (
         <Section title="About">
           <Text style={styles.bioText}>{(profile as any).bio}</Text>
+        </Section>
+      )}
+
+      {((profile as any).avg_response_minutes != null || (profile as any).response_rate != null) && (
+        <Section title="Reputation">
+          {(profile as any).avg_response_minutes != null && (
+            <InfoRow label="Responds within" value={`~${formatResponseTime((profile as any).avg_response_minutes)}`} />
+          )}
+          {(profile as any).response_rate != null && (
+            <InfoRow label="Response rate" value={`${(profile as any).response_rate}%`} />
+          )}
         </Section>
       )}
 
@@ -192,6 +285,23 @@ export default function SubProfileScreen() {
               </View>
             </View>
           )}
+          <View style={styles.payoutToggleSection}>
+            <Text style={styles.editLabel}>Availability</Text>
+            <View style={styles.payoutToggleRow}>
+              <TouchableOpacity
+                style={[styles.payoutOption, fields.availability === 'available' && styles.payoutOptionActive]}
+                onPress={() => setFields(f => ({ ...f, availability: 'available' }))}
+              >
+                <Text style={[styles.payoutOptionText, fields.availability === 'available' && styles.payoutOptionTextActive]}>🟢 Available for work</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.payoutOption, fields.availability === 'busy' && styles.payoutOptionActive]}
+                onPress={() => setFields(f => ({ ...f, availability: 'busy' }))}
+              >
+                <Text style={[styles.payoutOptionText, fields.availability === 'busy' && styles.payoutOptionTextActive]}>⏸️ Not available</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           <TouchableOpacity style={styles.saveButton} onPress={save} disabled={saving}>
             {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveButtonText}>Save Changes</Text>}
           </TouchableOpacity>
@@ -208,6 +318,11 @@ export default function SubProfileScreen() {
       </TouchableOpacity>
     </ScrollView>
   );
+}
+
+function formatResponseTime(minutes: number): string {
+  if (minutes >= 60) return `${Math.round(minutes / 60)}h`;
+  return `${Math.round(minutes)}m`;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -296,4 +411,21 @@ const styles = StyleSheet.create({
   signOutText: { color: colors.textMuted, fontWeight: '600' },
   jobsCompleted: { fontSize: fontSize.sm, color: colors.textMuted },
   bioText: { fontSize: fontSize.sm, color: colors.text, lineHeight: 20 },
+  tierBadge: { paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: 999 },
+  tierBadgeText: { fontSize: fontSize.sm, fontWeight: '700' },
+  jssRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
+  jssNumber: { fontSize: fontSize.xxl, fontWeight: '800' },
+  jssLabel: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '600' },
+  jssMuted: { fontSize: fontSize.xs, color: colors.textLight, textAlign: 'center' },
+  availabilityBadge: { paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
+  availabilityBadgeAvailable: { backgroundColor: colors.accentLight, borderColor: colors.accent },
+  availabilityBadgeBusy: { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+  availabilityBadgeText: { fontSize: fontSize.sm, fontWeight: '700' },
+  availabilityBadgeTextAvailable: { color: colors.accent },
+  availabilityBadgeTextBusy: { color: colors.textMuted },
+  completionCard: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.md, gap: spacing.sm },
+  completionHeader: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
+  progressTrack: { height: 8, borderRadius: 999, backgroundColor: colors.border, overflow: 'hidden' },
+  progressFill: { height: 8, borderRadius: 999 },
+  completionHint: { fontSize: fontSize.sm, color: colors.textMuted },
 });
