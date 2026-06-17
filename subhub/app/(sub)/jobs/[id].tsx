@@ -21,6 +21,9 @@ export default function SubJobDetailScreen() {
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [newQuestion, setNewQuestion] = useState('');
+  const [submittingQ, setSubmittingQ] = useState(false);
 
   // AI analysis
   const [analysis, setAnalysis] = useState<{ score: string; headline: string; bullets: string[]; watch_out: string | null } | null>(null);
@@ -33,15 +36,21 @@ export default function SubJobDetailScreen() {
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
-    const [{ data: j }, { data: co }, { data: m }] = await Promise.all([
+    const [{ data: j }, { data: co }, { data: m }, { data: qs }] = await Promise.all([
       supabase.from('jobs').select('*, contractor:contractor_profiles(*)').eq('id', id).single(),
       supabase.from('change_orders').select('*').eq('job_id', id).order('created_at', { ascending: false }),
       supabase.from('job_media').select('*').eq('job_id', id).order('created_at'),
+      supabase.from('job_questions').select('*').eq('job_id', id).order('created_at'),
     ]);
     setJob(j);
     setChangeOrders(co ?? []);
     setMedia(m ?? []);
+    setQuestions(qs ?? []);
     setLoading(false);
+    const { data: { user: u } } = await supabase.auth.getUser();
+    if (u) {
+      supabase.from('job_views').insert({ job_id: id, viewer_id: u.id }).then(() => {});
+    }
   }, [id]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -120,6 +129,20 @@ export default function SubJobDetailScreen() {
       rehire: stars >= 4,
     });
     Alert.alert('Thanks!', 'Your rating has been submitted.');
+  }
+
+  async function askQuestion() {
+    if (!newQuestion.trim()) return;
+    setSubmittingQ(true);
+    const { data: { user: u } } = await supabase.auth.getUser();
+    await supabase.from('job_questions').insert({
+      job_id: id,
+      asker_id: u!.id,
+      question: newQuestion.trim(),
+    });
+    setNewQuestion('');
+    setSubmittingQ(false);
+    fetchAll();
   }
 
   if (loading) return <ActivityIndicator style={styles.loader} color={colors.accent} />;
@@ -234,6 +257,39 @@ export default function SubJobDetailScreen() {
         {/* Scope */}
         <Section title="Scope of Work">
           <Text style={styles.body}>{job.scope_of_work}</Text>
+        </Section>
+
+        {/* Q&A */}
+        <Section title="Questions & Answers">
+          {questions.length === 0 && (
+            <Text style={styles.qaEmpty}>No questions yet. Ask the contractor below.</Text>
+          )}
+          {questions.map((q: any) => (
+            <View key={q.id} style={styles.qaItem}>
+              <Text style={styles.qaQuestion}>Q: {q.question}</Text>
+              {q.answer
+                ? <Text style={styles.qaAnswer}>A: {q.answer}</Text>
+                : <Text style={styles.qaPending}>Awaiting contractor response</Text>}
+            </View>
+          ))}
+          {canClaim && (
+            <View style={styles.qaInputRow}>
+              <TextInput
+                style={[styles.input, styles.qaInput]}
+                value={newQuestion}
+                onChangeText={setNewQuestion}
+                placeholder="Ask a question before claiming..."
+                placeholderTextColor={colors.textLight}
+              />
+              <TouchableOpacity
+                style={[styles.qaSubmitBtn, !newQuestion.trim() && styles.buttonDisabled]}
+                onPress={askQuestion}
+                disabled={submittingQ || !newQuestion.trim()}
+              >
+                {submittingQ ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={styles.qaSubmitText}>Ask</Text>}
+              </TouchableOpacity>
+            </View>
+          )}
         </Section>
 
         {/* Materials */}
@@ -541,4 +597,13 @@ const styles = StyleSheet.create({
   disputedTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.error },
   disputedReason: { fontSize: fontSize.sm, color: colors.text, fontStyle: 'italic' },
   disputedNote: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
+  qaEmpty: { fontSize: fontSize.sm, color: colors.textMuted, fontStyle: 'italic' },
+  qaItem: { backgroundColor: colors.surface, borderRadius: radius.sm, padding: spacing.sm, gap: 4 },
+  qaQuestion: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
+  qaAnswer: { fontSize: fontSize.sm, color: colors.accent, fontWeight: '500' },
+  qaPending: { fontSize: fontSize.xs, color: colors.textMuted, fontStyle: 'italic' },
+  qaInputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' },
+  qaInput: { flex: 1 },
+  qaSubmitBtn: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingVertical: 10, paddingHorizontal: spacing.md, alignItems: 'center', justifyContent: 'center' },
+  qaSubmitText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
 });

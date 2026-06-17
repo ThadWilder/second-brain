@@ -21,6 +21,7 @@ export default function OnboardSubScreen() {
     service_area_zip: '',
     service_area_miles: '75',
     phone_number: '',
+    bio: '',
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['Fencing']);
   const [termsAgreed, setTermsAgreed] = useState(false);
@@ -58,6 +59,7 @@ export default function OnboardSubScreen() {
       service_area_zip: form.service_area_zip,
       service_area_miles: parseInt(form.service_area_miles, 10) || 75,
       phone_number: form.phone_number || null,
+      bio: form.bio || null,
       skills: selectedSkills,
       payout_type: 'bank',
       verified: false,
@@ -83,6 +85,19 @@ export default function OnboardSubScreen() {
       <Field label="Home Zip Code" value={form.service_area_zip} onChangeText={set('service_area_zip')} keyboardType="number-pad" />
       <Field label="How far will you travel? (miles)" value={form.service_area_miles} onChangeText={set('service_area_miles')} keyboardType="number-pad" />
       <Field label="Mobile Phone (for SubHub calls)" value={form.phone_number} onChangeText={set('phone_number')} keyboardType="phone-pad" placeholder="+1 (555) 000-0000" />
+
+      <View style={styles.field}>
+        <Text style={styles.label}>About you (optional)</Text>
+        <TextInput
+          style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+          value={form.bio}
+          onChangeText={set('bio')}
+          placeholder="Briefly describe your experience, specialties, and work style..."
+          placeholderTextColor={colors.textLight}
+          multiline
+          numberOfLines={3}
+        />
+      </View>
 
       <Text style={styles.label}>Your skills / trades</Text>
       <View style={styles.chipGrid}>
