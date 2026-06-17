@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { signIn } from '@/lib/auth';
@@ -28,8 +28,8 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.hero}>
-        <Text style={styles.logo}>SubHub</Text>
-        <Text style={styles.tagline}>Find work. Post jobs. Get paid.</Text>
+        <Image source={require('@/assets/logo.jpeg')} style={styles.logoImage} resizeMode="contain" />
+        <Text style={styles.tagline}>Contractors. Sub-Contractors. Connected</Text>
       </View>
 
       <View style={styles.form}>
@@ -77,8 +77,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
   },
-  logo: { fontSize: 42, fontWeight: '800', color: colors.white, letterSpacing: -1 },
-  tagline: { fontSize: fontSize.md, color: 'rgba(255,255,255,0.7)', marginTop: spacing.sm },
+  logoImage: { width: 220, height: 120 },
+  tagline: { fontSize: fontSize.sm, color: 'rgba(255,255,255,0.75)', marginTop: spacing.sm, letterSpacing: 0.3, textAlign: 'center' },
   form: {
     backgroundColor: colors.background,
     borderTopLeftRadius: radius.lg * 2,

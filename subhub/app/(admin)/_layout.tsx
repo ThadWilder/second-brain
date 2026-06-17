@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Image } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
@@ -22,7 +22,7 @@ function AdminSidebar() {
   return (
     <View style={s.sidebar}>
       <View style={s.logoWrap}>
-        <Text style={s.logo}>SubHub</Text>
+        <Image source={require('@/assets/logo.jpeg')} style={s.logoImage} resizeMode="contain" />
         <Text style={s.logoSub}>Admin Portal</Text>
       </View>
       <View style={s.nav}>
@@ -86,7 +86,7 @@ export default function AdminLayout() {
     return (
       <View style={s.pinScreen}>
         <View style={s.pinCard}>
-          <Text style={s.pinLogo}>SubHub</Text>
+          <Image source={require('@/assets/logo.jpeg')} style={s.pinLogoImage} resizeMode="contain" />
           <Text style={s.pinTitle}>Admin Access</Text>
           <Text style={s.pinSubtitle}>Enter your admin PIN to continue.</Text>
           <TextInput
@@ -141,7 +141,7 @@ const s = StyleSheet.create({
     width: 340, alignItems: 'center', gap: 12,
     shadowColor: '#000', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 8 }, shadowRadius: 24, elevation: 10,
   },
-  pinLogo: { fontSize: 28, fontWeight: '800', color: '#1a3c5e' },
+  pinLogoImage: { width: 200, height: 109, marginBottom: 4 },
   pinTitle: { fontSize: 20, fontWeight: '700', color: '#1e293b', marginTop: 4 },
   pinSubtitle: { fontSize: 13, color: '#64748b', textAlign: 'center' as any, marginBottom: 4 },
   pinInput: {
@@ -167,14 +167,16 @@ const s = StyleSheet.create({
     gap: spacing.xs,
   },
   logoWrap: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
+    backgroundColor: '#0d1117',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.12)',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
     marginBottom: spacing.md,
+    alignItems: 'center' as any,
   },
-  logo: { fontSize: 28, fontWeight: '800', color: '#ffffff' },
-  logoSub: { fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginTop: 2 },
+  logoImage: { width: 150, height: 82 },
+  logoSub: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase' as any, marginTop: 2 },
   nav: { flex: 1, gap: 2, paddingHorizontal: spacing.sm },
   navItem: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,

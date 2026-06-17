@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
@@ -31,11 +31,8 @@ export default function LandingScreen() {
 
       {/* Center divider */}
       <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <View style={styles.logoChip}>
-          <Text style={styles.logoText}>SubHub</Text>
-        </View>
-        <View style={styles.dividerLine} />
+        <Image source={require('@/assets/logo.jpeg')} style={styles.logoImage} resizeMode="contain" />
+        <Text style={styles.tagline}>Contractors. Sub-Contractors. Connected</Text>
       </View>
 
       {/* Sub tile — bottom half */}
@@ -135,34 +132,25 @@ const styles = StyleSheet.create({
   },
 
   divider: {
-    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.xl,
-    height: 36,
+    justifyContent: 'center',
+    backgroundColor: '#0d1117',
+    paddingVertical: spacing.md,
     zIndex: 10,
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    gap: 4,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  logoChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginHorizontal: spacing.sm,
-  },
-  logoText: {
+  logoImage: { width: 180, height: 98 },
+  tagline: {
     fontSize: fontSize.xs,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: 1,
+    color: 'rgba(255,255,255,0.55)',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
+    fontWeight: '600',
   },
 
   signInRow: {
