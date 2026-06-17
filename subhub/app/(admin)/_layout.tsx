@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
@@ -50,6 +50,10 @@ function AdminSidebar() {
 export default function AdminLayout() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const [pinVerified, setPinVerified] = useState(false);
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -60,7 +64,59 @@ export default function AdminLayout() {
     });
   }, []);
 
+  async function submitPin() {
+    if (!pin.trim()) return;
+    setVerifying(true);
+    setPinError('');
+    const { data, error } = await supabase.functions.invoke('admin-action', {
+      body: { action: 'verify_pin', pin: pin.trim() },
+    });
+    setVerifying(false);
+    if (error || !data?.valid) {
+      setPinError('Incorrect PIN. Try again.');
+      setPin('');
+      return;
+    }
+    setPinVerified(true);
+  }
+
   if (checking) return <ActivityIndicator style={{ flex: 1 }} color="#1a3c5e" />;
+
+  if (!pinVerified) {
+    return (
+      <View style={s.pinScreen}>
+        <View style={s.pinCard}>
+          <Text style={s.pinLogo}>SubHub</Text>
+          <Text style={s.pinTitle}>Admin Access</Text>
+          <Text style={s.pinSubtitle}>Enter your admin PIN to continue.</Text>
+          <TextInput
+            style={[s.pinInput, pinError ? s.pinInputError : null]}
+            value={pin}
+            onChangeText={v => { setPin(v); setPinError(''); }}
+            placeholder="PIN"
+            placeholderTextColor="#94a3b8"
+            secureTextEntry
+            keyboardType="default"
+            onSubmitEditing={submitPin}
+            autoFocus
+          />
+          {pinError ? <Text style={s.pinError}>{pinError}</Text> : null}
+          <TouchableOpacity
+            style={[s.pinButton, (!pin.trim() || verifying) && s.pinButtonDisabled]}
+            onPress={submitPin}
+            disabled={!pin.trim() || verifying}
+          >
+            {verifying
+              ? <ActivityIndicator color="#ffffff" />
+              : <Text style={s.pinButtonText}>Enter</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={signOut} style={s.pinSignOut}>
+            <Text style={s.pinSignOutText}>Sign out</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={s.root}>
@@ -79,6 +135,30 @@ export default function AdminLayout() {
 }
 
 const s = StyleSheet.create({
+  pinScreen: { flex: 1, backgroundColor: '#1a3c5e', alignItems: 'center', justifyContent: 'center' },
+  pinCard: {
+    backgroundColor: '#ffffff', borderRadius: 16, padding: 36,
+    width: 340, alignItems: 'center', gap: 12,
+    shadowColor: '#000', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 8 }, shadowRadius: 24, elevation: 10,
+  },
+  pinLogo: { fontSize: 28, fontWeight: '800', color: '#1a3c5e' },
+  pinTitle: { fontSize: 20, fontWeight: '700', color: '#1e293b', marginTop: 4 },
+  pinSubtitle: { fontSize: 13, color: '#64748b', textAlign: 'center' as any, marginBottom: 4 },
+  pinInput: {
+    width: '100%' as any, borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 10,
+    padding: 14, fontSize: 18, color: '#1e293b', textAlign: 'center' as any,
+    letterSpacing: 4, backgroundColor: '#f8fafc',
+  },
+  pinInputError: { borderColor: '#ef4444', backgroundColor: '#fff1f2' },
+  pinError: { fontSize: 13, color: '#ef4444', fontWeight: '500' },
+  pinButton: {
+    width: '100%' as any, backgroundColor: '#1a3c5e', borderRadius: 10,
+    paddingVertical: 14, alignItems: 'center' as any, marginTop: 4,
+  },
+  pinButtonDisabled: { opacity: 0.4 },
+  pinButtonText: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
+  pinSignOut: { marginTop: 4 },
+  pinSignOutText: { fontSize: 13, color: '#94a3b8' },
   root: { flex: 1, flexDirection: 'row', backgroundColor: '#f1f5f9' },
   sidebar: {
     width: 220,
