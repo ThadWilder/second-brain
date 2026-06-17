@@ -45,6 +45,12 @@ supabase functions deploy connect-stripe
 supabase functions deploy setup-payment-method
 supabase functions deploy send-notification
 supabase functions deploy stripe-webhook
+supabase functions deploy hold-payment          # $1k posting authorization hold
+supabase functions deploy release-hold
+supabase functions deploy analyze-job           # AI job analysis (sub side)
+supabase functions deploy admin-action          # admin portal actions + PIN gate
+supabase functions deploy compute-job-success   # recompute sub reputation
+supabase functions deploy match-saved-searches  # push alerts on matching jobs
 ```
 
 ## Project structure
@@ -130,13 +136,24 @@ draft → posted → claimed → in_progress → pending_review → complete
 - 5-star ratings (both directions, post-completion)
 - Profile screens with payment status + action CTAs
 - `PaymentStatus` and `ChangeOrderCard` shared components
+- **$1,000 posting hold** — authorization hold on contractor card at post time (`hold-payment`/`release-hold`)
+- **Instant pay** — sub-selectable bank vs. instant payout (1.5% fee) in `payout-sub`
+- **AI job analysis** — Claude Haiku scores a job for the sub (`analyze-job`)
+- **Admin portal** — dashboard, jobs, users, disputes, payments; PIN-gated (`admin-action`, `ADMIN_PIN` secret)
+- **In-app VoIP calling** — Twilio click-to-call, numbers masked (`call-connect`/`call-twiml`)
+- **Reputation** — Job Success Score, tier badges (New/Rising/Top Rated/Elite), response rate, profile-completion meter (`lib/reputation.ts`, `compute-job-success`)
+- **Availability toggle** — subs mark available/busy
+- **Invite-to-job + favorites** — contractors invite specific subs and favorite them (`job_invites`, `favorites`)
+- **Saved-search alerts** — subs save searches, get push alerts on matching jobs (`saved_searches`, `match-saved-searches`)
+- **Earnings dashboard** — sub earnings totals, monthly breakdown, 1099 export
+- **Pre-claim Q&A** — subs ask questions on a job before claiming (`job_questions`)
+- **Structured disputes** — evidence threads + admin resolution (pay/split/cancel) (`disputes`, `dispute_evidence`)
+- **Sub profiles** — bio, jobs-completed, portfolio support
 
 ### Not yet built
-- In-app VoIP calling (Twilio masked numbers)
-- In-app text messaging UI (DB schema exists, no screen yet)
-- Admin dashboard
-- Instant pay (float model — Phase 2)
+- In-app text messaging UI (DB schema exists, basic chat screens present)
 - Push notification delivery from DB triggers (currently client-side initiated)
+- Portfolio photo upload UI (table exists: `portfolio_photos`)
 
 ## Conventions
 - All Supabase queries use the anon client — RLS enforces access

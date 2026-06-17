@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, TextInput,
+  ActivityIndicator, Alert, TextInput, Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -33,19 +33,36 @@ export default function SubJobDetailScreen() {
   const [signeeName, setSigneeName] = useState('');
   const [submittingSignoff, setSubmittingSignoff] = useState(false);
 
+  // Dispute state
+  const [dispute, setDispute] = useState<any>(null);
+  const [evidence, setEvidence] = useState<any[]>([]);
+  const [openingDispute, setOpeningDispute] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [submittingDispute, setSubmittingDispute] = useState(false);
+  const [evidenceNote, setEvidenceNote] = useState('');
+  const [submittingEvidence, setSubmittingEvidence] = useState(false);
+
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
-    const [{ data: j }, { data: co }, { data: m }, { data: qs }] = await Promise.all([
+    const [{ data: j }, { data: co }, { data: m }, { data: qs }, { data: d }] = await Promise.all([
       supabase.from('jobs').select('*, contractor:contractor_profiles(*)').eq('id', id).single(),
       supabase.from('change_orders').select('*').eq('job_id', id).order('created_at', { ascending: false }),
       supabase.from('job_media').select('*').eq('job_id', id).order('created_at'),
       supabase.from('job_questions').select('*').eq('job_id', id).order('created_at'),
+      supabase.from('disputes').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ]);
     setJob(j);
     setChangeOrders(co ?? []);
     setMedia(m ?? []);
     setQuestions(qs ?? []);
+    setDispute(d ?? null);
+    if (d) {
+      const { data: ev } = await supabase.from('dispute_evidence').select('*').eq('dispute_id', d.id).order('created_at');
+      setEvidence(ev ?? []);
+    } else {
+      setEvidence([]);
+    }
     setLoading(false);
     const { data: { user: u } } = await supabase.auth.getUser();
     if (u) {
@@ -145,6 +162,38 @@ export default function SubJobDetailScreen() {
     fetchAll();
   }
 
+  async function handleOpenDispute() {
+    if (!disputeReason.trim()) { Alert.alert('Required', 'Please describe the issue before opening a dispute.'); return; }
+    setSubmittingDispute(true);
+    await supabase.from('disputes').insert({
+      job_id: id,
+      opened_by: userId,
+      opener_role: 'subcontractor',
+      reason: disputeReason.trim(),
+      status: 'open',
+    });
+    await supabase.from('jobs').update({ status: 'disputed', dispute_reason: disputeReason.trim() }).eq('id', id);
+    await notify.disputeOpened(job!.contractor_id, job!.title, id);
+    setSubmittingDispute(false);
+    setOpeningDispute(false);
+    setDisputeReason('');
+    fetchAll();
+  }
+
+  async function handleAddEvidence() {
+    if (!evidenceNote.trim() || !dispute) return;
+    setSubmittingEvidence(true);
+    await supabase.from('dispute_evidence').insert({
+      dispute_id: dispute.id,
+      submitted_by: userId,
+      submitter_role: 'subcontractor',
+      note: evidenceNote.trim(),
+    });
+    setEvidenceNote('');
+    setSubmittingEvidence(false);
+    fetchAll();
+  }
+
   if (loading) return <ActivityIndicator style={styles.loader} color={colors.accent} />;
   if (!job) return <Text style={styles.notFound}>Job not found.</Text>;
 
@@ -238,12 +287,39 @@ export default function SubJobDetailScreen() {
         {job.status === 'disputed' && (
           <View style={styles.disputedBanner}>
             <Text style={styles.disputedTitle}>⚠️ Dispute Filed</Text>
-            {(job as any).dispute_reason && (
-              <Text style={styles.disputedReason}>Contractor's concern: "{(job as any).dispute_reason}"</Text>
+            {(dispute?.reason || (job as any).dispute_reason) && (
+              <Text style={styles.disputedReason}>
+                {dispute?.opener_role === 'subcontractor' ? 'Your concern' : "Contractor's concern"}: "{dispute?.reason ?? (job as any).dispute_reason}"
+              </Text>
             )}
             <Text style={styles.disputedNote}>
-              SubHub has been notified. Use the message thread to work toward a resolution with your contractor.
+              SubHub is reviewing this dispute. Add evidence below to support your case.
             </Text>
+
+            <EvidenceThread evidence={evidence} />
+
+            {dispute && (
+              <View style={styles.evidenceForm}>
+                <TextInput
+                  style={styles.disputeInput}
+                  value={evidenceNote}
+                  onChangeText={setEvidenceNote}
+                  placeholder="Add evidence or context — what happened, any details..."
+                  placeholderTextColor={colors.textLight}
+                  multiline
+                  numberOfLines={3}
+                />
+                <TouchableOpacity
+                  style={[styles.disputeSubmitButton, (!evidenceNote.trim() || submittingEvidence) && styles.buttonDisabled]}
+                  onPress={handleAddEvidence}
+                  disabled={submittingEvidence || !evidenceNote.trim()}
+                >
+                  {submittingEvidence
+                    ? <ActivityIndicator color={colors.white} />
+                    : <Text style={styles.disputeSubmitText}>Add Evidence</Text>}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
 
@@ -438,6 +514,41 @@ export default function SubJobDetailScreen() {
             <Text style={styles.pendingText}>⏳ Waiting for contractor to review and release payment</Text>
           </View>
         )}
+        {isMine && (job.status === 'in_progress' || job.status === 'pending_review') && (
+          openingDispute ? (
+            <View style={styles.disputeForm}>
+              <Text style={styles.disputeFormTitle}>Open a Dispute</Text>
+              <TextInput
+                style={styles.disputeFormInput}
+                value={disputeReason}
+                onChangeText={setDisputeReason}
+                placeholder="What's the issue? — contractor unresponsive, unfair terms, non-payment..."
+                placeholderTextColor={colors.textLight}
+                multiline
+                numberOfLines={3}
+                autoFocus
+              />
+              <View style={styles.footerRow}>
+                <TouchableOpacity style={styles.secondaryButton} onPress={() => { setOpeningDispute(false); setDisputeReason(''); }}>
+                  <Text style={styles.secondaryButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.disputeSubmitButton, styles.flex, (!disputeReason.trim() || submittingDispute) && styles.buttonDisabled]}
+                  onPress={handleOpenDispute}
+                  disabled={submittingDispute || !disputeReason.trim()}
+                >
+                  {submittingDispute
+                    ? <ActivityIndicator color={colors.white} />
+                    : <Text style={styles.disputeSubmitText}>Open Dispute</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.openDisputeButton} onPress={() => setOpeningDispute(true)}>
+              <Text style={styles.openDisputeButtonText}>⚠️ Open a Dispute</Text>
+            </TouchableOpacity>
+          )
+        )}
         {isMine && (
           <TouchableOpacity
             style={styles.messageButton}
@@ -479,6 +590,29 @@ function RateChip({ label, value }: { label: string; value: string }) {
 }
 
 function Divider() { return <View style={styles.divider} />; }
+
+function EvidenceThread({ evidence }: { evidence: any[] }) {
+  if (evidence.length === 0) {
+    return <Text style={styles.evidenceEmpty}>No evidence submitted yet.</Text>;
+  }
+  return (
+    <View style={styles.evidenceThread}>
+      {evidence.map((e) => (
+        <View key={e.id} style={styles.evidenceItem}>
+          <Text style={styles.evidenceRole}>{e.submitter_role}</Text>
+          {e.note ? <Text style={styles.evidenceNote}>{e.note}</Text> : null}
+          {Array.isArray(e.photo_urls) && e.photo_urls.length > 0 && (
+            <View style={styles.evidencePhotos}>
+              {e.photo_urls.map((url: string, i: number) => (
+                <Image key={i} source={{ uri: url }} style={styles.evidencePhoto} />
+              ))}
+            </View>
+          )}
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function materialStatusLabel(status: Job['material_status']) {
   if (status === 'on_site') return '✅ On-site';
@@ -597,6 +731,39 @@ const styles = StyleSheet.create({
   disputedTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.error },
   disputedReason: { fontSize: fontSize.sm, color: colors.text, fontStyle: 'italic' },
   disputedNote: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
+  evidenceForm: { gap: spacing.sm, marginTop: spacing.sm },
+  evidenceThread: { gap: spacing.sm, marginTop: spacing.sm },
+  evidenceEmpty: { fontSize: fontSize.xs, color: colors.textMuted, fontStyle: 'italic', marginTop: spacing.xs },
+  evidenceItem: {
+    backgroundColor: colors.white, borderRadius: radius.sm, padding: spacing.sm, gap: 4,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  evidenceRole: { fontSize: fontSize.xs, fontWeight: '700', color: colors.primary, textTransform: 'capitalize' },
+  evidenceNote: { fontSize: fontSize.sm, color: colors.text, lineHeight: 20 },
+  evidencePhotos: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: 4 },
+  evidencePhoto: { width: 64, height: 64, borderRadius: radius.sm, backgroundColor: colors.surface },
+  disputeInput: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    padding: spacing.sm, fontSize: fontSize.sm, color: colors.text,
+    backgroundColor: colors.white, minHeight: 72, textAlignVertical: 'top',
+  },
+  disputeSubmitButton: {
+    backgroundColor: colors.error, borderRadius: radius.md,
+    padding: spacing.md, alignItems: 'center',
+  },
+  disputeSubmitText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
+  disputeForm: { gap: spacing.sm },
+  disputeFormTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
+  disputeFormInput: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    padding: spacing.sm, fontSize: fontSize.sm, color: colors.text,
+    backgroundColor: colors.surface, minHeight: 72, textAlignVertical: 'top',
+  },
+  openDisputeButton: {
+    borderWidth: 1, borderColor: colors.error, borderRadius: radius.md,
+    padding: spacing.sm, alignItems: 'center', marginTop: spacing.sm,
+  },
+  openDisputeButtonText: { color: colors.error, fontSize: fontSize.sm, fontWeight: '600' },
   qaEmpty: { fontSize: fontSize.sm, color: colors.textMuted, fontStyle: 'italic' },
   qaItem: { backgroundColor: colors.surface, borderRadius: radius.sm, padding: spacing.sm, gap: 4 },
   qaQuestion: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },

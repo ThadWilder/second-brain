@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, TextInput,
+  ActivityIndicator, Alert, TextInput, Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -27,18 +27,30 @@ export default function ContractorJobDetailScreen() {
   const [disputing, setDisputing] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
   const [submittingDispute, setSubmittingDispute] = useState(false);
+  const [dispute, setDispute] = useState<any>(null);
+  const [evidence, setEvidence] = useState<any[]>([]);
+  const [evidenceNote, setEvidenceNote] = useState('');
+  const [submittingEvidence, setSubmittingEvidence] = useState(false);
 
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
-    const [{ data: j }, { data: co }, { data: m }] = await Promise.all([
+    const [{ data: j }, { data: co }, { data: m }, { data: d }] = await Promise.all([
       supabase.from('jobs').select('*, claimed_sub:sub_profiles!claimed_by(*)').eq('id', id).single(),
       supabase.from('change_orders').select('*').eq('job_id', id).order('created_at', { ascending: false }),
       supabase.from('job_media').select('*').eq('job_id', id).order('created_at'),
+      supabase.from('disputes').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ]);
     setJob(j);
     setChangeOrders(co ?? []);
     setMedia(m ?? []);
+    setDispute(d ?? null);
+    if (d) {
+      const { data: ev } = await supabase.from('dispute_evidence').select('*').eq('dispute_id', d.id).order('created_at');
+      setEvidence(ev ?? []);
+    } else {
+      setEvidence([]);
+    }
     setLoading(false);
   }, [id]);
 
@@ -59,6 +71,9 @@ export default function ContractorJobDetailScreen() {
               if (error) throw new Error(error.message);
               await initiateSubPayout(id);
               await notify.paymentReleased(job!.claimed_by!, job!.sub_payout);
+              try {
+                await supabase.functions.invoke('compute-job-success', { body: { subUserId: job!.claimed_by } });
+              } catch { /* fire and forget */ }
               fetchAll();
               Alert.alert('Payment Released', 'The subcontractor has been paid.');
             } catch (err) {
@@ -76,9 +91,31 @@ export default function ContractorJobDetailScreen() {
     if (!disputeReason.trim()) { Alert.alert('Required', 'Please describe the issue before filing a dispute.'); return; }
     setSubmittingDispute(true);
     await supabase.from('jobs').update({ status: 'disputed', dispute_reason: disputeReason.trim() }).eq('id', id);
+    await supabase.from('disputes').insert({
+      job_id: id,
+      opened_by: userId,
+      opener_role: 'contractor',
+      reason: disputeReason.trim(),
+      status: 'open',
+    });
+    if (job!.claimed_by) await notify.disputeOpened(job!.claimed_by, job!.title, id);
     setSubmittingDispute(false);
     setDisputing(false);
     setDisputeReason('');
+    fetchAll();
+  }
+
+  async function handleAddEvidence() {
+    if (!evidenceNote.trim() || !dispute) return;
+    setSubmittingEvidence(true);
+    await supabase.from('dispute_evidence').insert({
+      dispute_id: dispute.id,
+      submitted_by: userId,
+      submitter_role: 'contractor',
+      note: evidenceNote.trim(),
+    });
+    setEvidenceNote('');
+    setSubmittingEvidence(false);
     fetchAll();
   }
 
@@ -102,6 +139,17 @@ export default function ContractorJobDetailScreen() {
                 if (error) throw new Error(error.message);
                 await initiateSubPayout(id);
                 await notify.paymentReleased(job!.claimed_by!, job!.sub_payout);
+                if (dispute) {
+                  await supabase.from('disputes').update({
+                    status: 'resolved_paid',
+                    resolved_by: userId,
+                    resolved_at: new Date().toISOString(),
+                  }).eq('id', dispute.id);
+                  await notify.disputeResolved(job!.claimed_by!, job!.title, 'Payment released to the sub.');
+                }
+                try {
+                  await supabase.functions.invoke('compute-job-success', { body: { subUserId: job!.claimed_by } });
+                } catch { /* fire and forget */ }
                 fetchAll();
               } catch (err) {
                 Alert.alert('Payment Failed', (err as Error).message);
@@ -110,6 +158,14 @@ export default function ContractorJobDetailScreen() {
               }
             } else {
               await supabase.from('jobs').update({ status: 'draft', claimed_by: null, claimed_at: null }).eq('id', id);
+              if (dispute) {
+                await supabase.from('disputes').update({
+                  status: 'resolved_cancelled',
+                  resolved_by: userId,
+                  resolved_at: new Date().toISOString(),
+                }).eq('id', dispute.id);
+                if (job!.claimed_by) await notify.disputeResolved(job!.claimed_by, job!.title, 'Job cancelled — no payment.');
+              }
               router.back();
             }
           },
@@ -126,6 +182,9 @@ export default function ContractorJobDetailScreen() {
       stars,
       rehire: stars >= 4,
     });
+    try {
+      await supabase.functions.invoke('compute-job-success', { body: { subUserId: job!.claimed_by } });
+    } catch { /* fire and forget */ }
     Alert.alert('Thanks!', 'Your rating has been submitted.');
   }
 
@@ -327,12 +386,46 @@ export default function ContractorJobDetailScreen() {
           </View>
         )}
         {job.status === 'disputed' && (
-          <View style={styles.disputedBox}>
+          <ScrollView style={styles.disputePanelScroll} contentContainerStyle={styles.disputedBox}>
             <Text style={styles.disputedTitle}>⚠️ Dispute in Progress</Text>
-            {(job as any).dispute_reason && (
-              <Text style={styles.disputedReason}>"{(job as any).dispute_reason}"</Text>
+            {dispute?.reason
+              ? <Text style={styles.disputedReason}>"{dispute.reason}"</Text>
+              : (job as any).dispute_reason
+                ? <Text style={styles.disputedReason}>"{(job as any).dispute_reason}"</Text>
+                : null}
+            {dispute && (
+              <Text style={styles.disputeOpener}>
+                Opened by {dispute.opener_role === 'contractor' ? 'you (contractor)' : 'the subcontractor'}
+              </Text>
             )}
-            <Text style={styles.disputedSub}>Choose how to resolve this job.</Text>
+            <Text style={styles.disputedSub}>SubHub is reviewing this dispute.</Text>
+
+            <EvidenceThread evidence={evidence} />
+
+            {dispute && (
+              <View style={styles.evidenceForm}>
+                <TextInput
+                  style={styles.disputeInput}
+                  value={evidenceNote}
+                  onChangeText={setEvidenceNote}
+                  placeholder="Add evidence or context — what happened, any details..."
+                  placeholderTextColor={colors.textLight}
+                  multiline
+                  numberOfLines={3}
+                />
+                <TouchableOpacity
+                  style={[styles.disputeSubmitButton, (!evidenceNote.trim() || submittingEvidence) && styles.buttonDisabled]}
+                  onPress={handleAddEvidence}
+                  disabled={submittingEvidence || !evidenceNote.trim()}
+                >
+                  {submittingEvidence
+                    ? <ActivityIndicator color={colors.white} />
+                    : <Text style={styles.disputeSubmitText}>Add Evidence</Text>}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <Text style={styles.disputedSub}>Resolve this job:</Text>
             <View style={styles.footerRow}>
               <TouchableOpacity style={[styles.payButton, styles.flex]} onPress={() => handleResolveDispute(true)} disabled={paying}>
                 {paying ? <ActivityIndicator color={colors.white} /> : <Text style={styles.payButtonText}>Approve & Pay</Text>}
@@ -341,7 +434,7 @@ export default function ContractorJobDetailScreen() {
                 <Text style={styles.disputeButtonText}>Cancel Job</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         )}
       </View>
     </View>
@@ -375,6 +468,29 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function Divider() { return <View style={styles.divider} />; }
+
+function EvidenceThread({ evidence }: { evidence: any[] }) {
+  if (evidence.length === 0) {
+    return <Text style={styles.evidenceEmpty}>No evidence submitted yet.</Text>;
+  }
+  return (
+    <View style={styles.evidenceThread}>
+      {evidence.map((e) => (
+        <View key={e.id} style={styles.evidenceItem}>
+          <Text style={styles.evidenceRole}>{e.submitter_role}</Text>
+          {e.note ? <Text style={styles.evidenceNote}>{e.note}</Text> : null}
+          {Array.isArray(e.photo_urls) && e.photo_urls.length > 0 && (
+            <View style={styles.evidencePhotos}>
+              {e.photo_urls.map((url: string, i: number) => (
+                <Image key={i} source={{ uri: url }} style={styles.evidencePhoto} />
+              ))}
+            </View>
+          )}
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function formatCurrency(n: number) {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
@@ -470,4 +586,18 @@ const styles = StyleSheet.create({
   disputedTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.error },
   disputedReason: { fontSize: fontSize.sm, color: colors.text, fontStyle: 'italic' },
   disputedSub: { fontSize: fontSize.sm, color: colors.textMuted },
+  disputeOpener: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '600' },
+  disputePanelScroll: { maxHeight: 420 },
+  buttonDisabled: { backgroundColor: colors.textLight },
+  evidenceForm: { gap: spacing.sm },
+  evidenceThread: { gap: spacing.sm },
+  evidenceEmpty: { fontSize: fontSize.sm, color: colors.textMuted, fontStyle: 'italic' },
+  evidenceItem: {
+    backgroundColor: colors.white, borderRadius: radius.sm, padding: spacing.sm, gap: 4,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  evidenceRole: { fontSize: fontSize.xs, fontWeight: '700', color: colors.primary, textTransform: 'capitalize' },
+  evidenceNote: { fontSize: fontSize.sm, color: colors.text, lineHeight: 20 },
+  evidencePhotos: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: 4 },
+  evidencePhoto: { width: 64, height: 64, borderRadius: radius.sm, backgroundColor: colors.surface },
 });
