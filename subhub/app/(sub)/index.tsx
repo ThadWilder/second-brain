@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm, fontSize: fontSize.md, color: colors.text, backgroundColor: colors.surface,
   },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  filterLabel: { fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted, width: 40, textTransform: 'uppercase' },
+  filterLabel: { fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted, width: 56, textTransform: 'uppercase' },
   chipRow: { flexDirection: 'row', gap: spacing.xs },
   chip: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
