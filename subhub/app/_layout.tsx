@@ -3,6 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
+import { getUserRole } from '@/lib/auth';
 import { registerForPushNotifications } from '@/lib/notifications';
 import type { UserRole } from '@/lib/types';
 
@@ -33,8 +34,8 @@ export default function RootLayout() {
       const data = response.notification.request.content.data as any;
       if (data?.jobId) {
         getUserRole().then(role => {
-          if (role === 'contractor') router.push(`/(contractor)/jobs/${data.jobId}`);
-          else if (role === 'subcontractor') router.push(`/(sub)/jobs/${data.jobId}`);
+          if (role === 'contractor') router.push(`/(contractor)/jobs/${data.jobId}` as any);
+          else if (role === 'subcontractor') router.push(`/(sub)/jobs/${data.jobId}` as any);
         });
       }
     });
@@ -67,7 +68,7 @@ export default function RootLayout() {
   function redirectToRole(role: UserRole | null) {
     if (role === 'contractor') router.replace('/(contractor)/home' as any);
     else if (role === 'subcontractor') router.replace('/(sub)/home' as any);
-    else if (role === 'admin') router.replace('/(admin)/');
+    else if (role === 'admin') router.replace('/(admin)/' as any);
     else router.replace('/(auth)/signup');
   }
 
