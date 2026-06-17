@@ -151,6 +151,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     fontWeight: '600',
+    textAlign: 'center' as any,
   },
 
   signInRow: {
