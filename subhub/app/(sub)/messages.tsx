@@ -19,16 +19,18 @@ export default function SubMessages() {
     if (!session) return;
     const { data: jobs } = await supabase
       .from('jobs')
-      .select('id, title, status, messages(id, body, sender_role, created_at)')
+      .select('id, title, status, messages(id, body, sender_role, sender_id, read_at, created_at)')
       .eq('claimed_by', session.user.id);
 
     const withMessages = (jobs ?? [])
       .filter(j => (j.messages as any[]).length > 0)
       .map(j => {
-        const sorted = [...(j.messages as any[])].sort(
+        const msgs = j.messages as any[];
+        const sorted = [...msgs].sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
-        return { ...j, lastMsg: sorted[0] };
+        const unread = msgs.filter(m => m.sender_id !== session.user.id && !m.read_at).length;
+        return { ...j, lastMsg: sorted[0], unread };
       })
       .sort((a, b) => new Date(b.lastMsg.created_at).getTime() - new Date(a.lastMsg.created_at).getTime());
 
@@ -60,13 +62,20 @@ export default function SubMessages() {
           onPress={() => router.push(`/(sub)/chat/${item.id}`)}
         >
           <View style={styles.info}>
-            <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.preview} numberOfLines={1}>
+            <Text style={[styles.title, item.unread > 0 && styles.titleUnread]} numberOfLines={1}>{item.title}</Text>
+            <Text style={[styles.preview, item.unread > 0 && styles.previewUnread]} numberOfLines={1}>
               {item.lastMsg.sender_role === 'subcontractor' ? 'You: ' : 'Contractor: '}
               {item.lastMsg.body}
             </Text>
           </View>
-          <Text style={styles.time}>{formatTime(item.lastMsg.created_at)}</Text>
+          <View style={styles.meta}>
+            <Text style={styles.time}>{formatTime(item.lastMsg.created_at)}</Text>
+            {item.unread > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{item.unread}</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       )}
       ItemSeparatorComponent={() => <View style={styles.sep} />}
@@ -93,7 +102,15 @@ const styles = StyleSheet.create({
   },
   info: { flex: 1, gap: 4 },
   title: { fontSize: fontSize.md, fontWeight: '600', color: colors.text },
+  titleUnread: { fontWeight: '800' },
   preview: { fontSize: fontSize.sm, color: colors.textMuted },
+  previewUnread: { color: colors.text, fontWeight: '600' },
+  meta: { alignItems: 'flex-end', gap: 6 },
   time: { fontSize: fontSize.xs, color: colors.textLight },
+  badge: {
+    minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6,
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+  },
+  badgeText: { color: colors.white, fontSize: fontSize.xs, fontWeight: '700' },
   sep: { height: 1, backgroundColor: colors.border, marginLeft: spacing.lg },
 });

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Platform, View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Image } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
+import { useUnreadMessages } from '@/lib/useUnreadMessages';
 
 const SIDEBAR_W = 240;
 const BREAKPOINT = 768;
@@ -15,7 +16,7 @@ const TABS = [
   { segment: 'profile',  icon: '👤', label: 'Profile'   },
 ];
 
-function ContractorSidebar({ onCollapse }: { onCollapse: () => void }) {
+function ContractorSidebar({ onCollapse, unread }: { onCollapse: () => void; unread: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const current = pathname.split('/').filter(Boolean)[0] ?? '';
@@ -38,6 +39,9 @@ function ContractorSidebar({ onCollapse }: { onCollapse: () => void }) {
           >
             <Text style={s.icon}>{t.icon}</Text>
             <Text style={[s.label, active && s.labelOn]}>{t.label}</Text>
+            {t.segment === 'messages' && unread > 0 && (
+              <View style={s.sidebarBadge}><Text style={s.sidebarBadgeText}>{unread}</Text></View>
+            )}
           </TouchableOpacity>
         );
       })}
@@ -51,10 +55,11 @@ export default function ContractorLayout() {
   const isWide = isWeb && width >= BREAKPOINT;
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const showSidebar = isWide && sidebarOpen;
+  const unread = useUnreadMessages();
 
   return (
     <View style={{ flex: 1, flexDirection: isWide ? 'row' : 'column' }}>
-      {showSidebar && <ContractorSidebar onCollapse={() => setSidebarOpen(false)} />}
+      {showSidebar && <ContractorSidebar onCollapse={() => setSidebarOpen(false)} unread={unread} />}
       <View style={{ flex: 1 }}>
         <Tabs
           screenOptions={{
@@ -75,7 +80,7 @@ export default function ContractorLayout() {
           <Tabs.Screen name="home"     options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
           <Tabs.Screen name="index"    options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
           <Tabs.Screen name="post-job" options={{ title: 'Post Job',  tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
-          <Tabs.Screen name="messages" options={{ title: 'Messages',  tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
+          <Tabs.Screen name="messages" options={{ title: 'Messages',  tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
           <Tabs.Screen name="subs"     options={{ title: 'Find Subs', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
           <Tabs.Screen name="profile"  options={{ title: 'Profile',   tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
           <Tabs.Screen name="jobs/[id]"    options={{ href: null }} />
@@ -141,4 +146,9 @@ const s = StyleSheet.create({
     color: colors.primary,
     fontWeight: '700',
   },
+  sidebarBadge: {
+    minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6,
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+  },
+  sidebarBadgeText: { color: colors.white, fontSize: fontSize.xs, fontWeight: '700' },
 });

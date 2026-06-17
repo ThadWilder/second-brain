@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Platform, View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Image } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
+import { useUnreadMessages } from '@/lib/useUnreadMessages';
 
 const SIDEBAR_W = 240;
 const BREAKPOINT = 768;
@@ -16,7 +17,7 @@ const TABS = [
   { segment: 'profile',     icon: '👤', label: 'Profile'     },
 ];
 
-function SubSidebar({ onCollapse }: { onCollapse: () => void }) {
+function SubSidebar({ onCollapse, unread }: { onCollapse: () => void; unread: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const current = pathname.split('/').filter(Boolean)[0] ?? '';
@@ -39,6 +40,9 @@ function SubSidebar({ onCollapse }: { onCollapse: () => void }) {
           >
             <Text style={s.icon}>{t.icon}</Text>
             <Text style={[s.label, active && s.labelOn]}>{t.label}</Text>
+            {t.segment === 'messages' && unread > 0 && (
+              <View style={s.sidebarBadge}><Text style={s.sidebarBadgeText}>{unread}</Text></View>
+            )}
           </TouchableOpacity>
         );
       })}
@@ -52,10 +56,11 @@ export default function SubLayout() {
   const isWide = isWeb && width >= BREAKPOINT;
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const showSidebar = isWide && sidebarOpen;
+  const unread = useUnreadMessages();
 
   return (
     <View style={{ flex: 1, flexDirection: isWide ? 'row' : 'column' }}>
-      {showSidebar && <SubSidebar onCollapse={() => setSidebarOpen(false)} />}
+      {showSidebar && <SubSidebar onCollapse={() => setSidebarOpen(false)} unread={unread} />}
       <View style={{ flex: 1 }}>
         <Tabs
           screenOptions={{
@@ -78,7 +83,7 @@ export default function SubLayout() {
           <Tabs.Screen name="my-jobs"      options={{ title: 'My Jobs',     tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
           <Tabs.Screen name="earnings"     options={{ title: 'Earnings',    tabBarIcon: ({ color }) => <Icon e="💰" c={color} /> }} />
           <Tabs.Screen name="contractors"  options={{ title: 'Contractors', tabBarIcon: ({ color }) => <Icon e="🏗️" c={color} /> }} />
-          <Tabs.Screen name="messages"     options={{ title: 'Messages',    tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
+          <Tabs.Screen name="messages"     options={{ title: 'Messages',    tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
           <Tabs.Screen name="profile"      options={{ title: 'Profile',     tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
           <Tabs.Screen name="saved-searches" options={{ href: null, title: 'Job Alerts' }} />
           <Tabs.Screen name="jobs/[id]"      options={{ href: null }} />
@@ -145,4 +150,9 @@ const s = StyleSheet.create({
     color: colors.accent,
     fontWeight: '700',
   },
+  sidebarBadge: {
+    minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6,
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+  },
+  sidebarBadgeText: { color: colors.white, fontSize: fontSize.xs, fontWeight: '700' },
 });

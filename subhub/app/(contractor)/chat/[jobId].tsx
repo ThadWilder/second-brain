@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { notify } from '@/lib/notifications';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 export default function ContractorChat() {
@@ -16,24 +15,27 @@ export default function ContractorChat() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [recipientId, setRecipientId] = useState('');
-  const [myName, setMyName] = useState('');
-  const [jobTitle, setJobTitle] = useState('');
+  const [theyreTyping, setTheyreTyping] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSent = useRef(0);
+
+  // Stamp read_at on inbound messages I haven't read yet.
+  async function markRead(uid: string) {
+    await supabase
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('job_id', jobId)
+      .neq('sender_id', uid)
+      .is('read_at', null);
+  }
 
   useEffect(() => {
-    let channel: ReturnType<typeof supabase.channel>;
-
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return;
-      setMyId(session.user.id);
-
-      const { data: cp } = await supabase
-        .from('contractor_profiles')
-        .select('business_name')
-        .eq('user_id', session.user.id)
-        .single();
-      if (cp?.business_name) setMyName(cp.business_name);
+      const uid = session.user.id;
+      setMyId(uid);
 
       const [{ data: msgs }, { data: job }] = await Promise.all([
         supabase.from('messages').select('*').eq('job_id', jobId).order('created_at'),
@@ -49,25 +51,52 @@ export default function ContractorChat() {
           </TouchableOpacity>
         ),
       });
-      if (job?.claimed_by) setRecipientId(job.claimed_by);
-      if (job?.title) setJobTitle(job.title);
       setLoading(false);
+      markRead(uid);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50);
 
-      channel = supabase
+      const channel = supabase
         .channel(`contractor-chat-${jobId}`)
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'messages',
           filter: `job_id=eq.${jobId}`,
         }, payload => {
           setMessages(prev => [...prev, payload.new]);
+          if (payload.new.sender_id !== uid) markRead(uid);
           setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
         })
+        .on('postgres_changes', {
+          event: 'UPDATE', schema: 'public', table: 'messages',
+          filter: `job_id=eq.${jobId}`,
+        }, payload => {
+          setMessages(prev => prev.map(m => (m.id === payload.new.id ? payload.new : m)));
+        })
+        .on('broadcast', { event: 'typing' }, ({ payload }) => {
+          if (payload?.userId && payload.userId !== uid) {
+            setTheyreTyping(true);
+            if (typingTimeout.current) clearTimeout(typingTimeout.current);
+            typingTimeout.current = setTimeout(() => setTheyreTyping(false), 3000);
+          }
+        })
         .subscribe();
+      channelRef.current = channel;
     });
 
-    return () => { if (channel) supabase.removeChannel(channel); };
+    return () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    };
   }, [jobId]);
+
+  function onChangeText(v: string) {
+    setText(v);
+    // Throttle typing broadcasts to ~1/sec
+    const now = Date.now();
+    if (channelRef.current && myId && now - lastTypingSent.current > 1000) {
+      lastTypingSent.current = now;
+      channelRef.current.send({ type: 'broadcast', event: 'typing', payload: { userId: myId } });
+    }
+  }
 
   async function handleCall() {
     Alert.alert(
@@ -93,19 +122,23 @@ export default function ContractorChat() {
     if (!body || sending) return;
     setSending(true);
     setText('');
+    // Push is fired server-side by the on_message_insert trigger.
     await supabase.from('messages').insert({
       job_id: jobId,
       sender_id: myId,
       sender_role: 'contractor',
       body,
     });
-    if (recipientId) {
-      notify.newMessage(recipientId, myName || 'Contractor', jobTitle, jobId).catch(() => {});
-    }
     setSending(false);
   }
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} color={colors.primary} />;
+
+  // Index of my last message — only that one shows a read receipt.
+  let lastMineIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].sender_id === myId) { lastMineIdx = i; break; }
+  }
 
   return (
     <KeyboardAvoidingView
@@ -118,7 +151,7 @@ export default function ContractorChat() {
         data={messages}
         keyExtractor={m => m.id}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const mine = item.sender_id === myId;
           return (
             <View style={[styles.bubbleWrap, mine ? styles.bubbleWrapMine : styles.bubbleWrapTheirs]}>
@@ -127,6 +160,7 @@ export default function ContractorChat() {
               </View>
               <Text style={styles.bubbleTime}>
                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {mine && index === lastMineIdx ? (item.read_at ? ' · Read' : ' · Sent') : ''}
               </Text>
             </View>
           );
@@ -134,12 +168,15 @@ export default function ContractorChat() {
         ListEmptyComponent={
           <Text style={styles.emptyMsg}>No messages yet. Start the conversation.</Text>
         }
+        ListFooterComponent={
+          theyreTyping ? <Text style={styles.typing}>Sub is typing…</Text> : null
+        }
       />
       <View style={styles.inputBar}>
         <TextInput
           style={styles.input}
           value={text}
-          onChangeText={setText}
+          onChangeText={onChangeText}
           placeholder="Message..."
           placeholderTextColor={colors.textLight}
           multiline
@@ -160,6 +197,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.lg },
   emptyMsg: { textAlign: 'center', color: colors.textMuted, fontSize: fontSize.sm, marginTop: spacing.xxl },
+  typing: { color: colors.textMuted, fontSize: fontSize.xs, fontStyle: 'italic', paddingTop: spacing.xs, paddingLeft: spacing.xs },
   bubbleWrap: { marginBottom: spacing.xs, gap: 2 },
   bubbleWrapMine: { alignItems: 'flex-end' },
   bubbleWrapTheirs: { alignItems: 'flex-start' },

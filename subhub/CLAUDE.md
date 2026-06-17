@@ -24,9 +24,15 @@ Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
 ## Supabase setup
 1. Create a new Supabase project
-2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `005`)
+2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `017`)
 3. Enable the `pg_trgm` extension: Dashboard → Database → Extensions → search "pg_trgm" → enable
 4. Copy the project URL and anon key into `.env`
+5. **Server-side push (migration 016)** needs the `pg_net` extension (the migration enables it) plus two Vault secrets so the DB trigger can call the edge function. In the SQL editor, run once with your real values:
+   ```sql
+   select vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
+   select vault.create_secret('<service-role-key>', 'service_role_key');
+   ```
+   These are NOT committed to git. Until they exist, the message trigger no-ops (no push) but messaging still works.
 
 ## Deploying Edge Functions
 ```bash
@@ -148,16 +154,20 @@ draft → posted → claimed → in_progress → pending_review → complete
 - **Earnings dashboard** — sub earnings totals, monthly breakdown, 1099 export
 - **Pre-claim Q&A** — subs ask questions on a job before claiming (`job_questions`)
 - **Structured disputes** — evidence threads + admin resolution (pay/split/cancel) (`disputes`, `dispute_evidence`)
-- **Sub profiles** — bio, jobs-completed, portfolio support
+- **Sub profiles** — bio, jobs-completed, portfolio
+- **Portfolio photo upload UI** — subs add/remove work photos on their profile; uploads to `job-media/portfolio/`, stored in `portfolio_photos`
+- **Home splash** — both roles land on a full-bleed logo splash after login (`(sub)/home.tsx`, `(contractor)/home.tsx`) with live platform tallies (Jobs Completed, Paid to Crews) via the `get_platform_stats()` RPC. Navigation is via the tab bar / sidebar, not buttons.
+- **In-app messaging** — per-job threads with realtime updates, **unread badges** (Messages tab + per-thread counts), **read receipts** ("Read"/"Sent" under your last message), and a **typing indicator** (Realtime broadcast on the chat channel)
+- **Server-side message push** — `messages` INSERT fires the `on_message_insert` trigger (migration 016) → `send-notification` edge function via `pg_net`, so delivery no longer depends on the sender's app staying open. Recipient is resolved as the other job party; sender name + job title fill the notification
 
 ### Not yet built
-- In-app text messaging UI (DB schema exists, basic chat screens present)
-- Push notification delivery from DB triggers (currently client-side initiated)
-- Portfolio photo upload UI (table exists: `portfolio_photos`)
+- Push delivery from DB triggers for non-message events (claims, change orders, payments still fire client-side / from their own edge functions)
 
 ## Conventions
 - All Supabase queries use the anon client — RLS enforces access
 - Never surface `homeowner_phone` or `homeowner_email` in sub-facing screens
-- All communication features (messaging, future VoIP) are per-job — no direct contact info
+- All communication features (messaging, VoIP) are per-job — no direct contact info shared between parties
 - Use `getUserRole()` from `lib/auth.ts` for role checks, not raw `user_metadata`
-- Theme constants live in `lib/theme.ts` — no hardcoded color strings in components
+- Theme constants live in `lib/theme.ts` — no hardcoded color strings in components (the dark splash background `#0d1117` is the one intentional exception)
+- Secrets the DB needs (service role key, project URL for `pg_net` calls) live in Supabase Vault, never in committed migrations
+- Unread message count comes from `useUnreadMessages()` (`lib/`) — messages addressed to me with `read_at is null`
