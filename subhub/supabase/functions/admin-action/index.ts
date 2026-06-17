@@ -23,7 +23,14 @@ serve(async (req) => {
     if (!user) throw new Error('Unauthorized');
     if (user.user_metadata?.role !== 'admin') throw new Error('Admin access required');
 
-    const { action, jobId, subId, verified } = await req.json();
+    const { action, jobId, subId, verified, pin } = await req.json();
+
+    if (action === 'verify_pin') {
+      const adminPin = Deno.env.get('ADMIN_PIN');
+      if (!adminPin) throw new Error('ADMIN_PIN secret not configured.');
+      const valid = pin === adminPin;
+      return ok({ valid });
+    }
 
     if (action === 'cancel_job') {
       if (!jobId) throw new Error('jobId required');
