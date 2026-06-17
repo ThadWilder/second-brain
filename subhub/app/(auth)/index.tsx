@@ -31,7 +31,7 @@ export default function LandingScreen() {
 
       {/* Center divider */}
       <View style={styles.divider}>
-        <Image source={require('@/assets/logo.jpeg')} style={styles.logoImage} resizeMode="contain" />
+        <Image source={require('@/assets/logo-icon.jpeg')} style={styles.logoImage} resizeMode="contain" />
         <Text style={styles.tagline}>Contractors. Sub-Contractors. Connected</Text>
       </View>
 
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     gap: 4,
   },
-  logoImage: { width: 180, height: 98 },
+  logoImage: { width: 100, height: 100 },
   tagline: {
     fontSize: fontSize.xs,
     color: 'rgba(255,255,255,0.55)',
