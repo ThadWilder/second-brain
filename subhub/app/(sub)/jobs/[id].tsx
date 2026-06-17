@@ -42,21 +42,30 @@ export default function SubJobDetailScreen() {
   const [evidenceNote, setEvidenceNote] = useState('');
   const [submittingEvidence, setSubmittingEvidence] = useState(false);
 
+  // Communications
+  const [messages, setMessages] = useState<any[]>([]);
+  const [callLog, setCallLog] = useState<any[]>([]);
+  const [calling, setCalling] = useState(false);
+
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
-    const [{ data: j }, { data: co }, { data: m }, { data: qs }, { data: d }] = await Promise.all([
+    const [{ data: j }, { data: co }, { data: m }, { data: qs }, { data: d }, { data: msgs }, { data: calls }] = await Promise.all([
       supabase.from('jobs').select('*, contractor:contractor_profiles(*)').eq('id', id).single(),
       supabase.from('change_orders').select('*').eq('job_id', id).order('created_at', { ascending: false }),
       supabase.from('job_media').select('*').eq('job_id', id).order('created_at'),
       supabase.from('job_questions').select('*').eq('job_id', id).order('created_at'),
       supabase.from('disputes').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('messages').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(5),
+      supabase.from('call_log').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(5),
     ]);
     setJob(j);
     setChangeOrders(co ?? []);
     setMedia(m ?? []);
     setQuestions(qs ?? []);
     setDispute(d ?? null);
+    setMessages((msgs ?? []).reverse());
+    setCallLog(calls ?? []);
     if (d) {
       const { data: ev } = await supabase.from('dispute_evidence').select('*').eq('dispute_id', d.id).order('created_at');
       setEvidence(ev ?? []);
@@ -64,11 +73,35 @@ export default function SubJobDetailScreen() {
       setEvidence([]);
     }
     setLoading(false);
-    const { data: { user: u } } = await supabase.auth.getUser();
-    if (u) {
-      supabase.from('job_views').insert({ job_id: id, viewer_id: u.id }).then(() => {});
+    if (user) {
+      supabase.from('job_views').insert({ job_id: id, viewer_id: user.id }).then(() => {});
     }
   }, [id]);
+
+  async function handleCall() {
+    Alert.alert(
+      'Call Contractor',
+      "SubHub will call your phone and connect you to the contractor. Neither party will see the other's real number.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call Now', onPress: async () => {
+            setCalling(true);
+            try {
+              const { error } = await supabase.functions.invoke('call-connect', { body: { jobId: id } });
+              if (error) throw new Error(error.message);
+              Alert.alert('Calling…', 'SubHub is connecting your call. Your phone will ring shortly.');
+              fetchAll();
+            } catch (err) {
+              Alert.alert('Call Failed', (err as Error).message);
+            } finally {
+              setCalling(false);
+            }
+          },
+        },
+      ]
+    );
+  }
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -241,6 +274,63 @@ export default function SubJobDetailScreen() {
               <RateChip label="Payment terms" value={`${(job.contractor as any).payment_terms_days ?? 14} days`} />
             </View>
           </View>
+        )}
+
+        {/* Communications — visible once sub has claimed the job */}
+        {isMine && (
+          <>
+            <Divider />
+            <Section title="Communications">
+              <View style={styles.commsActions}>
+                <TouchableOpacity
+                  style={[styles.commsBtn, styles.callBtn]}
+                  onPress={handleCall}
+                  disabled={calling}
+                >
+                  {calling
+                    ? <ActivityIndicator color={colors.white} size="small" />
+                    : <Text style={styles.commsBtnText}>📞  Call Contractor</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.commsBtn, styles.msgBtn]}
+                  onPress={() => router.push({ pathname: '/(sub)/chat/[jobId]', params: { jobId: id } })}
+                >
+                  <Text style={[styles.commsBtnText, { color: colors.accent }]}>💬  Message</Text>
+                </TouchableOpacity>
+              </View>
+              {messages.length > 0 && (
+                <View style={styles.msgPreview}>
+                  {messages.slice(-3).map(msg => (
+                    <TouchableOpacity
+                      key={msg.id}
+                      style={styles.msgPreviewRow}
+                      onPress={() => router.push({ pathname: '/(sub)/chat/[jobId]', params: { jobId: id } })}
+                    >
+                      <Text style={styles.msgPreviewRole}>
+                        {msg.sender_role === 'subcontractor' ? 'You' : 'Contractor'}
+                      </Text>
+                      <Text style={styles.msgPreviewBody} numberOfLines={1}>{msg.body}</Text>
+                      <Text style={styles.msgPreviewTime}>{timeAgo(msg.created_at)}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: '/(sub)/chat/[jobId]', params: { jobId: id } })}
+                  >
+                    <Text style={styles.viewThread}>View full thread →</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {callLog.length > 0 && (
+                <View style={styles.callLogList}>
+                  {callLog.map(c => (
+                    <Text key={c.id} style={styles.callLogRow}>
+                      📞 {c.initiated_by_role === 'subcontractor' ? 'You called' : 'Contractor called'}  ·  {timeAgo(c.created_at)}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </Section>
+          </>
         )}
 
         {/* AI job analysis */}
@@ -549,14 +639,6 @@ export default function SubJobDetailScreen() {
             </TouchableOpacity>
           )
         )}
-        {isMine && (
-          <TouchableOpacity
-            style={styles.messageButton}
-            onPress={() => router.push({ pathname: '/(sub)/chat/[jobId]', params: { jobId: id } })}
-          >
-            <Text style={styles.messageButtonText}>💬 Message Contractor</Text>
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
@@ -622,6 +704,14 @@ function materialStatusLabel(status: Job['material_status']) {
 
 function formatCurrency(n: number) {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+}
+
+function timeAgo(dateStr: string) {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 const styles = StyleSheet.create({
@@ -698,11 +788,49 @@ const styles = StyleSheet.create({
   },
   rateChipLabel: { fontSize: 10, color: colors.textMuted },
   rateChipValue: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
-  messageButton: {
-    borderWidth: 1, borderColor: colors.accent, borderRadius: radius.md,
-    padding: spacing.sm, alignItems: 'center', marginTop: spacing.sm,
+  commsActions: {
+    flexDirection: 'row', gap: spacing.sm,
   },
-  messageButtonText: { color: colors.accent, fontSize: fontSize.sm, fontWeight: '600' },
+  commsBtn: {
+    flex: 1, borderRadius: radius.md, paddingVertical: spacing.sm + 2,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  callBtn: {
+    backgroundColor: colors.primary,
+  },
+  msgBtn: {
+    borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.white,
+  },
+  commsBtnText: {
+    color: colors.white, fontWeight: '700', fontSize: fontSize.sm,
+  },
+  msgPreview: {
+    backgroundColor: colors.surface, borderRadius: radius.md,
+    padding: spacing.sm, gap: 2, marginTop: spacing.xs,
+  },
+  msgPreviewRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingVertical: 4,
+  },
+  msgPreviewRole: {
+    fontSize: fontSize.xs, fontWeight: '700', color: colors.accent, minWidth: 48,
+  },
+  msgPreviewBody: {
+    flex: 1, fontSize: fontSize.sm, color: colors.text,
+  },
+  msgPreviewTime: {
+    fontSize: fontSize.xs, color: colors.textMuted,
+  },
+  viewThread: {
+    fontSize: fontSize.xs, color: colors.accent, fontWeight: '600',
+    marginTop: spacing.xs, textAlign: 'right',
+  },
+  callLogList: {
+    marginTop: spacing.xs, gap: 2,
+  },
+  callLogRow: {
+    fontSize: fontSize.xs, color: colors.textMuted, paddingVertical: 2,
+  },
   analyzeButton: {
     borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md,
     padding: spacing.sm, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: spacing.xs,

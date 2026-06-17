@@ -91,6 +91,17 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: `Twilio error: ${err}` }), { status: 500, headers: corsHeaders });
     }
 
+    const twilioData = await twilioRes.json();
+
+    // Log the call against the job — best effort
+    await supabase.from('call_log').insert({
+      job_id: jobId,
+      initiated_by: user.id,
+      initiated_by_role: isContractor ? 'contractor' : 'subcontractor',
+      call_sid: twilioData.sid ?? null,
+      status: 'initiated',
+    }).then(() => {});
+
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -31,20 +31,27 @@ export default function ContractorJobDetailScreen() {
   const [evidence, setEvidence] = useState<any[]>([]);
   const [evidenceNote, setEvidenceNote] = useState('');
   const [submittingEvidence, setSubmittingEvidence] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [callLog, setCallLog] = useState<any[]>([]);
+  const [calling, setCalling] = useState(false);
 
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
-    const [{ data: j }, { data: co }, { data: m }, { data: d }] = await Promise.all([
+    const [{ data: j }, { data: co }, { data: m }, { data: d }, { data: msgs }, { data: calls }] = await Promise.all([
       supabase.from('jobs').select('*, claimed_sub:sub_profiles!claimed_by(*)').eq('id', id).single(),
       supabase.from('change_orders').select('*').eq('job_id', id).order('created_at', { ascending: false }),
       supabase.from('job_media').select('*').eq('job_id', id).order('created_at'),
       supabase.from('disputes').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('messages').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(5),
+      supabase.from('call_log').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(5),
     ]);
     setJob(j);
     setChangeOrders(co ?? []);
     setMedia(m ?? []);
     setDispute(d ?? null);
+    setMessages((msgs ?? []).reverse());
+    setCallLog(calls ?? []);
     if (d) {
       const { data: ev } = await supabase.from('dispute_evidence').select('*').eq('dispute_id', d.id).order('created_at');
       setEvidence(ev ?? []);
@@ -53,6 +60,31 @@ export default function ContractorJobDetailScreen() {
     }
     setLoading(false);
   }, [id]);
+
+  async function handleCall() {
+    Alert.alert(
+      'Call Sub',
+      "SubHub will call your phone and connect you to the subcontractor. Neither party will see the other's real number.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call Now', onPress: async () => {
+            setCalling(true);
+            try {
+              const { error } = await supabase.functions.invoke('call-connect', { body: { jobId: id } });
+              if (error) throw new Error(error.message);
+              Alert.alert('Calling…', 'SubHub is connecting your call. Your phone will ring shortly.');
+              fetchAll();
+            } catch (err) {
+              Alert.alert('Call Failed', (err as Error).message);
+            } finally {
+              setCalling(false);
+            }
+          },
+        },
+      ]
+    );
+  }
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -240,6 +272,63 @@ export default function ContractorJobDetailScreen() {
           </View>
         )}
 
+        {/* Communications — visible whenever a sub is on the job */}
+        {sub && (
+          <>
+            <Divider />
+            <Section title="Communications">
+              <View style={styles.commsActions}>
+                <TouchableOpacity
+                  style={[styles.commsBtn, styles.callBtn]}
+                  onPress={handleCall}
+                  disabled={calling}
+                >
+                  {calling
+                    ? <ActivityIndicator color={colors.white} size="small" />
+                    : <Text style={styles.commsBtnText}>📞  Call Sub</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.commsBtn, styles.msgBtn]}
+                  onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
+                >
+                  <Text style={[styles.commsBtnText, { color: colors.primary }]}>💬  Message</Text>
+                </TouchableOpacity>
+              </View>
+              {messages.length > 0 && (
+                <View style={styles.msgPreview}>
+                  {messages.slice(-3).map(msg => (
+                    <TouchableOpacity
+                      key={msg.id}
+                      style={styles.msgPreviewRow}
+                      onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
+                    >
+                      <Text style={styles.msgPreviewRole}>
+                        {msg.sender_role === 'contractor' ? 'You' : sub.name ?? 'Sub'}
+                      </Text>
+                      <Text style={styles.msgPreviewBody} numberOfLines={1}>{msg.body}</Text>
+                      <Text style={styles.msgPreviewTime}>{timeAgo(msg.created_at)}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
+                  >
+                    <Text style={styles.viewThread}>View full thread →</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {callLog.length > 0 && (
+                <View style={styles.callLogList}>
+                  {callLog.map(c => (
+                    <Text key={c.id} style={styles.callLogRow}>
+                      📞 {c.initiated_by_role === 'contractor' ? 'You called' : 'Sub called'}  ·  {timeAgo(c.created_at)}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </Section>
+          </>
+        )}
+
         <Divider />
 
         <Section title="Scope">
@@ -311,27 +400,11 @@ export default function ContractorJobDetailScreen() {
       {/* Footer actions */}
       <View style={styles.footer}>
         {job.status === 'in_progress' && (
-          <View style={styles.footerRow}>
-            <TouchableOpacity
-              style={[styles.secondaryButton, styles.flex]}
-              onPress={() => router.push({ pathname: '/(contractor)/change-order', params: { jobId: id } })}
-            >
-              <Text style={styles.secondaryButtonText}>File Change Order</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.messageButton}
-              onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
-            >
-              <Text style={styles.messageButtonText}>💬 Message</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        {job.status === 'claimed' && sub && (
           <TouchableOpacity
-            style={styles.messageButtonFull}
-            onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
+            style={styles.secondaryButton}
+            onPress={() => router.push({ pathname: '/(contractor)/change-order', params: { jobId: id } })}
           >
-            <Text style={styles.messageButtonText}>💬 Message Sub</Text>
+            <Text style={styles.secondaryButtonText}>File Change Order</Text>
           </TouchableOpacity>
         )}
         {isPendingReview && !disputing && (
@@ -348,12 +421,6 @@ export default function ContractorJobDetailScreen() {
                 <Text style={styles.disputeButtonText}>Dispute</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.messageButtonFull}
-              onPress={() => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: id } })}
-            >
-              <Text style={styles.messageButtonText}>💬 Message Sub</Text>
-            </TouchableOpacity>
           </View>
         )}
         {isPendingReview && disputing && (
@@ -496,6 +563,14 @@ function formatCurrency(n: number) {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 }
 
+function timeAgo(dateStr: string) {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   loader: { marginTop: spacing.xxl },
@@ -553,15 +628,49 @@ const styles = StyleSheet.create({
   },
   payButtonText: { color: colors.white, fontSize: fontSize.md, fontWeight: '700' },
   flex: { flex: 1 },
-  messageButton: {
-    borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md,
-    paddingHorizontal: spacing.md, padding: spacing.sm, alignItems: 'center', justifyContent: 'center',
+  commsActions: {
+    flexDirection: 'row', gap: spacing.sm,
   },
-  messageButtonFull: {
-    borderWidth: 1, borderColor: colors.primary, borderRadius: radius.md,
-    padding: spacing.sm, alignItems: 'center',
+  commsBtn: {
+    flex: 1, borderRadius: radius.md, paddingVertical: spacing.sm + 2,
+    alignItems: 'center', justifyContent: 'center',
   },
-  messageButtonText: { color: colors.primary, fontSize: fontSize.sm, fontWeight: '600' },
+  callBtn: {
+    backgroundColor: colors.primary,
+  },
+  msgBtn: {
+    borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.white,
+  },
+  commsBtnText: {
+    color: colors.white, fontWeight: '700', fontSize: fontSize.sm,
+  },
+  msgPreview: {
+    backgroundColor: colors.surface, borderRadius: radius.md,
+    padding: spacing.sm, gap: 2, marginTop: spacing.xs,
+  },
+  msgPreviewRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingVertical: 4,
+  },
+  msgPreviewRole: {
+    fontSize: fontSize.xs, fontWeight: '700', color: colors.primary, minWidth: 36,
+  },
+  msgPreviewBody: {
+    flex: 1, fontSize: fontSize.sm, color: colors.text,
+  },
+  msgPreviewTime: {
+    fontSize: fontSize.xs, color: colors.textMuted,
+  },
+  viewThread: {
+    fontSize: fontSize.xs, color: colors.primary, fontWeight: '600',
+    marginTop: spacing.xs, textAlign: 'right',
+  },
+  callLogList: {
+    marginTop: spacing.xs, gap: 2,
+  },
+  callLogRow: {
+    fontSize: fontSize.xs, color: colors.textMuted, paddingVertical: 2,
+  },
   disputeButton: {
     borderWidth: 1, borderColor: colors.error, borderRadius: radius.md,
     paddingHorizontal: spacing.md, padding: spacing.sm, alignItems: 'center', justifyContent: 'center',
