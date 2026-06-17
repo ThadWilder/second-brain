@@ -33,6 +33,10 @@ export default function SubJobDetailScreen() {
   const [signeeName, setSigneeName] = useState('');
   const [submittingSignoff, setSubmittingSignoff] = useState(false);
 
+  // Rating gate — must rate contractor before submitting sign-off
+  const [hasRated, setHasRated] = useState(false);
+  const [pendingStars, setPendingStars] = useState(0);
+
   // Dispute state
   const [dispute, setDispute] = useState<any>(null);
   const [evidence, setEvidence] = useState<any[]>([]);
@@ -50,7 +54,7 @@ export default function SubJobDetailScreen() {
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
-    const [{ data: j }, { data: co }, { data: m }, { data: qs }, { data: d }, { data: msgs }, { data: calls }] = await Promise.all([
+    const [{ data: j }, { data: co }, { data: m }, { data: qs }, { data: d }, { data: msgs }, { data: calls }, { data: myRating }] = await Promise.all([
       supabase.from('jobs').select('*, contractor:contractor_profiles(*)').eq('id', id).single(),
       supabase.from('change_orders').select('*').eq('job_id', id).order('created_at', { ascending: false }),
       supabase.from('job_media').select('*').eq('job_id', id).order('created_at'),
@@ -58,6 +62,7 @@ export default function SubJobDetailScreen() {
       supabase.from('disputes').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('messages').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(5),
       supabase.from('call_log').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(5),
+      supabase.from('ratings').select('id').eq('job_id', id).eq('rater_id', user!.id).maybeSingle(),
     ]);
     setJob(j);
     setChangeOrders(co ?? []);
@@ -66,6 +71,7 @@ export default function SubJobDetailScreen() {
     setDispute(d ?? null);
     setMessages((msgs ?? []).reverse());
     setCallLog(calls ?? []);
+    setHasRated(!!myRating);
     if (d) {
       const { data: ev } = await supabase.from('dispute_evidence').select('*').eq('dispute_id', d.id).order('created_at');
       setEvidence(ev ?? []);
@@ -157,6 +163,10 @@ export default function SubJobDetailScreen() {
       return;
     }
 
+    if (!hasRated) {
+      Alert.alert('Rate First', 'Please rate the contractor before submitting job completion.');
+      return;
+    }
     setSubmittingSignoff(true);
     await supabase.from('customer_signoffs').insert({
       job_id: id,
@@ -178,7 +188,8 @@ export default function SubJobDetailScreen() {
       stars,
       rehire: stars >= 4,
     });
-    Alert.alert('Thanks!', 'Your rating has been submitted.');
+    setHasRated(true);
+    setPendingStars(stars);
   }
 
   async function askQuestion() {
@@ -525,6 +536,26 @@ export default function SubJobDetailScreen() {
         {inProgress && (
           <>
             <Divider />
+            <Section title="Rate This Contractor">
+              <Text style={styles.signoffNote}>
+                Rate the contractor before submitting — required to release your payment.
+              </Text>
+              {hasRated ? (
+                <View style={styles.ratedRow}>
+                  <RatingStars value={pendingStars} size="md" />
+                  <Text style={styles.ratedConfirm}>✓ Rating submitted</Text>
+                </View>
+              ) : (
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <TouchableOpacity key={n} onPress={() => handleRating(n)} style={styles.starBtn}>
+                      <Text style={[styles.starGlyph, pendingStars >= n && styles.starGlyphOn]}>★</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </Section>
+            <Divider />
             <Section title="Customer Sign-Off">
               <Text style={styles.signoffNote}>
                 Collect the homeowner's acknowledgment that the work is complete.
@@ -541,17 +572,18 @@ export default function SubJobDetailScreen() {
           </>
         )}
 
-        {/* Rating — after completion */}
-        {isComplete && isMine && (
+        {/* Rating reminder — after completion, if somehow not yet rated */}
+        {isComplete && isMine && !hasRated && (
           <>
             <Divider />
             <Section title="Rate This Contractor">
-              <TouchableOpacity
-                style={styles.reviewButton}
-                onPress={() => router.push(`/(sub)/rate/${job.id}`)}
-              >
-                <Text style={styles.reviewButtonText}>⭐ Leave a Review</Text>
-              </TouchableOpacity>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <TouchableOpacity key={n} onPress={() => handleRating(n)} style={styles.starBtn}>
+                    <Text style={[styles.starGlyph, pendingStars >= n && styles.starGlyphOn]}>★</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </Section>
           </>
         )}
@@ -901,4 +933,10 @@ const styles = StyleSheet.create({
   qaInput: { flex: 1 },
   qaSubmitBtn: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingVertical: 10, paddingHorizontal: spacing.md, alignItems: 'center', justifyContent: 'center' },
   qaSubmitText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
+  starsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  starBtn: { padding: 4 },
+  starGlyph: { fontSize: 32, color: colors.border },
+  starGlyphOn: { color: '#f59e0b' },
+  ratedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xs },
+  ratedConfirm: { fontSize: fontSize.sm, color: colors.accent, fontWeight: '600' },
 });

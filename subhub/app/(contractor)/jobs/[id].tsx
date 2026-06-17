@@ -35,16 +35,21 @@ export default function ContractorJobDetailScreen() {
   const [callLog, setCallLog] = useState<any[]>([]);
   const [calling, setCalling] = useState(false);
 
+  // Rating gate — must rate sub before releasing payment
+  const [hasRated, setHasRated] = useState(false);
+  const [pendingStars, setPendingStars] = useState(0);
+
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
-    const [{ data: j }, { data: co }, { data: m }, { data: d }, { data: msgs }, { data: calls }] = await Promise.all([
+    const [{ data: j }, { data: co }, { data: m }, { data: d }, { data: msgs }, { data: calls }, { data: myRating }] = await Promise.all([
       supabase.from('jobs').select('*, claimed_sub:sub_profiles!claimed_by(*)').eq('id', id).single(),
       supabase.from('change_orders').select('*').eq('job_id', id).order('created_at', { ascending: false }),
       supabase.from('job_media').select('*').eq('job_id', id).order('created_at'),
       supabase.from('disputes').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('messages').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(5),
       supabase.from('call_log').select('*').eq('job_id', id).order('created_at', { ascending: false }).limit(5),
+      supabase.from('ratings').select('id').eq('job_id', id).eq('rater_id', user!.id).maybeSingle(),
     ]);
     setJob(j);
     setChangeOrders(co ?? []);
@@ -52,6 +57,7 @@ export default function ContractorJobDetailScreen() {
     setDispute(d ?? null);
     setMessages((msgs ?? []).reverse());
     setCallLog(calls ?? []);
+    setHasRated(!!myRating);
     if (d) {
       const { data: ev } = await supabase.from('dispute_evidence').select('*').eq('dispute_id', d.id).order('created_at');
       setEvidence(ev ?? []);
@@ -89,6 +95,10 @@ export default function ContractorJobDetailScreen() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   async function handleReleasePayment() {
+    if (!hasRated) {
+      Alert.alert('Rate First', 'Please rate the subcontractor before releasing payment.');
+      return;
+    }
     Alert.alert(
       'Release Payment?',
       `This will charge your card and send ${formatCurrency(job!.sub_payout)} to the subcontractor.`,
@@ -217,7 +227,8 @@ export default function ContractorJobDetailScreen() {
     try {
       await supabase.functions.invoke('compute-job-success', { body: { subUserId: job!.claimed_by } });
     } catch { /* fire and forget */ }
-    Alert.alert('Thanks!', 'Your rating has been submitted.');
+    setHasRated(true);
+    setPendingStars(stars);
   }
 
   async function handleCancel() {
@@ -411,8 +422,31 @@ export default function ContractorJobDetailScreen() {
           <View style={styles.reviewBox}>
             <Text style={styles.reviewTitle}>Sub has marked this job complete</Text>
             <Text style={styles.reviewSub}>Review photos and sign-off, then release payment or file a dispute.</Text>
+
+            {/* Must rate before releasing payment */}
+            <View style={styles.ratingGate}>
+              <Text style={styles.ratingGateLabel}>
+                {hasRated ? '✓ Sub rated — ready to release payment' : 'Rate the sub to unlock payment release:'}
+              </Text>
+              {hasRated ? (
+                <RatingStars value={pendingStars} size="md" />
+              ) : (
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <TouchableOpacity key={n} onPress={() => handleRating(n)} style={styles.starBtn}>
+                      <Text style={[styles.starGlyph, pendingStars >= n && styles.starGlyphOn]}>★</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
             <View style={styles.footerRow}>
-              <TouchableOpacity style={[styles.payButton, styles.flex]} onPress={handleReleasePayment} disabled={paying}>
+              <TouchableOpacity
+                style={[styles.payButton, styles.flex, !hasRated && styles.payButtonDisabled]}
+                onPress={handleReleasePayment}
+                disabled={paying || !hasRated}
+              >
                 {paying
                   ? <ActivityIndicator color={colors.white} />
                   : <Text style={styles.payButtonText}>Release Payment — {formatCurrency(job.sub_payout)}</Text>}
@@ -709,4 +743,11 @@ const styles = StyleSheet.create({
   evidenceNote: { fontSize: fontSize.sm, color: colors.text, lineHeight: 20 },
   evidencePhotos: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: 4 },
   evidencePhoto: { width: 64, height: 64, borderRadius: radius.sm, backgroundColor: colors.surface },
+  ratingGate: { gap: spacing.xs, marginBottom: spacing.sm },
+  ratingGateLabel: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '600' },
+  starsRow: { flexDirection: 'row', gap: spacing.sm },
+  starBtn: { padding: 4 },
+  starGlyph: { fontSize: 32, color: colors.border },
+  starGlyphOn: { color: '#f59e0b' },
+  payButtonDisabled: { opacity: 0.4 },
 });
