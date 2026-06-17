@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Platform, View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
+import { Platform, View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Image } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
@@ -22,7 +22,7 @@ function SubSidebar({ onCollapse }: { onCollapse: () => void }) {
   return (
     <View style={s.sidebar}>
       <View style={s.logoRow}>
-        <Text style={s.logo}>SubHub</Text>
+        <Image source={require('@/assets/logo.jpeg')} style={s.logoImage} resizeMode="contain" />
         <TouchableOpacity onPress={onCollapse} style={s.collapseBtn}>
           <Text style={s.collapseBtnText}>◀</Text>
         </TouchableOpacity>
@@ -105,23 +105,18 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: '#0d1117',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     marginBottom: spacing.md,
   },
-  logo: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: colors.primary,
-  },
+  logoImage: { width: 160, height: 87 },
   collapseBtn: {
     padding: spacing.sm,
   },
   collapseBtnText: {
     fontSize: 18,
-    color: colors.textMuted,
+    color: 'rgba(255,255,255,0.5)',
   },
   item: {
     flexDirection: 'row',
