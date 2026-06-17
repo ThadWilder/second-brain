@@ -155,8 +155,8 @@ export default function OnboardContractorScreen() {
           <Field label="Delay pay ($ per hour)" value={form.delay_pay_rate_per_hour} onChangeText={set('delay_pay_rate_per_hour')} keyboardType="decimal-pad" placeholder="35" />
           <Field label="Add-on pay ($ per linear foot)" value={form.addon_pay_rate_per_lf} onChangeText={set('addon_pay_rate_per_lf')} keyboardType="decimal-pad" placeholder="15" />
           <Field label="Return trip fee ($)" value={form.return_trip_fee} onChangeText={set('return_trip_fee')} keyboardType="decimal-pad" placeholder="150" />
-          <Field label="Change order admin fee ($)" value={form.change_order_fee} onChangeText={set('change_order_fee')} keyboardType="decimal-pad" placeholder="75" />
-          <Field label="Max delay liability ($)" value={form.delay_liability_cap} onChangeText={set('delay_liability_cap')} keyboardType="decimal-pad" placeholder="500" />
+          <LockedField label="Change order admin fee ($)" value="75" />
+          <LockedField label="Max delay liability ($)" value="500" />
 
           <Text style={styles.label}>Payment terms (days to collect from homeowner)</Text>
           <View style={styles.pillRow}>
@@ -239,6 +239,22 @@ function Field({ label, value, onChangeText, placeholder, keyboardType }: {
   );
 }
 
+function LockedField({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.field}>
+      <View style={styles.lockedLabelRow}>
+        <Text style={styles.label}>{label}</Text>
+        <View style={styles.lockedBadge}>
+          <Text style={styles.lockedBadgeText}>🔒 Set by SubHub</Text>
+        </View>
+      </View>
+      <View style={styles.lockedInput}>
+        <Text style={styles.lockedValue}>${value}</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.xl, gap: spacing.md, paddingBottom: spacing.xxl },
@@ -284,4 +300,12 @@ const styles = StyleSheet.create({
   chipTextSelected: { color: colors.white },
   signOutButton: { alignItems: 'center', paddingVertical: spacing.sm },
   signOutText: { fontSize: fontSize.sm, color: colors.textMuted },
+  lockedLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  lockedBadge: { backgroundColor: '#f1f5f9', borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  lockedBadgeText: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
+  lockedInput: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    padding: spacing.md, backgroundColor: '#f8fafc',
+  },
+  lockedValue: { fontSize: fontSize.md, color: colors.textMuted },
 });
