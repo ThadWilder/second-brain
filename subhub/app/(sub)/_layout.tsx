@@ -7,6 +7,7 @@ const SIDEBAR_W = 240;
 const BREAKPOINT = 768;
 
 const TABS = [
+  { segment: 'home',        icon: '🏠', label: 'Home'        },
   { segment: '',            icon: '🔍', label: 'Job Board'   },
   { segment: 'my-jobs',     icon: '🔨', label: 'My Jobs'     },
   { segment: 'earnings',    icon: '💰', label: 'Earnings'    },
@@ -72,6 +73,7 @@ export default function SubLayout() {
             ) : undefined,
           }}
         >
+          <Tabs.Screen name="home"         options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
           <Tabs.Screen name="index"        options={{ title: 'Job Board',   tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
           <Tabs.Screen name="my-jobs"      options={{ title: 'My Jobs',     tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
           <Tabs.Screen name="earnings"     options={{ title: 'Earnings',    tabBarIcon: ({ color }) => <Icon e="💰" c={color} /> }} />

@@ -85,7 +85,7 @@ export default function OnboardContractorScreen() {
       payment_terms_days: parseInt(form.payment_terms_days, 10) || 14,
     });
     if (err) { setError(err.message); setLoading(false); return; }
-    router.replace('/(contractor)/');
+    router.replace('/(contractor)/home' as any);
   }
 
   return (

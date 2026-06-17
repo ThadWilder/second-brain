@@ -65,8 +65,8 @@ export default function RootLayout() {
   }, []);
 
   function redirectToRole(role: UserRole | null) {
-    if (role === 'contractor') router.replace('/(contractor)/');
-    else if (role === 'subcontractor') router.replace('/(sub)/');
+    if (role === 'contractor') router.replace('/(contractor)/home' as any);
+    else if (role === 'subcontractor') router.replace('/(sub)/home' as any);
     else if (role === 'admin') router.replace('/(admin)/');
     else router.replace('/(auth)/signup');
   }

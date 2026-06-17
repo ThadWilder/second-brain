@@ -7,6 +7,7 @@ const SIDEBAR_W = 240;
 const BREAKPOINT = 768;
 
 const TABS = [
+  { segment: 'home',     icon: '🏠', label: 'Home'      },
   { segment: '',         icon: '📋', label: 'My Jobs'   },
   { segment: 'post-job', icon: '➕', label: 'Post Job'  },
   { segment: 'messages', icon: '💬', label: 'Messages'  },
@@ -71,6 +72,7 @@ export default function ContractorLayout() {
             ) : undefined,
           }}
         >
+          <Tabs.Screen name="home"     options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
           <Tabs.Screen name="index"    options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
           <Tabs.Screen name="post-job" options={{ title: 'Post Job',  tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
           <Tabs.Screen name="messages" options={{ title: 'Messages',  tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />

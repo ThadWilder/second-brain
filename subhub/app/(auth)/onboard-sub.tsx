@@ -65,7 +65,7 @@ export default function OnboardSubScreen() {
       verified: false,
     });
     if (err) { setError(err.message); setLoading(false); return; }
-    router.replace('/(sub)/');
+    router.replace('/(sub)/home' as any);
   }
 
   return (
