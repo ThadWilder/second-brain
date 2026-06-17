@@ -9,6 +9,7 @@ const BREAKPOINT = 768;
 const TABS = [
   { segment: '',            icon: '🔍', label: 'Job Board'   },
   { segment: 'my-jobs',     icon: '🔨', label: 'My Jobs'     },
+  { segment: 'earnings',    icon: '💰', label: 'Earnings'    },
   { segment: 'contractors', icon: '🏗️', label: 'Contractors' },
   { segment: 'messages',    icon: '💬', label: 'Messages'    },
   { segment: 'profile',     icon: '👤', label: 'Profile'     },
@@ -73,9 +74,11 @@ export default function SubLayout() {
         >
           <Tabs.Screen name="index"        options={{ title: 'Job Board',   tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
           <Tabs.Screen name="my-jobs"      options={{ title: 'My Jobs',     tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
+          <Tabs.Screen name="earnings"     options={{ title: 'Earnings',    tabBarIcon: ({ color }) => <Icon e="💰" c={color} /> }} />
           <Tabs.Screen name="contractors"  options={{ title: 'Contractors', tabBarIcon: ({ color }) => <Icon e="🏗️" c={color} /> }} />
           <Tabs.Screen name="messages"     options={{ title: 'Messages',    tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
           <Tabs.Screen name="profile"      options={{ title: 'Profile',     tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
+          <Tabs.Screen name="saved-searches" options={{ href: null, title: 'Job Alerts' }} />
           <Tabs.Screen name="jobs/[id]"      options={{ href: null }} />
           <Tabs.Screen name="chat/[jobId]"   options={{ href: null, title: 'Chat' }} />
           <Tabs.Screen name="rate/[jobId]"   options={{ href: null, title: 'Leave a Review' }} />

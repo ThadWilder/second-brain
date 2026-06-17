@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, ActivityIndicator,
-  TouchableOpacity, TextInput, ScrollView,
+  TouchableOpacity, TextInput, ScrollView, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -51,6 +51,20 @@ function matchesPay(payout: number, f: PayFilter) {
   return true;
 }
 
+function payFilterMin(f: PayFilter): number | null {
+  if (f === 'under1k') return null;
+  if (f === '1k-2.5k') return 1000;
+  if (f === '2.5k-5k') return 2500;
+  if (f === '5k+') return 5000;
+  return null;
+}
+
+type PendingInvite = {
+  id: string;
+  status: string;
+  job: { id: string; title: string; sub_payout: number } | null;
+};
+
 export default function JobBoardScreen() {
   const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -60,8 +74,12 @@ export default function JobBoardScreen() {
   const [duration, setDuration] = useState<DurationFilter>('all');
   const [pay, setPay] = useState<PayFilter>('all');
   const [loading, setLoading] = useState(true);
+  const [invites, setInvites] = useState<PendingInvite[]>([]);
+  const [invitesDismissed, setInvitesDismissed] = useState(false);
+  const [subProfileId, setSubProfileId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => { fetchJobs(); }, []);
+  useEffect(() => { fetchJobs(); fetchInvites(); }, []);
 
   async function fetchJobs() {
     const { data } = await supabase
@@ -71,6 +89,67 @@ export default function JobBoardScreen() {
       .order('created_at', { ascending: false });
     setJobs(data ?? []);
     setLoading(false);
+  }
+
+  async function fetchInvites() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setUserId(user.id);
+
+    const { data: prof } = await supabase
+      .from('sub_profiles').select('id').eq('user_id', user.id).single();
+    if (!prof) return;
+    setSubProfileId(prof.id);
+
+    const { data } = await supabase
+      .from('job_invites')
+      .select('id, status, job:jobs(id, title, sub_payout)')
+      .eq('sub_id', prof.id)
+      .eq('status', 'pending');
+
+    setInvites((data as unknown as PendingInvite[]) ?? []);
+  }
+
+  async function acceptInvite(inviteId: string, jobId: string) {
+    if (!userId) return;
+    await supabase.from('jobs').update({
+      status: 'claimed',
+      claimed_by: userId,
+      claimed_at: new Date().toISOString(),
+    }).eq('id', jobId);
+    await supabase.from('job_invites').update({ status: 'accepted' }).eq('id', inviteId);
+    await fetchInvites();
+    await fetchJobs();
+    router.push(`/(sub)/jobs/${jobId}`);
+  }
+
+  async function declineInvite(inviteId: string) {
+    await supabase.from('job_invites').update({ status: 'declined' }).eq('id', inviteId);
+    await fetchInvites();
+  }
+
+  async function saveCurrentSearch() {
+    if (!subProfileId) {
+      Alert.alert('Not ready', 'Could not load your profile. Try again in a moment.');
+      return;
+    }
+    const skills = industry === 'All' ? [] : [industry];
+    const min_payout = payFilterMin(pay);
+    const labelParts = [
+      industry === 'All' ? 'All trades' : industry,
+      pay === 'all' ? null : PAY_BRACKETS.find(p => p.value === pay)?.label,
+    ].filter(Boolean);
+
+    await supabase.from('saved_searches').insert({
+      sub_id: subProfileId,
+      label: labelParts.join(' · ') || null,
+      skills,
+      zip: null,
+      min_payout,
+      notify: true,
+    });
+
+    Alert.alert('Alert saved', "We'll notify you when matching jobs are posted. Manage your alerts anytime under Job Alerts.");
   }
 
   const filtered = jobs
@@ -137,6 +216,15 @@ export default function JobBoardScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        <View style={styles.alertRow}>
+          <TouchableOpacity style={styles.saveSearchBtn} onPress={saveCurrentSearch}>
+            <Text style={styles.saveSearchText}>🔔 Save this search</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(sub)/saved-searches' as any)}>
+            <Text style={styles.manageAlertsText}>Manage alerts</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading ? (
@@ -153,7 +241,41 @@ export default function JobBoardScreen() {
             />
           )}
           ListHeaderComponent={
-            <Text style={styles.count}>{filtered.length} job{filtered.length !== 1 ? 's' : ''} available</Text>
+            <View>
+              {!invitesDismissed && invites.length > 0 && (
+                <View style={styles.inviteBanner}>
+                  <View style={styles.inviteHeader}>
+                    <Text style={styles.inviteTitle}>📨 You have {invites.length} job invitation{invites.length !== 1 ? 's' : ''}</Text>
+                    <TouchableOpacity onPress={() => setInvitesDismissed(true)} hitSlop={8}>
+                      <Text style={styles.inviteDismiss}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {invites.map(inv => (
+                    <View key={inv.id} style={styles.inviteCard}>
+                      <View style={styles.inviteInfo}>
+                        <Text style={styles.inviteJobTitle} numberOfLines={1}>{inv.job?.title ?? 'Job'}</Text>
+                        <Text style={styles.invitePayout}>${(inv.job?.sub_payout ?? 0).toLocaleString()}</Text>
+                      </View>
+                      <View style={styles.inviteActions}>
+                        <TouchableOpacity
+                          style={styles.acceptBtn}
+                          onPress={() => inv.job && acceptInvite(inv.id, inv.job.id)}
+                        >
+                          <Text style={styles.acceptText}>Accept</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.declineBtn}
+                          onPress={() => declineInvite(inv.id)}
+                        >
+                          <Text style={styles.declineText}>Decline</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <Text style={styles.count}>{filtered.length} job{filtered.length !== 1 ? 's' : ''} available</Text>
+            </View>
           }
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -215,6 +337,33 @@ const styles = StyleSheet.create({
   sortTextActive: { color: colors.white },
   clearButton: { marginLeft: 'auto' as any },
   clearText: { fontSize: fontSize.xs, color: colors.error, fontWeight: '600' },
+  alertRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
+  saveSearchBtn: {
+    paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: 999,
+    borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.accentLight,
+  },
+  saveSearchText: { fontSize: fontSize.xs, color: colors.accent, fontWeight: '700' },
+  manageAlertsText: { fontSize: fontSize.xs, color: colors.primary, fontWeight: '600', textDecorationLine: 'underline' },
+  inviteBanner: {
+    margin: spacing.md, marginBottom: 0, padding: spacing.md,
+    backgroundColor: colors.accentLight, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.accent, gap: spacing.sm,
+  },
+  inviteHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  inviteTitle: { fontSize: fontSize.sm, fontWeight: '800', color: colors.text, flex: 1, paddingRight: spacing.sm },
+  inviteDismiss: { fontSize: fontSize.md, color: colors.textMuted, fontWeight: '700' },
+  inviteCard: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: colors.background, borderRadius: radius.sm, padding: spacing.sm, gap: spacing.sm,
+  },
+  inviteInfo: { flex: 1 },
+  inviteJobTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.text },
+  invitePayout: { fontSize: fontSize.sm, fontWeight: '800', color: colors.accent },
+  inviteActions: { flexDirection: 'row', gap: spacing.xs },
+  acceptBtn: { backgroundColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  acceptText: { color: colors.white, fontSize: fontSize.xs, fontWeight: '700' },
+  declineBtn: { backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  declineText: { color: colors.textMuted, fontSize: fontSize.xs, fontWeight: '700' },
   loader: { marginTop: spacing.xxl },
   count: { fontSize: fontSize.sm, color: colors.textMuted, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
   list: { paddingBottom: spacing.xxl },
