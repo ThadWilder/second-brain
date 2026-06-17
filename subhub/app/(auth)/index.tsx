@@ -18,6 +18,12 @@ export default function LandingScreen() {
         />
       </View>
 
+      {/* Pitch copy */}
+      <View style={styles.pitchSection}>
+        <Text style={styles.pitchHeadline}>The job board for fencing crews.</Text>
+        <Text style={styles.pitchSub}>Post a scoped job. Claim one. Get paid — all in the app.</Text>
+      </View>
+
       {/* CTA section */}
       <View style={styles.ctaSection}>
         <TouchableOpacity
@@ -28,7 +34,7 @@ export default function LandingScreen() {
           <Text style={styles.contractorBtnIcon}>📋</Text>
           <View style={styles.btnTextWrap}>
             <Text style={styles.contractorBtnTitle}>Post a Job</Text>
-            <Text style={styles.contractorBtnSub}>For contractors & franchise operators</Text>
+            <Text style={styles.contractorBtnSub}>Scoped. Locked. Crewed.</Text>
           </View>
           <Text style={styles.btnArrow}>→</Text>
         </TouchableOpacity>
@@ -41,7 +47,7 @@ export default function LandingScreen() {
           <Text style={styles.subBtnIcon}>💰</Text>
           <View style={styles.btnTextWrap}>
             <Text style={styles.subBtnTitle}>Find Work</Text>
-            <Text style={styles.subBtnSub}>For subcontractors in the field</Text>
+            <Text style={styles.subBtnSub}>Browse. Claim. Get Paid.</Text>
           </View>
           <Text style={[styles.btnArrow, styles.subBtnArrow]}>→</Text>
         </TouchableOpacity>
@@ -77,6 +83,27 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 520,
     aspectRatio: 1220 / 796,
+  },
+
+  pitchSection: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
+    gap: spacing.xs,
+    alignItems: 'center',
+  },
+  pitchHeadline: {
+    fontSize: fontSize.xl,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
+    letterSpacing: -0.4,
+  },
+  pitchSub: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center',
+    lineHeight: 20,
+    letterSpacing: 0.1,
   },
 
   ctaSection: {
