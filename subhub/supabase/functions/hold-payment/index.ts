@@ -41,9 +41,26 @@ serve(async (req) => {
     }) as any;
 
     const defaultPm = customer.invoice_settings?.default_payment_method;
-    const paymentMethodId = typeof defaultPm === 'string' ? defaultPm : defaultPm?.id;
+    let paymentMethodId = typeof defaultPm === 'string' ? defaultPm : defaultPm?.id;
 
-    if (!paymentMethodId) throw new Error('No default card on file. Add a payment method in your profile.');
+    // SetupIntent flows attach a card but don't mark it as the customer's
+    // default. Fall back to the most recently attached card, then persist it
+    // as the default so future holds + charges find it immediately.
+    if (!paymentMethodId) {
+      const pms = await stripe.paymentMethods.list({
+        customer: profile.stripe_customer_id,
+        type: 'card',
+        limit: 1,
+      });
+      paymentMethodId = pms.data[0]?.id;
+      if (paymentMethodId) {
+        await stripe.customers.update(profile.stripe_customer_id, {
+          invoice_settings: { default_payment_method: paymentMethodId },
+        });
+      }
+    }
+
+    if (!paymentMethodId) throw new Error('No card on file. Add a payment method in your profile before posting.');
 
     const hold = await stripe.paymentIntents.create({
       amount: 100000, // $1,000.00
