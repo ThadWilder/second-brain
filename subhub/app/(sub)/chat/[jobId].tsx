@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { notify } from '@/lib/notifications';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 export default function SubChat() {
@@ -15,6 +16,9 @@ export default function SubChat() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [recipientId, setRecipientId] = useState('');
+  const [myName, setMyName] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
   const listRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -24,9 +28,16 @@ export default function SubChat() {
       if (!session) return;
       setMyId(session.user.id);
 
+      const { data: sp } = await supabase
+        .from('sub_profiles')
+        .select('name')
+        .eq('user_id', session.user.id)
+        .single();
+      if (sp?.name) setMyName(sp.name);
+
       const [{ data: msgs }, { data: job }] = await Promise.all([
         supabase.from('messages').select('*').eq('job_id', jobId).order('created_at'),
-        supabase.from('jobs').select('title').eq('id', jobId).single(),
+        supabase.from('jobs').select('title, contractor_id').eq('id', jobId).single(),
       ]);
 
       setMessages(msgs ?? []);
@@ -38,6 +49,8 @@ export default function SubChat() {
           </TouchableOpacity>
         ),
       });
+      if (job?.contractor_id) setRecipientId(job.contractor_id);
+      if (job?.title) setJobTitle(job.title);
       setLoading(false);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50);
 
@@ -86,6 +99,9 @@ export default function SubChat() {
       sender_role: 'subcontractor',
       body,
     });
+    if (recipientId) {
+      notify.newMessage(recipientId, myName || 'Sub', jobTitle, jobId).catch(() => {});
+    }
     setSending(false);
   }
 

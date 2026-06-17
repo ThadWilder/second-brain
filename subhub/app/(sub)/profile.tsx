@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
 import RatingStars from '@/components/RatingStars';
@@ -26,6 +28,8 @@ export default function SubProfileScreen() {
     availability: 'available' as 'available' | 'busy',
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [portfolioPhotos, setPortfolioPhotos] = useState<Array<{ id: string; url: string; caption: string | null }>>([]);
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
 
   useEffect(() => { fetchProfile(); }, []);
 
@@ -43,6 +47,12 @@ export default function SubProfileScreen() {
         availability: (data as any).availability ?? 'available',
       });
       setSelectedSkills(data.skills ?? ['Fencing']);
+      const { data: photos } = await supabase
+        .from('portfolio_photos')
+        .select('id, url, caption')
+        .eq('sub_id', data.id)
+        .order('created_at', { ascending: false });
+      setPortfolioPhotos(photos ?? []);
     }
     setLoading(false);
   }
@@ -90,6 +100,57 @@ export default function SubProfileScreen() {
       setFields(f => ({ ...f, availability: next }));
       fetchProfile();
     }
+  }
+
+  async function addPortfolioPhoto() {
+    if (!profile) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (result.canceled) return;
+    setUploadingPortfolio(true);
+    try {
+      const asset = result.assets[0];
+      const { data: { user } } = await supabase.auth.getUser();
+      const ext = asset.uri.split('.').pop() ?? 'jpg';
+      const path = `portfolio/${user!.id}/${Date.now()}.${ext}`;
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const { error: uploadError } = await supabase.storage
+        .from('job-media')
+        .upload(path, decodeBase64(base64), { contentType: `image/${ext}` });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('job-media').getPublicUrl(path);
+      const { data: photo, error: dbError } = await supabase
+        .from('portfolio_photos')
+        .insert({ sub_id: profile.id, url: publicUrl })
+        .select()
+        .single();
+      if (dbError) throw dbError;
+      setPortfolioPhotos(prev => [photo, ...prev]);
+    } catch (err) {
+      Alert.alert('Upload failed', (err as Error).message);
+    } finally {
+      setUploadingPortfolio(false);
+    }
+  }
+
+  async function deletePortfolioPhoto(id: string, url: string) {
+    Alert.alert('Remove Photo', 'Delete this portfolio photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          const match = url.match(/job-media\/(.+)$/);
+          if (match) await supabase.storage.from('job-media').remove([match[1]]);
+          await supabase.from('portfolio_photos').delete().eq('id', id);
+          setPortfolioPhotos(prev => prev.filter(p => p.id !== id));
+        },
+      },
+    ]);
   }
 
   if (loading) return <ActivityIndicator style={styles.loader} color={colors.accent} />;
@@ -191,6 +252,38 @@ export default function SubProfileScreen() {
           <Text style={styles.bioText}>{(profile as any).bio}</Text>
         </Section>
       )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Portfolio</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.portfolioScroll}>
+          <View style={styles.portfolioRow}>
+            {portfolioPhotos.map(photo => (
+              <TouchableOpacity
+                key={photo.id}
+                onLongPress={() => deletePortfolioPhoto(photo.id, photo.url)}
+                activeOpacity={0.85}
+              >
+                <Image source={{ uri: photo.url }} style={styles.portfolioThumb} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.portfolioAddBtn}
+              onPress={addPortfolioPhoto}
+              disabled={uploadingPortfolio}
+            >
+              {uploadingPortfolio
+                ? <ActivityIndicator color={colors.accent} />
+                : <Text style={styles.portfolioAddIcon}>+</Text>}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+        {portfolioPhotos.length === 0 && !uploadingPortfolio && (
+          <Text style={styles.portfolioHint}>Add photos of your completed work to stand out on the job board.</Text>
+        )}
+        {portfolioPhotos.length > 0 && (
+          <Text style={styles.portfolioTip}>Long press a photo to remove it.</Text>
+        )}
+      </View>
 
       {((profile as any).avg_response_minutes != null || (profile as any).response_rate != null) && (
         <Section title="Reputation">
@@ -320,6 +413,15 @@ export default function SubProfileScreen() {
   );
 }
 
+function decodeBase64(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
 function formatResponseTime(minutes: number): string {
   if (minutes >= 60) return `${Math.round(minutes / 60)}h`;
   return `${Math.round(minutes)}m`;
@@ -428,4 +530,16 @@ const styles = StyleSheet.create({
   progressTrack: { height: 8, borderRadius: 999, backgroundColor: colors.border, overflow: 'hidden' },
   progressFill: { height: 8, borderRadius: 999 },
   completionHint: { fontSize: fontSize.sm, color: colors.textMuted },
+  portfolioScroll: { marginHorizontal: -spacing.xl },
+  portfolioRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.xs },
+  portfolioThumb: { width: 88, height: 88, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
+  portfolioAddBtn: {
+    width: 88, height: 88, borderRadius: radius.sm,
+    borderWidth: 2, borderColor: colors.border, borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  portfolioAddIcon: { fontSize: 28, color: colors.textLight },
+  portfolioHint: { fontSize: fontSize.xs, color: colors.textMuted, fontStyle: 'italic' },
+  portfolioTip: { fontSize: fontSize.xs, color: colors.textLight },
 });
