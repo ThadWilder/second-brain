@@ -1,6 +1,6 @@
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors, spacing, fontSize, radius } from '@/lib/theme';
+import { spacing, fontSize, radius } from '@/lib/theme';
 
 export default function LandingScreen() {
   const router = useRouter();
@@ -9,53 +9,45 @@ export default function LandingScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Contractor tile — top half */}
-      <TouchableOpacity
-        style={styles.contractorTile}
-        activeOpacity={0.88}
-        onPress={() => router.push({ pathname: '/(auth)/signup', params: { role: 'contractor' } })}
-      >
-        <View style={styles.tileInner}>
-          <Text style={styles.tileIcon}>📋</Text>
-          <Text style={styles.tileTitle}>Post a Job</Text>
-          <Text style={styles.tileSubtitle}>
-            You sold it. Now build your crew.{'\n'}
-            Post a scoped job and get bids{'\n'}
-            from verified field subs.
-          </Text>
-          <View style={styles.tileCta}>
-            <Text style={styles.tileCtaText}>Post a job  →</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-
-      {/* Center divider */}
-      <View style={styles.divider}>
-        <Image source={require('@/assets/logo-icon.jpeg')} style={styles.logoImage} resizeMode="contain" />
-        <Text style={styles.tagline}>Contractors. Sub-Contractors. Connected</Text>
+      {/* Hero logo */}
+      <View style={styles.heroSection}>
+        <Image
+          source={require('@/assets/logo-hero.jpeg')}
+          style={styles.heroLogo}
+          resizeMode="contain"
+        />
       </View>
 
-      {/* Sub tile — bottom half */}
-      <TouchableOpacity
-        style={styles.subTile}
-        activeOpacity={0.88}
-        onPress={() => router.push({ pathname: '/(auth)/signup', params: { role: 'subcontractor' } })}
-      >
-        <View style={styles.tileInner}>
-          <Text style={styles.tileIcon}>💰</Text>
-          <Text style={[styles.tileTitle, styles.subTileTitle]}>Find Work</Text>
-          <Text style={[styles.tileSubtitle, styles.subTileSubtitle]}>
-            Browse fully scoped jobs near you.{'\n'}
-            Claim, complete, and get paid{'\n'}
-            — all inside the app.
-          </Text>
-          <View style={[styles.tileCta, styles.subTileCta]}>
-            <Text style={[styles.tileCtaText, styles.subTileCtaText]}>Find work  →</Text>
+      {/* CTA section */}
+      <View style={styles.ctaSection}>
+        <TouchableOpacity
+          style={styles.contractorBtn}
+          activeOpacity={0.85}
+          onPress={() => router.push({ pathname: '/(auth)/signup', params: { role: 'contractor' } })}
+        >
+          <Text style={styles.contractorBtnIcon}>📋</Text>
+          <View style={styles.btnTextWrap}>
+            <Text style={styles.contractorBtnTitle}>Post a Job</Text>
+            <Text style={styles.contractorBtnSub}>For contractors & franchise operators</Text>
           </View>
-        </View>
-      </TouchableOpacity>
+          <Text style={styles.btnArrow}>→</Text>
+        </TouchableOpacity>
 
-      {/* Sign in link */}
+        <TouchableOpacity
+          style={styles.subBtn}
+          activeOpacity={0.85}
+          onPress={() => router.push({ pathname: '/(auth)/signup', params: { role: 'subcontractor' } })}
+        >
+          <Text style={styles.subBtnIcon}>💰</Text>
+          <View style={styles.btnTextWrap}>
+            <Text style={styles.subBtnTitle}>Find Work</Text>
+            <Text style={styles.subBtnSub}>For subcontractors in the field</Text>
+          </View>
+          <Text style={[styles.btnArrow, styles.subBtnArrow]}>→</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Sign in */}
       <TouchableOpacity
         style={styles.signInRow}
         onPress={() => router.push('/(auth)/login')}
@@ -68,101 +60,94 @@ export default function LandingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-
-  contractorTile: {
+  container: {
     flex: 1,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
+    backgroundColor: '#0d1117',
+    justifyContent: 'space-between',
   },
-  subTile: {
+
+  heroSection: {
     flex: 1,
-    backgroundColor: colors.accent,
-    justifyContent: 'center',
-  },
-
-  tileInner: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    gap: spacing.sm,
-  },
-  tileIcon: {
-    fontSize: 48,
-    marginBottom: spacing.xs,
-  },
-  tileTitle: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: colors.white,
-    letterSpacing: -0.5,
-  },
-  subTileTitle: {
-    color: '#0f2a0a',
-  },
-  tileSubtitle: {
-    fontSize: fontSize.md,
-    color: 'rgba(255,255,255,0.75)',
-    lineHeight: 22,
-  },
-  subTileSubtitle: {
-    color: 'rgba(0,0,0,0.55)',
-  },
-  tileCta: {
-    marginTop: spacing.sm,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  subTileCta: {
-    backgroundColor: 'rgba(0,0,0,0.12)',
-    borderColor: 'rgba(0,0,0,0.2)',
-  },
-  tileCtaText: {
-    color: colors.white,
-    fontWeight: '700',
-    fontSize: fontSize.sm,
-    letterSpacing: 0.2,
-  },
-  subTileCtaText: {
-    color: '#0f2a0a',
-  },
-
-  divider: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0d1117',
-    paddingVertical: spacing.md,
-    zIndex: 10,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    gap: 4,
+    paddingHorizontal: spacing.xl,
+    paddingTop: Platform.OS === 'web' ? spacing.xl * 2 : spacing.xl,
   },
-  logoImage: { width: 100, height: 100 },
-  tagline: {
-    fontSize: fontSize.xs,
-    color: 'rgba(255,255,255,0.55)',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    fontWeight: '600',
-    textAlign: 'center' as any,
+  heroLogo: {
+    width: '100%',
+    maxWidth: 520,
+    aspectRatio: 1220 / 796,
   },
 
+  ctaSection: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+  },
+
+  contractorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a3c5e',
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md + 4,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  contractorBtnIcon: { fontSize: 28 },
+  contractorBtnTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: -0.2,
+  },
+  contractorBtnSub: {
+    fontSize: fontSize.xs,
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 1,
+  },
+
+  subBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#14532d',
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md + 4,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.2)',
+  },
+  subBtnIcon: { fontSize: 28 },
+  subBtnTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: '#22c55e',
+    letterSpacing: -0.2,
+  },
+  subBtnSub: {
+    fontSize: fontSize.xs,
+    color: 'rgba(255,255,255,0.45)',
+    marginTop: 1,
+  },
+
+  btnTextWrap: { flex: 1 },
+  btnArrow: {
+    fontSize: 20,
+    color: 'rgba(255,255,255,0.4)',
+    fontWeight: '300',
+  },
+  subBtnArrow: { color: 'rgba(34,197,94,0.5)' },
+
   signInRow: {
-    position: 'absolute',
-    bottom: spacing.xl,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: spacing.lg,
+    paddingBottom: spacing.xl,
   },
-  signInText: { fontSize: fontSize.sm, color: 'rgba(0,0,0,0.45)' },
-  signInLink: { fontSize: fontSize.sm, fontWeight: '700', color: colors.primary },
+  signInText: { fontSize: fontSize.sm, color: 'rgba(255,255,255,0.35)' },
+  signInLink: { fontSize: fontSize.sm, fontWeight: '700', color: '#22c55e' },
 });
