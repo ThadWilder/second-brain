@@ -6,7 +6,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
 import { supabase } from '@/lib/supabase';
-import { createPaymentIntent, initiateSubPayout } from '@/lib/stripe';
+import { createPaymentIntent, initiateSubPayout, boostJob } from '@/lib/stripe';
 import { notify } from '@/lib/notifications';
 import RatingStars from '@/components/RatingStars';
 import ChangeOrderCard from '@/components/ChangeOrderCard';
@@ -38,6 +38,9 @@ export default function ContractorJobDetailScreen() {
   // Rating gate — must rate sub before releasing payment
   const [hasRated, setHasRated] = useState(false);
   const [pendingStars, setPendingStars] = useState(0);
+
+  // Boost
+  const [boosting, setBoosting] = useState(false);
 
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -122,6 +125,31 @@ export default function ContractorJobDetailScreen() {
               Alert.alert('Payment Failed', (err as Error).message);
             } finally {
               setPaying(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleBoost() {
+    const fee = job!.install_price * 0.015;
+    Alert.alert(
+      'Boost This Job?',
+      `Boosting pushes your job to the top of the board with a highlighted badge so more subs see it first.\n\nThis charges your card ${formatCurrency(fee)} (1.5% of the ${formatCurrency(job!.install_price)} job).`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Boost', onPress: async () => {
+            setBoosting(true);
+            try {
+              const amount = await boostJob(id);
+              await fetchAll();
+              Alert.alert('Job Boosted ⚡', `Charged ${formatCurrency(amount)}. Your job now appears at the top of the board.`);
+            } catch (err) {
+              Alert.alert('Boost Failed', (err as Error).message);
+            } finally {
+              setBoosting(false);
             }
           },
         },
@@ -394,6 +422,36 @@ export default function ContractorJobDetailScreen() {
             <Divider />
             <Section title="Rate This Sub">
               <RatingStars value={0} interactive onRate={handleRating} size="lg" />
+            </Section>
+          </>
+        )}
+
+        {/* Boost (open jobs only) */}
+        {job.status === 'posted' && (
+          <>
+            <Divider />
+            <Section title="Boost Visibility">
+              {job.boosted ? (
+                <View style={styles.boostedCard}>
+                  <Text style={styles.boostedCardText}>⚡ This job is boosted — it appears at the top of the board.</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.boostNote}>
+                    Push this job to the top of the sub board with a highlighted badge so more
+                    subs see it first. One-time fee of 1.5% of the job ({formatCurrency(job.install_price * 0.015)}).
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.boostButton, boosting && styles.boostButtonDisabled]}
+                    onPress={handleBoost}
+                    disabled={boosting}
+                  >
+                    {boosting
+                      ? <ActivityIndicator color={colors.white} />
+                      : <Text style={styles.boostButtonText}>⚡ Boost Job — {formatCurrency(job.install_price * 0.015)}</Text>}
+                  </TouchableOpacity>
+                </>
+              )}
             </Section>
           </>
         )}
@@ -750,4 +808,16 @@ const styles = StyleSheet.create({
   starGlyph: { fontSize: 32, color: colors.border },
   starGlyphOn: { color: '#f59e0b' },
   payButtonDisabled: { opacity: 0.4 },
+  boostNote: { fontSize: fontSize.sm, color: colors.textMuted, lineHeight: 20, marginBottom: spacing.sm },
+  boostButton: {
+    backgroundColor: '#f59e0b', borderRadius: radius.md,
+    padding: spacing.md, alignItems: 'center', justifyContent: 'center',
+  },
+  boostButtonDisabled: { opacity: 0.5 },
+  boostButtonText: { color: colors.white, fontWeight: '700', fontSize: fontSize.md },
+  boostedCard: {
+    backgroundColor: '#fffbeb', borderRadius: radius.md, padding: spacing.md,
+    borderLeftWidth: 3, borderLeftColor: '#f59e0b',
+  },
+  boostedCardText: { fontSize: fontSize.sm, color: '#78350f', fontWeight: '600' },
 });

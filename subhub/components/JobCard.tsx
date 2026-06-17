@@ -34,7 +34,12 @@ export default function JobCard({ job, onPress, variant = 'board', onMessage }: 
   const payout = job.sub_payout.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={[styles.card, job.boosted && styles.cardBoosted]} onPress={onPress} activeOpacity={0.85}>
+      {job.boosted && (
+        <View style={styles.boostBadge}>
+          <Text style={styles.boostBadgeText}>⚡ Boosted</Text>
+        </View>
+      )}
       <View style={styles.row}>
         <View style={styles.flex}>
           <Text style={styles.title} numberOfLines={2}>{job.title}</Text>
@@ -123,6 +128,19 @@ const styles = StyleSheet.create({
     elevation: 2,
     gap: spacing.sm,
   },
+  cardBoosted: {
+    borderWidth: 1.5,
+    borderColor: '#f59e0b',
+    backgroundColor: '#fffdf7',
+  },
+  boostBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#fef3c7',
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  boostBadgeText: { fontSize: fontSize.xs, fontWeight: '800', color: '#92400e' },
   row: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1, gap: 2 },
   title: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },

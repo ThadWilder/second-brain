@@ -35,6 +35,13 @@ export async function initiateSubPayout(jobId: string): Promise<void> {
   await callFunction('payout-sub', { jobId });
 }
 
+// Boosts a posted job for 1.5% of the total job. Charges the saved card
+// off-session and flags the job boosted on success. Returns the amount charged.
+export async function boostJob(jobId: string): Promise<number> {
+  const { amount } = await callFunction('boost-job', { jobId });
+  return amount;
+}
+
 // Saves the Stripe sub account ID after successful Connect onboarding.
 export async function saveSubStripeAccount(stripeAccountId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();

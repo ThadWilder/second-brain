@@ -144,6 +144,9 @@ export interface Job {
   claimed_at?: string;
   completed_at?: string;
   created_at: string;
+
+  boosted?: boolean;
+  boosted_at?: string;
 }
 
 export interface JobMaterial {

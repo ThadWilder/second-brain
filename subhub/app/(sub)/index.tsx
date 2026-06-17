@@ -160,6 +160,8 @@ export default function JobBoardScreen() {
       matchesPay(j.sub_payout, pay)
     )
     .sort((a, b) => {
+      // Boosted jobs always rise to the top, regardless of the chosen sort.
+      if (!!a.boosted !== !!b.boosted) return a.boosted ? -1 : 1;
       if (sort === 'payout') return b.sub_payout - a.sub_payout;
       if (sort === 'duration') return a.estimated_days - b.estimated_days;
       return 0;
