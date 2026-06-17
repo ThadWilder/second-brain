@@ -54,6 +54,59 @@ export interface SubProfile {
   rating: number;
   rating_count: number;
   verified: boolean;
+  bio?: string;
+  jobs_completed?: number;
+  availability?: 'available' | 'busy';
+  job_success_score?: number | null;
+  tier?: 'new' | 'rising' | 'top_rated' | 'elite';
+  response_rate?: number | null;
+  avg_response_minutes?: number | null;
+  total_earned?: number;
+  created_at: string;
+}
+
+export interface SavedSearch {
+  id: string;
+  sub_id: string;
+  label?: string;
+  skills: string[];
+  zip?: string;
+  radius_miles: number;
+  min_payout?: number;
+  notify: boolean;
+  created_at: string;
+}
+
+export interface JobInvite {
+  id: string;
+  job_id: string;
+  contractor_id: string;
+  sub_id: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  message?: string;
+  created_at: string;
+}
+
+export interface Dispute {
+  id: string;
+  job_id: string;
+  opened_by: string;
+  opener_role: 'contractor' | 'subcontractor';
+  reason: string;
+  status: 'open' | 'under_review' | 'resolved_paid' | 'resolved_cancelled' | 'resolved_split';
+  resolution_note?: string;
+  resolved_by?: string;
+  resolved_at?: string;
+  created_at: string;
+}
+
+export interface DisputeEvidence {
+  id: string;
+  dispute_id: string;
+  submitted_by: string;
+  submitter_role: 'contractor' | 'subcontractor' | 'admin';
+  note?: string;
+  photo_urls: string[];
   created_at: string;
 }
 

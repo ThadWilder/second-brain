@@ -142,6 +142,9 @@ export default function PostJobScreen() {
       return;
     }
 
+    // Notify subs whose saved-search alerts match this job (best-effort)
+    supabase.functions.invoke('match-saved-searches', { body: { jobId: newJob.id } }).catch(() => {});
+
     setLoading(false);
     Alert.alert('Job Posted!', 'A $1,000 hold has been placed on your card. Subs can now claim this job — the hold is released when the job is cancelled or replaced by full payment.', [
       { text: 'View My Jobs', onPress: () => router.replace('/(contractor)/') },

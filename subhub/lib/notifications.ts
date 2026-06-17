@@ -98,4 +98,21 @@ export const notify = {
 
   paymentReleased: (subId: string, amount: number) =>
     sendPushToUser(subId, 'Payment Released', `$${amount.toLocaleString()} has been sent to your account`, { type: 'payment_released' }),
+
+  jobInvite: (subId: string, contractorName: string, jobTitle: string, jobId: string) =>
+    sendPushToUser(subId, '📨 Job Invitation', `${contractorName} invited you to "${jobTitle}"`, { type: 'job_invite', jobId }),
+
+  inviteResponse: (contractorId: string, subName: string, accepted: boolean, jobTitle: string) =>
+    sendPushToUser(
+      contractorId,
+      accepted ? '✅ Invite Accepted' : 'Invite Declined',
+      `${subName} ${accepted ? 'accepted' : 'declined'} your invite for "${jobTitle}"`,
+      { type: 'invite_response' }
+    ),
+
+  disputeOpened: (recipientId: string, jobTitle: string, jobId: string) =>
+    sendPushToUser(recipientId, '⚠️ Dispute Opened', `A dispute was opened on "${jobTitle}"`, { type: 'dispute', jobId }),
+
+  disputeResolved: (recipientId: string, jobTitle: string, outcome: string) =>
+    sendPushToUser(recipientId, 'Dispute Resolved', `"${jobTitle}": ${outcome}`, { type: 'dispute_resolved' }),
 };
