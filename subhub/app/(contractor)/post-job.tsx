@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { MaterialStatus } from '@/lib/types';
@@ -47,19 +47,21 @@ export default function PostJobScreen() {
     homeowner_email: '',
   });
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      supabase
-        .from('contractor_profiles')
-        .select('stripe_customer_id')
-        .eq('user_id', session.user.id)
-        .single()
-        .then(({ data }) => {
-          setHasPaymentMethod(!!data?.stripe_customer_id);
-        });
-    });
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        supabase
+          .from('contractor_profiles')
+          .select('stripe_customer_id')
+          .eq('user_id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            setHasPaymentMethod(!!data?.stripe_customer_id);
+          });
+      });
+    }, [])
+  );
 
   function set(key: keyof typeof form) {
     return (val: string) => setForm(f => ({ ...f, [key]: val }));

@@ -21,6 +21,7 @@ export default function SubProfileScreen() {
     service_area_zip: '',
     service_area_miles: '',
     payout_type: 'bank' as 'bank' | 'instant',
+    bio: '',
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
@@ -36,6 +37,7 @@ export default function SubProfileScreen() {
         service_area_zip: data.service_area_zip ?? '',
         service_area_miles: String(data.service_area_miles ?? 75),
         payout_type: data.payout_type ?? 'bank',
+        bio: (data as any).bio ?? '',
       });
       setSelectedSkills(data.skills ?? ['Fencing']);
     }
@@ -59,6 +61,7 @@ export default function SubProfileScreen() {
         service_area_miles: parseInt(fields.service_area_miles, 10) || 75,
         skills: selectedSkills,
         payout_type: fields.payout_type,
+        bio: fields.bio || null,
       })
       .eq('id', profile.id);
     setSaving(false);
@@ -81,6 +84,9 @@ export default function SubProfileScreen() {
         </View>
         <Text style={styles.name}>{profile.name}</Text>
         <RatingStars value={profile.rating} count={profile.rating_count} size="lg" />
+        {(profile as any).jobs_completed > 0 && (
+          <Text style={styles.jobsCompleted}>{(profile as any).jobs_completed} jobs completed</Text>
+        )}
         {profile.verified && (
           <View style={styles.verifiedBadge}>
             <Text style={styles.verifiedText}>✓ Verified</Text>
@@ -96,6 +102,12 @@ export default function SubProfileScreen() {
         >
           <Text style={styles.connectText}>Connect Bank Account →</Text>
         </TouchableOpacity>
+      )}
+
+      {profile && (profile as any).bio && (
+        <Section title="About">
+          <Text style={styles.bioText}>{(profile as any).bio}</Text>
+        </Section>
       )}
 
       <Section title="Credentials">
@@ -146,6 +158,18 @@ export default function SubProfileScreen() {
                 </TouchableOpacity>
               );
             })}
+          </View>
+          <View style={styles.editFieldRow}>
+            <Text style={styles.editLabel}>About you</Text>
+            <TextInput
+              style={[styles.editInput, { height: 80, textAlignVertical: 'top' }]}
+              value={fields.bio}
+              onChangeText={v => setFields(f => ({ ...f, bio: v }))}
+              placeholder="Briefly describe your experience and specialties..."
+              placeholderTextColor={colors.textLight}
+              multiline
+              numberOfLines={3}
+            />
           </View>
           {profile?.stripe_account_id && (
             <View style={styles.payoutToggleSection}>
@@ -270,4 +294,6 @@ const styles = StyleSheet.create({
   payoutOptionSub: { fontSize: 10, color: colors.textMuted },
   signOutButton: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.md },
   signOutText: { color: colors.textMuted, fontWeight: '600' },
+  jobsCompleted: { fontSize: fontSize.sm, color: colors.textMuted },
+  bioText: { fontSize: fontSize.sm, color: colors.text, lineHeight: 20 },
 });

@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
+import RatingStars from '@/components/RatingStars';
 import type { Job, JobStatus } from '@/lib/types';
 
 const STATUS_COLORS: Record<JobStatus, string> = {
@@ -61,6 +62,15 @@ export default function JobCard({ job, onPress, variant = 'board', onMessage }: 
       {variant === 'board' && (
         <Text style={styles.scope} numberOfLines={2}>{job.scope_of_work}</Text>
       )}
+      {variant === 'board' && job.contractor && (
+        <View style={styles.contractorMeta}>
+          <Text style={styles.contractorMetaName}>{(job.contractor as any).business_name}</Text>
+          <RatingStars value={(job.contractor as any).rating ?? 0} count={(job.contractor as any).rating_count ?? 0} size="sm" />
+        </View>
+      )}
+      {variant === 'board' && job.created_at && (
+        <Text style={styles.postedAgo}>Posted {timeAgo(job.created_at)}</Text>
+      )}
       {variant === 'manage' && onMessage && job.claimed_by && (
         <TouchableOpacity
           style={styles.messageRow}
@@ -81,6 +91,16 @@ function Chip({ icon, label }: { icon: string; label: string }) {
       <Text style={styles.chipText}>{label}</Text>
     </View>
   );
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(mins / 60);
+  const days = Math.floor(hours / 24);
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  return `${mins}m ago`;
 }
 
 function materialLabel(status: Job['material_status']) {
@@ -126,4 +146,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   messageRowText: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '600' },
+  contractorMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 },
+  contractorMetaName: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '600' },
+  postedAgo: { fontSize: fontSize.xs, color: colors.textLight },
 });
