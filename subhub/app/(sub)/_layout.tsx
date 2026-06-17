@@ -17,7 +17,7 @@ const TABS = [
   { segment: 'profile',     icon: '👤', label: 'Profile'     },
 ];
 
-function SubSidebar({ onCollapse, unread }: { onCollapse: () => void; unread: number }) {
+function SubSidebar({ unread }: { unread: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const current = pathname.split('/').filter(Boolean)[0] ?? '';
@@ -26,9 +26,6 @@ function SubSidebar({ onCollapse, unread }: { onCollapse: () => void; unread: nu
     <View style={s.sidebar}>
       <View style={s.logoRow}>
         <Image source={require('@/assets/logo.jpeg')} style={s.logoImage} resizeMode="contain" />
-        <TouchableOpacity onPress={onCollapse} style={s.collapseBtn}>
-          <Text style={s.collapseBtnText}>◀</Text>
-        </TouchableOpacity>
       </View>
       {TABS.map(t => {
         const active = t.segment === current;
@@ -60,7 +57,7 @@ export default function SubLayout() {
 
   return (
     <View style={{ flex: 1, flexDirection: isWide ? 'row' : 'column' }}>
-      {showSidebar && <SubSidebar onCollapse={() => setSidebarOpen(false)} unread={unread} />}
+      {showSidebar && <SubSidebar unread={unread} />}
       <View style={{ flex: 1 }}>
         <Tabs
           screenOptions={{
@@ -71,11 +68,6 @@ export default function SubLayout() {
             headerStyle: { backgroundColor: colors.primary },
             headerTintColor: colors.white,
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
-            headerLeft: (isWide && !sidebarOpen) ? () => (
-              <TouchableOpacity onPress={() => setSidebarOpen(true)} style={{ paddingLeft: spacing.md }}>
-                <Text style={{ fontSize: 22, color: colors.white }}>☰</Text>
-              </TouchableOpacity>
-            ) : undefined,
           }}
         >
           <Tabs.Screen name="home"         options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
@@ -93,6 +85,17 @@ export default function SubLayout() {
           <Tabs.Screen name="connect-stripe" options={{ href: null, title: 'Payout Account' }} />
         </Tabs>
       </View>
+
+      {/* Collapse / expand handle — sits on the divider line between sidebar and content */}
+      {isWide && (
+        <TouchableOpacity
+          onPress={() => setSidebarOpen(o => !o)}
+          style={[s.collapseHandle, { left: sidebarOpen ? SIDEBAR_W - 13 : -1 }]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={s.collapseHandleText}>{sidebarOpen ? '‹' : '›'}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -121,12 +124,28 @@ const s = StyleSheet.create({
     marginBottom: spacing.md,
   },
   logoImage: { width: 160, height: 87 },
-  collapseBtn: {
-    padding: spacing.sm,
+  collapseHandle: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -18,
+    width: 26,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 4,
   },
-  collapseBtnText: {
+  collapseHandleText: {
+    color: colors.white,
     fontSize: 18,
-    color: 'rgba(255,255,255,0.5)',
+    fontWeight: '700',
+    lineHeight: 18,
   },
   item: {
     flexDirection: 'row',
