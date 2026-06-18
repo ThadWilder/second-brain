@@ -51,7 +51,9 @@ export default function ContractorLayout() {
   const isWeb = Platform.OS === 'web';
   const isWide = isWeb && width >= BREAKPOINT;
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const showSidebar = isWide && sidebarOpen;
+  const pathname = usePathname();
+  const isHome = pathname === '/home';
+  const showSidebar = isWide && sidebarOpen && !isHome;
   const unread = useUnreadMessages();
 
   return (
@@ -69,7 +71,7 @@ export default function ContractorLayout() {
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
           }}
         >
-          <Tabs.Screen name="home"     options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
+          <Tabs.Screen name="home"     options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} />, tabBarStyle: { display: 'none' } }} />
           <Tabs.Screen name="index"    options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
           <Tabs.Screen name="post-job" options={{ title: 'Post Job',  tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
           <Tabs.Screen name="messages" options={{ title: 'Messages',  tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
@@ -83,7 +85,7 @@ export default function ContractorLayout() {
       </View>
 
       {/* Collapse / expand handle — sits on the divider line between sidebar and content */}
-      {isWide && (
+      {isWide && !isHome && (
         <TouchableOpacity
           onPress={() => setSidebarOpen(o => !o)}
           style={[s.collapseHandle, { left: sidebarOpen ? SIDEBAR_W - 13 : -1 }]}

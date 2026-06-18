@@ -52,7 +52,9 @@ export default function SubLayout() {
   const isWeb = Platform.OS === 'web';
   const isWide = isWeb && width >= BREAKPOINT;
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const showSidebar = isWide && sidebarOpen;
+  const pathname = usePathname();
+  const isHome = pathname === '/home';
+  const showSidebar = isWide && sidebarOpen && !isHome;
   const unread = useUnreadMessages();
 
   return (
@@ -70,7 +72,7 @@ export default function SubLayout() {
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
           }}
         >
-          <Tabs.Screen name="home"         options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
+          <Tabs.Screen name="home"         options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} />, tabBarStyle: { display: 'none' } }} />
           <Tabs.Screen name="index"        options={{ title: 'Job Board',   tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
           <Tabs.Screen name="my-jobs"      options={{ title: 'My Jobs',     tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
           <Tabs.Screen name="earnings"     options={{ title: 'Earnings',    tabBarIcon: ({ color }) => <Icon e="💰" c={color} /> }} />
@@ -87,7 +89,7 @@ export default function SubLayout() {
       </View>
 
       {/* Collapse / expand handle — sits on the divider line between sidebar and content */}
-      {isWide && (
+      {isWide && !isHome && (
         <TouchableOpacity
           onPress={() => setSidebarOpen(o => !o)}
           style={[s.collapseHandle, { left: sidebarOpen ? SIDEBAR_W - 13 : -1 }]}
