@@ -88,12 +88,14 @@ export default function SubLayout() {
           <Tabs.Screen name="reviews"      options={{ title: 'Reviews',     tabBarIcon: ({ color }) => <Icon e="⭐" c={color} /> }} />
           <Tabs.Screen name="messages"     options={{ title: 'Messages',    tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
           <Tabs.Screen name="profile"      options={{ title: 'Profile',     tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
-          <Tabs.Screen name="saved-searches" options={{ href: null, title: 'Job Alerts' }} />
-          <Tabs.Screen name="jobs/[id]"      options={{ href: null }} />
-          <Tabs.Screen name="chat/[jobId]"   options={{ href: null, title: 'Chat' }} />
-          <Tabs.Screen name="rate/[jobId]"   options={{ href: null, title: 'Leave a Review' }} />
-          <Tabs.Screen name="change-order"   options={{ href: null, title: 'Change Order' }} />
-          <Tabs.Screen name="connect-stripe" options={{ href: null, title: 'Payout Account' }} />
+          <Tabs.Screen name="saved-searches"            options={{ href: null, title: 'Job Alerts' }} />
+          <Tabs.Screen name="jobs/[id]"               options={{ href: null }} />
+          <Tabs.Screen name="claim-confirm/[id]"      options={{ href: null, title: 'Confirm Claim' }} />
+          <Tabs.Screen name="payout-status/[jobId]"   options={{ href: null, title: 'Payout Status' }} />
+          <Tabs.Screen name="chat/[jobId]"            options={{ href: null, title: 'Chat' }} />
+          <Tabs.Screen name="rate/[jobId]"            options={{ href: null, title: 'Leave a Review' }} />
+          <Tabs.Screen name="change-order"            options={{ href: null, title: 'Change Order' }} />
+          <Tabs.Screen name="connect-stripe"          options={{ href: null, title: 'Payout Account' }} />
         </Tabs>
       </View>
 

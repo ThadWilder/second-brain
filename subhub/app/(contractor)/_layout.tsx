@@ -13,6 +13,7 @@ const TABS = [
   { segment: 'post-job', icon: '➕', label: 'Post Job'  },
   { segment: 'projects', icon: '🗂️', label: 'Projects'  },
   { segment: 'crew',     icon: '👷', label: 'Crew'      },
+  { segment: 'payments', icon: '💳', label: 'Payments'  },
   { segment: 'messages', icon: '💬', label: 'Messages'  },
   { segment: 'subs',     icon: '🔍', label: 'Find Subs' },
   { segment: 'profile',  icon: '👤', label: 'Profile'   },
@@ -85,6 +86,7 @@ export default function ContractorLayout() {
           <Tabs.Screen name="projects" options={{ title: 'Projects',  tabBarIcon: ({ color }) => <Icon e="🗂️" c={color} /> }} />
           <Tabs.Screen name="projects/[id]" options={{ href: null, title: 'Project' }} />
           <Tabs.Screen name="crew"     options={{ title: 'Crew',      tabBarIcon: ({ color }) => <Icon e="👷" c={color} /> }} />
+          <Tabs.Screen name="payments" options={{ title: 'Payments',  tabBarIcon: ({ color }) => <Icon e="💳" c={color} /> }} />
           <Tabs.Screen name="messages" options={{ title: 'Messages',  tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
           <Tabs.Screen name="subs"     options={{ title: 'Find Subs', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
           <Tabs.Screen name="profile"  options={{ title: 'Profile',   tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
