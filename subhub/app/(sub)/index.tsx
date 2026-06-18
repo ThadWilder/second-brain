@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import JobCard from '@/components/JobCard';
+import FlipJobCard from '@/components/FlipJobCard';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { Job } from '@/lib/types';
 
@@ -78,6 +78,8 @@ export default function JobBoardScreen() {
   const [invitesDismissed, setInvitesDismissed] = useState(false);
   const [subProfileId, setSubProfileId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchJobs(); fetchInvites(); }, []);
 
@@ -128,6 +130,14 @@ export default function JobBoardScreen() {
     await fetchInvites();
   }
 
+  function handleSave(id: string) {
+    setSavedIds(prev => new Set([...prev, id]));
+  }
+
+  function handlePass(id: string) {
+    setPassedIds(prev => new Set([...prev, id]));
+  }
+
   async function saveCurrentSearch() {
     if (!subProfileId) {
       Alert.alert('Not ready', 'Could not load your profile. Try again in a moment.');
@@ -154,6 +164,7 @@ export default function JobBoardScreen() {
 
   const filtered = jobs
     .filter(j =>
+      !passedIds.has(j.id) &&
       (!search || j.title.toLowerCase().includes(search.toLowerCase()) || j.city.toLowerCase().includes(search.toLowerCase())) &&
       (industry === 'All' || j.industry === industry) &&
       matchesDuration(j.estimated_days, duration) &&
@@ -236,10 +247,12 @@ export default function JobBoardScreen() {
           data={filtered}
           keyExtractor={j => j.id}
           renderItem={({ item }) => (
-            <JobCard
+            <FlipJobCard
               job={item}
-              variant="board"
-              onPress={() => router.push(`/(sub)/jobs/${item.id}`)}
+              saved={savedIds.has(item.id)}
+              onViewDetail={() => router.push(`/(sub)/jobs/${item.id}`)}
+              onSave={handleSave}
+              onPass={handlePass}
             />
           )}
           ListHeaderComponent={
@@ -276,7 +289,12 @@ export default function JobBoardScreen() {
                   ))}
                 </View>
               )}
-              <Text style={styles.count}>{filtered.length} job{filtered.length !== 1 ? 's' : ''} available</Text>
+              <View style={styles.countRow}>
+                <Text style={styles.count}>{filtered.length} job{filtered.length !== 1 ? 's' : ''} available</Text>
+                {savedIds.size > 0 && (
+                  <Text style={styles.savedCount}>💰 {savedIds.size} saved</Text>
+                )}
+              </View>
             </View>
           }
           ListEmptyComponent={
@@ -367,7 +385,9 @@ const styles = StyleSheet.create({
   declineBtn: { backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },
   declineText: { color: colors.textMuted, fontSize: fontSize.xs, fontWeight: '700' },
   loader: { marginTop: spacing.xxl },
-  count: { fontSize: fontSize.sm, color: colors.textMuted, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  count: { fontSize: fontSize.sm, color: colors.textMuted },
+  savedCount: { fontSize: fontSize.sm, color: colors.accent, fontWeight: '700' },
   list: { paddingBottom: spacing.xxl },
   empty: { alignItems: 'center', padding: spacing.xxl, gap: spacing.md },
   emptyIcon: { fontSize: 40 },
