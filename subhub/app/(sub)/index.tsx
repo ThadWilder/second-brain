@@ -6,6 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import FlipJobCard from '@/components/FlipJobCard';
+import { DEMO_JOBS } from '@/lib/demo';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { Job } from '@/lib/types';
 
@@ -89,7 +90,9 @@ export default function JobBoardScreen() {
       .select('*, contractor:contractor_profiles(business_name, rating, rating_count)')
       .eq('status', 'posted')
       .order('created_at', { ascending: false });
-    setJobs(data ?? []);
+    // Demo jobs ride alongside real listings so the board is never empty in
+    // concept mode. They sort in by created_at like anything else.
+    setJobs([...(data ?? []), ...DEMO_JOBS]);
     setLoading(false);
   }
 

@@ -5,11 +5,13 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { isDemoId, getDemoJob, getDemoMessages } from '@/lib/demo';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 export default function SubChat() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
   const navigation = useNavigation();
+  const demo = isDemoId(jobId);
   const [messages, setMessages] = useState<any[]>([]);
   const [myId, setMyId] = useState('');
   const [text, setText] = useState('');
@@ -32,6 +34,15 @@ export default function SubChat() {
   }
 
   useEffect(() => {
+    // Demo conversation — render the canned thread, skip auth/realtime/DB.
+    if (demo) {
+      const dj = getDemoJob(jobId);
+      if (dj) navigation.setOptions({ title: dj.title });
+      setMessages(getDemoMessages(jobId));
+      setLoading(false);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50);
+      return;
+    }
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) return;
       const uid = session.user.id;
@@ -120,8 +131,22 @@ export default function SubChat() {
   async function send() {
     const body = text.trim();
     if (!body || sending) return;
-    setSending(true);
     setText('');
+    // In demo mode just append locally so the thread feels live.
+    if (demo) {
+      setMessages(prev => [...prev, {
+        id: `demo-msg-local-${Date.now()}`,
+        job_id: jobId,
+        sender_id: 'demo-sub',
+        sender_role: 'subcontractor',
+        body,
+        created_at: new Date().toISOString(),
+        read_at: new Date().toISOString(),
+      }]);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+      return;
+    }
+    setSending(true);
     // Push is fired server-side by the on_message_insert trigger.
     await supabase.from('messages').insert({
       job_id: jobId,
@@ -134,10 +159,14 @@ export default function SubChat() {
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} color={colors.accent} />;
 
+  // Whose bubble is "mine": real session matches sender_id; in demo the sub
+  // (this viewer) is always the subcontractor side.
+  const isMine = (m: any) => (demo ? m.sender_role === 'subcontractor' : m.sender_id === myId);
+
   // Index of my last message — only that one shows a read receipt.
   let lastMineIdx = -1;
   for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].sender_id === myId) { lastMineIdx = i; break; }
+    if (isMine(messages[i])) { lastMineIdx = i; break; }
   }
 
   return (
@@ -152,7 +181,7 @@ export default function SubChat() {
         keyExtractor={m => m.id}
         contentContainerStyle={styles.list}
         renderItem={({ item, index }) => {
-          const mine = item.sender_id === myId;
+          const mine = isMine(item);
           return (
             <View style={[styles.bubbleWrap, mine ? styles.bubbleWrapMine : styles.bubbleWrapTheirs]}>
               <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>

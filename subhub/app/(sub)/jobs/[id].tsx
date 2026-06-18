@@ -9,6 +9,7 @@ import { notify } from '@/lib/notifications';
 import RatingStars from '@/components/RatingStars';
 import ChangeOrderCard from '@/components/ChangeOrderCard';
 import PhotoUpload from '@/components/PhotoUpload';
+import { isDemoId, getDemoJob, getDemoMessages } from '@/lib/demo';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { Job, ChangeOrder, JobMedia } from '@/lib/types';
 
@@ -51,7 +52,23 @@ export default function SubJobDetailScreen() {
   const [callLog, setCallLog] = useState<any[]>([]);
   const [calling, setCalling] = useState(false);
 
+  const demo = isDemoId(id);
+
   const fetchAll = useCallback(async () => {
+    // Demo jobs are served entirely from local data — no DB round-trips.
+    if (isDemoId(id)) {
+      const dj = getDemoJob(id);
+      setJob(dj);
+      setMessages(getDemoMessages(id));
+      setChangeOrders([]);
+      setMedia([]);
+      setQuestions([]);
+      setDispute(null);
+      setEvidence([]);
+      setCallLog([]);
+      setLoading(false);
+      return;
+    }
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
     const [{ data: j }, { data: co }, { data: m }, { data: qs }, { data: d }, { data: msgs }, { data: calls }, { data: myRating }] = await Promise.all([
@@ -85,6 +102,10 @@ export default function SubJobDetailScreen() {
   }, [id]);
 
   async function handleCall() {
+    if (demo) {
+      Alert.alert('Demo Job', 'On a real job, SubHub places the call and connects you to the contractor — neither party ever sees the other\'s real number.');
+      return;
+    }
     Alert.alert(
       'Call Contractor',
       "SubHub will call your phone and connect you to the contractor. Neither party will see the other's real number.",
@@ -112,6 +133,19 @@ export default function SubJobDetailScreen() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   async function analyzeJob() {
+    if (demo) {
+      setAnalysis({
+        score: 'great',
+        headline: 'Strong payout for the day count — worth claiming.',
+        bullets: [
+          'Payout lands above the board average for this trade and duration.',
+          'Material is staged/on-site, so no sourcing delay or pickup drive.',
+          'Scope is clearly defined with gate hardware and haul-off spelled out.',
+        ],
+        watch_out: 'Confirm the start window fits your schedule before claiming.',
+      });
+      return;
+    }
     setAnalyzingJob(true);
     const { data, error } = await supabase.functions.invoke('analyze-job', {
       body: { jobId: id },
@@ -125,6 +159,10 @@ export default function SubJobDetailScreen() {
   }
 
   async function handleClaim() {
+    if (demo) {
+      Alert.alert('Demo Job', 'This is a sample listing to show how the board works. Real jobs are claimed the same way — sign up to start claiming.');
+      return;
+    }
     Alert.alert(
       'Claim This Job',
       `You're committing to complete this job for ${formatCurrency(job!.sub_payout)}. SubHub takes a platform fee from your payout.`,
@@ -287,8 +325,9 @@ export default function SubJobDetailScreen() {
           </View>
         )}
 
-        {/* Communications — visible once sub has claimed the job */}
-        {isMine && (
+        {/* Communications — visible once sub has claimed the job (and always
+            for demo jobs, so the messaging experience can be previewed). */}
+        {(isMine || demo) && (
           <>
             <Divider />
             <Section title="Communications">
