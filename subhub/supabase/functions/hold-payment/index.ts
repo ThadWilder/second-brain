@@ -1,5 +1,7 @@
-// Places a $1,000 authorization hold on the contractor's saved card when a job is posted.
-// Uses capture_method: 'manual' so the hold never charges unless explicitly captured.
+// Places a graduated authorization hold on the contractor's saved card when a job
+// is posted: $1,000 for the first concurrently-active job, $250 for each additional
+// one (see migration 030 posting_hold_amount). Uses capture_method: 'manual' so the
+// hold never charges unless explicitly captured.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import Stripe from 'https://esm.sh/stripe@14.0.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -62,8 +64,13 @@ serve(async (req) => {
 
     if (!paymentMethodId) throw new Error('No card on file. Add a payment method in your profile before posting.');
 
+    // Graduated hold: $1,000 for the first active job, $250 for each additional
+    // concurrent one. Authoritative server-side (migration 030).
+    const { data: holdCents } = await supabase.rpc('posting_hold_amount', { p_contractor: user.id });
+    const amount = typeof holdCents === 'number' ? holdCents : 100000;
+
     const hold = await stripe.paymentIntents.create({
-      amount: 100000, // $1,000.00
+      amount,
       currency: 'usd',
       customer: profile.stripe_customer_id,
       payment_method: paymentMethodId,
@@ -71,7 +78,7 @@ serve(async (req) => {
       confirm: true,
       off_session: true,
       description: `SubHub posting hold — job ${jobId}`,
-      metadata: { jobId, type: 'posting_hold', contractorId: user.id },
+      metadata: { jobId, type: 'posting_hold', contractorId: user.id, amount: amount.toString() },
     });
 
     await supabase
@@ -81,7 +88,7 @@ serve(async (req) => {
       .eq('contractor_id', user.id);
 
     return new Response(
-      JSON.stringify({ holdId: hold.id, status: hold.status }),
+      JSON.stringify({ holdId: hold.id, status: hold.status, amount: amount / 100 }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
