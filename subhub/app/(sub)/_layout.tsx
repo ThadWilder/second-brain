@@ -3,20 +3,31 @@ import { Platform, View, Text, TouchableOpacity, StyleSheet, useWindowDimensions
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import { useUnreadMessages } from '@/lib/useUnreadMessages';
+import NotificationBell from '@/components/NotificationBell';
 
 const SIDEBAR_W = 240;
 const COMPACT_W = 64;
 const BREAKPOINT = 768;
 
-const TABS = [
+// Blueprint nav: four primary destinations. Messages is NOT a tab — it lives
+// inside each job card.
+const PRIMARY = [
+  { segment: '',         icon: '🔍', label: 'Browse'  },
+  { segment: 'my-jobs',  icon: '🔨', label: 'My Jobs' },
+  { segment: 'earnings', icon: '💰', label: 'Pay'     },
+  { segment: 'profile',  icon: '👤', label: 'Profile' },
+];
+
+// Wide-screen sidebar shows the full set so discovery (Reviews, Contractors)
+// and Market stay one tap away on desktop web.
+const FULL = [
   { segment: 'home',        icon: '🏠', label: 'Home'        },
   { segment: '',            icon: '🔍', label: 'Job Board'   },
   { segment: 'my-jobs',     icon: '🔨', label: 'My Jobs'     },
   { segment: 'earnings',    icon: '💰', label: 'Earnings'    },
-  { segment: 'contractors', icon: '🏗️', label: 'Contractors' },
-  { segment: 'reviews',     icon: '⭐', label: 'Reviews'     },
   { segment: 'market',      icon: '📊', label: 'Market'      },
-  { segment: 'messages',    icon: '💬', label: 'Messages'    },
+  { segment: 'reviews',     icon: '⭐', label: 'Reviews'     },
+  { segment: 'contractors', icon: '🏗️', label: 'Contractors' },
   { segment: 'profile',     icon: '👤', label: 'Profile'     },
 ];
 
@@ -28,7 +39,7 @@ function SubSidebar({ unread, compact }: { unread: number; compact?: boolean }) 
   if (compact) {
     return (
       <View style={s.sidebarCompact}>
-        {TABS.map(t => {
+        {PRIMARY.map(t => {
           const active = t.segment === current;
           return (
             <TouchableOpacity
@@ -54,7 +65,7 @@ function SubSidebar({ unread, compact }: { unread: number; compact?: boolean }) 
       <View style={s.logoRow}>
         <Image source={require('@/assets/logo.jpeg')} style={s.logoImage} resizeMode="contain" />
       </View>
-      {TABS.map(t => {
+      {FULL.map(t => {
         const active = t.segment === current;
         return (
           <TouchableOpacity
@@ -107,18 +118,23 @@ export default function SubLayout() {
             headerStyle: { backgroundColor: colors.primary },
             headerTintColor: colors.white,
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
+            // Global notification bell in every screen header.
+            headerRight: () => <NotificationBell tint={colors.white} />,
           }}
         >
-          <Tabs.Screen name="home"         options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
-          <Tabs.Screen name="index"        options={{ title: 'Job Board',   tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
-          <Tabs.Screen name="my-jobs"      options={{ title: 'My Jobs',     tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
-          <Tabs.Screen name="earnings"     options={{ title: 'Earnings',    tabBarIcon: ({ color }) => <Icon e="💰" c={color} /> }} />
-          <Tabs.Screen name="contractors"  options={{ title: 'Contractors', tabBarIcon: ({ color }) => <Icon e="🏗️" c={color} /> }} />
+          {/* Primary tabs (native bottom bar) */}
+          <Tabs.Screen name="index"        options={{ title: 'Job Board', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
+          <Tabs.Screen name="my-jobs"      options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="🔨" c={color} /> }} />
+          <Tabs.Screen name="earnings"     options={{ title: 'Pay',       tabBarIcon: ({ color }) => <Icon e="💰" c={color} /> }} />
+          <Tabs.Screen name="profile"      options={{ title: 'Profile',   tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
+          {/* Secondary screens — reachable from the sidebar / in-screen links */}
+          <Tabs.Screen name="home"         options={{ href: null, headerShown: false, title: 'Home' }} />
+          <Tabs.Screen name="market"       options={{ href: null, title: 'Market' }} />
+          <Tabs.Screen name="reviews"      options={{ href: null, title: 'Reviews' }} />
+          <Tabs.Screen name="contractors"  options={{ href: null, title: 'Contractors' }} />
           <Tabs.Screen name="contractors/[id]" options={{ href: null, title: 'Contractor' }} />
-          <Tabs.Screen name="reviews"      options={{ title: 'Reviews',     tabBarIcon: ({ color }) => <Icon e="⭐" c={color} /> }} />
-          <Tabs.Screen name="market"       options={{ title: 'Market',      tabBarIcon: ({ color }) => <Icon e="📊" c={color} /> }} />
-          <Tabs.Screen name="messages"     options={{ title: 'Messages',    tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
-          <Tabs.Screen name="profile"      options={{ title: 'Profile',     tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
+          {/* Messaging lives inside the job card — not a standalone tab */}
+          <Tabs.Screen name="messages"     options={{ href: null, title: 'Messages' }} />
           <Tabs.Screen name="saved-searches"            options={{ href: null, title: 'Job Alerts' }} />
           <Tabs.Screen name="jobs/[id]"               options={{ href: null }} />
           <Tabs.Screen name="claim-confirm/[id]"      options={{ href: null, title: 'Confirm Claim' }} />

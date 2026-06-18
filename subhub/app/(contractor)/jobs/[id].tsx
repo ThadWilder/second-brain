@@ -42,6 +42,10 @@ export default function ContractorJobDetailScreen() {
   // Boost
   const [boosting, setBoosting] = useState(false);
 
+  // Pending claim request (awaiting contractor accept/decline)
+  const [pendingSub, setPendingSub] = useState<any>(null);
+  const [decidingClaim, setDecidingClaim] = useState(false);
+
   const fetchAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user!.id);
@@ -67,8 +71,44 @@ export default function ContractorJobDetailScreen() {
     } else {
       setEvidence([]);
     }
+    // Pending claim request — load the requesting sub's profile so the
+    // contractor can review rating/history before accepting.
+    if (j?.pending_claim_by) {
+      const { data: ps } = await supabase
+        .from('sub_profiles')
+        .select('*')
+        .eq('user_id', j.pending_claim_by)
+        .maybeSingle();
+      setPendingSub(ps ?? null);
+    } else {
+      setPendingSub(null);
+    }
     setLoading(false);
   }, [id]);
+
+  async function handleAcceptClaim() {
+    setDecidingClaim(true);
+    const { error } = await supabase.rpc('accept_claim', { p_job: id });
+    setDecidingClaim(false);
+    if (error) { Alert.alert('Could not accept', error.message); return; }
+    Alert.alert('Claim Accepted', 'The sub has been notified and the job is now in progress on their end.');
+    fetchAll();
+  }
+
+  function handleRejectClaim() {
+    Alert.alert('Decline this claim?', 'The job stays on the board for other subs to claim.', [
+      { text: 'Back', style: 'cancel' },
+      {
+        text: 'Decline', style: 'destructive', onPress: async () => {
+          setDecidingClaim(true);
+          const { error } = await supabase.rpc('reject_claim', { p_job: id });
+          setDecidingClaim(false);
+          if (error) { Alert.alert('Could not decline', error.message); return; }
+          fetchAll();
+        },
+      },
+    ]);
+  }
 
   async function handleCall() {
     Alert.alert(
@@ -298,6 +338,39 @@ export default function ContractorJobDetailScreen() {
         {openChangeOrders.length > 0 && (
           <View style={styles.alertBanner}>
             <Text style={styles.alertText}>⚠️ {openChangeOrders.length} open change order{openChangeOrders.length > 1 ? 's' : ''} need your approval</Text>
+          </View>
+        )}
+
+        {/* Pending claim request — review the sub, then accept or decline */}
+        {job.status === 'posted' && pendingSub && (
+          <View style={styles.claimReqCard}>
+            <Text style={styles.claimReqLabel}>⏳ Claim request — review &amp; respond</Text>
+            <Text style={styles.subName}>{pendingSub.name}</Text>
+            <RatingStars value={pendingSub.rating} count={pendingSub.rating_count} size="sm" />
+            <View style={styles.claimReqMeta}>
+              {pendingSub.verified && <Text style={styles.verified}>✓ Verified</Text>}
+              {typeof pendingSub.job_success_score === 'number' && (
+                <Text style={styles.claimReqStat}>Job Success {pendingSub.job_success_score}%</Text>
+              )}
+              {pendingSub.tier && <Text style={styles.claimReqStat}>{String(pendingSub.tier).replace('_', ' ')}</Text>}
+            </View>
+            {Array.isArray(pendingSub.skills) && pendingSub.skills.length > 0 && (
+              <Text style={styles.claimReqSkills}>{pendingSub.skills.join(' · ')}</Text>
+            )}
+            <View style={styles.footerRow}>
+              <TouchableOpacity
+                style={[styles.payButton, styles.flex, decidingClaim && styles.payButtonDisabled]}
+                onPress={handleAcceptClaim}
+                disabled={decidingClaim}
+              >
+                {decidingClaim
+                  ? <ActivityIndicator color={colors.white} />
+                  : <Text style={styles.payButtonText}>Accept Claim</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.disputeButton} onPress={handleRejectClaim} disabled={decidingClaim}>
+                <Text style={styles.disputeButtonText}>Decline</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -688,6 +761,14 @@ const styles = StyleSheet.create({
   subCardLabel: { fontSize: fontSize.xs, color: colors.textMuted, textTransform: 'uppercase' },
   subName: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
   verified: { fontSize: fontSize.xs, color: colors.accent, fontWeight: '700' },
+  claimReqCard: {
+    backgroundColor: '#fffbeb', borderRadius: radius.md, padding: spacing.md, gap: spacing.sm,
+    borderLeftWidth: 3, borderLeftColor: colors.warning,
+  },
+  claimReqLabel: { fontSize: fontSize.xs, color: '#92400e', fontWeight: '700', textTransform: 'uppercase' },
+  claimReqMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' },
+  claimReqStat: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '600', textTransform: 'capitalize' },
+  claimReqSkills: { fontSize: fontSize.xs, color: colors.textMuted },
   divider: { height: 1, backgroundColor: colors.border },
   section: { gap: spacing.sm },
   sectionTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },

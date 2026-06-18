@@ -130,6 +130,9 @@ export interface Job {
   material_supplier_address: string;
   material_status: MaterialStatus;
   site_layout_url?: string;
+  access_notes?: string;
+  trade_measure_type?: string | null;
+  trade_measure_value?: number | null;
 
   address: string;
   city: string;
@@ -138,6 +141,7 @@ export interface Job {
   lat?: number;
   lng?: number;
   estimated_days: number;
+  start_window_type?: string;
   start_window_start: string;
   start_window_end: string;
   install_price: number;

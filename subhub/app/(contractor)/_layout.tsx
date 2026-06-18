@@ -3,23 +3,35 @@ import { Platform, View, Text, TouchableOpacity, StyleSheet, useWindowDimensions
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import { useUnreadMessages } from '@/lib/useUnreadMessages';
+import NotificationBell from '@/components/NotificationBell';
 
 const SIDEBAR_W = 240;
 const COMPACT_W = 64;
 const BREAKPOINT = 768;
 
-const TABS = [
-  { segment: 'home',      icon: '🏠', label: 'Home'       },
-  { segment: '',          icon: '📋', label: 'My Jobs'    },
-  { segment: 'post-job',  icon: '➕', label: 'Post Job'   },
-  { segment: 'bulk-post', icon: '📦', label: 'Bulk Post'  },
-  { segment: 'projects',  icon: '🗂️', label: 'Projects'   },
-  { segment: 'crew',      icon: '👷', label: 'Crew'       },
-  { segment: 'payments',  icon: '💳', label: 'Payments'   },
-  { segment: 'messages',  icon: '💬', label: 'Messages'   },
-  { segment: 'subs',      icon: '🔍', label: 'Find Subs'  },
-  { segment: 'market',    icon: '📊', label: 'Market'     },
-  { segment: 'profile',   icon: '👤', label: 'Profile'    },
+// Blueprint nav: four primary destinations (Jobs · Crew · Pay+Market · Profile).
+// These are the only items in the native tab bar and the compact mobile-web
+// sidebar. Messages is NOT a tab — it lives inside each job card.
+const PRIMARY = [
+  { segment: '',         icon: '📋', label: 'Jobs'    },
+  { segment: 'crew',     icon: '👷', label: 'Crew'    },
+  { segment: 'payments', icon: '💳', label: 'Pay'     },
+  { segment: 'profile',  icon: '👤', label: 'Profile' },
+];
+
+// The wide-screen (desktop web) sidebar shows the full set, grouped so every
+// secondary screen (Post, Bulk, Projects, Market, Find Subs) stays one tap away.
+const FULL = [
+  { segment: 'home',      icon: '🏠', label: 'Home'      },
+  { segment: '',          icon: '📋', label: 'My Jobs'   },
+  { segment: 'post-job',  icon: '➕', label: 'Post Job'  },
+  { segment: 'bulk-post', icon: '📦', label: 'Bulk Post' },
+  { segment: 'projects',  icon: '🗂️', label: 'Projects'  },
+  { segment: 'crew',      icon: '👷', label: 'Crew'      },
+  { segment: 'subs',      icon: '🔍', label: 'Find Subs' },
+  { segment: 'payments',  icon: '💳', label: 'Payments'  },
+  { segment: 'market',    icon: '📊', label: 'Market'    },
+  { segment: 'profile',   icon: '👤', label: 'Profile'   },
 ];
 
 function ContractorSidebar({ unread, compact }: { unread: number; compact?: boolean }) {
@@ -30,7 +42,7 @@ function ContractorSidebar({ unread, compact }: { unread: number; compact?: bool
   if (compact) {
     return (
       <View style={s.sidebarCompact}>
-        {TABS.map(t => {
+        {PRIMARY.map(t => {
           const active = t.segment === current;
           return (
             <TouchableOpacity
@@ -56,7 +68,7 @@ function ContractorSidebar({ unread, compact }: { unread: number; compact?: bool
       <View style={s.logoRow}>
         <Image source={require('@/assets/logo.jpeg')} style={s.logoImage} resizeMode="contain" />
       </View>
-      {TABS.map(t => {
+      {FULL.map(t => {
         const active = t.segment === current;
         return (
           <TouchableOpacity
@@ -109,20 +121,25 @@ export default function ContractorLayout() {
             headerStyle: { backgroundColor: colors.primary },
             headerTintColor: colors.white,
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
+            // Global notification bell in every screen header.
+            headerRight: () => <NotificationBell tint={colors.white} />,
           }}
         >
-          <Tabs.Screen name="home"     options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
-          <Tabs.Screen name="index"    options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
-          <Tabs.Screen name="post-job"  options={{ title: 'Post Job',  tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
-          <Tabs.Screen name="bulk-post" options={{ title: 'Bulk Post', tabBarIcon: ({ color }) => <Icon e="📦" c={color} /> }} />
-          <Tabs.Screen name="projects" options={{ title: 'Projects',  tabBarIcon: ({ color }) => <Icon e="🗂️" c={color} /> }} />
+          {/* Primary tabs (native bottom bar) */}
+          <Tabs.Screen name="index"    options={{ title: 'My Jobs',  tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
+          <Tabs.Screen name="crew"     options={{ title: 'Crew',     tabBarIcon: ({ color }) => <Icon e="👷" c={color} /> }} />
+          <Tabs.Screen name="payments" options={{ title: 'Pay',      tabBarIcon: ({ color }) => <Icon e="💳" c={color} /> }} />
+          <Tabs.Screen name="profile"  options={{ title: 'Profile',  tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
+          {/* Secondary screens — reachable from the sidebar / in-screen links, not the bottom bar */}
+          <Tabs.Screen name="home"      options={{ href: null, headerShown: false, title: 'Home' }} />
+          <Tabs.Screen name="post-job"  options={{ href: null, title: 'Post Job' }} />
+          <Tabs.Screen name="bulk-post" options={{ href: null, title: 'Bulk Post' }} />
+          <Tabs.Screen name="projects"  options={{ href: null, title: 'Projects' }} />
           <Tabs.Screen name="projects/[id]" options={{ href: null, title: 'Project' }} />
-          <Tabs.Screen name="crew"     options={{ title: 'Crew',      tabBarIcon: ({ color }) => <Icon e="👷" c={color} /> }} />
-          <Tabs.Screen name="payments" options={{ title: 'Payments',  tabBarIcon: ({ color }) => <Icon e="💳" c={color} /> }} />
-          <Tabs.Screen name="messages" options={{ title: 'Messages',  tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
-          <Tabs.Screen name="subs"     options={{ title: 'Find Subs', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
-          <Tabs.Screen name="market"   options={{ title: 'Market',    tabBarIcon: ({ color }) => <Icon e="📊" c={color} /> }} />
-          <Tabs.Screen name="profile"  options={{ title: 'Profile',   tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
+          <Tabs.Screen name="subs"      options={{ href: null, title: 'Find Subs' }} />
+          <Tabs.Screen name="market"    options={{ href: null, title: 'Market' }} />
+          {/* Messaging lives inside the job card — not a standalone tab */}
+          <Tabs.Screen name="messages"  options={{ href: null, title: 'Messages' }} />
           <Tabs.Screen name="jobs/[id]"    options={{ href: null }} />
           <Tabs.Screen name="chat/[jobId]" options={{ href: null, title: 'Chat' }} />
           <Tabs.Screen name="change-order" options={{ href: null, title: 'Change Order' }} />

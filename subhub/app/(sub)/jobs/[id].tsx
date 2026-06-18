@@ -260,7 +260,9 @@ export default function SubJobDetailScreen() {
   if (!job) return <Text style={styles.notFound}>Job not found.</Text>;
 
   const isMine = job.claimed_by === userId;
-  const canClaim = job.status === 'posted';
+  const myClaimPending = (job as any).pending_claim_by === userId && job.status === 'posted';
+  const claimPendingOther = !!(job as any).pending_claim_by && (job as any).pending_claim_by !== userId && job.status === 'posted';
+  const canClaim = job.status === 'posted' && !(job as any).pending_claim_by;
   const canStart = isMine && job.status === 'claimed';
   const inProgress = isMine && job.status === 'in_progress';
   const isComplete = job.status === 'complete';
@@ -623,6 +625,17 @@ export default function SubJobDetailScreen() {
           <TouchableOpacity style={styles.primaryButton} onPress={handleClaim}>
             <Text style={styles.primaryButtonText}>Review & Claim — {formatCurrency(job.sub_payout)}</Text>
           </TouchableOpacity>
+        )}
+        {myClaimPending && (
+          <View style={styles.pendingBox}>
+            <Text style={styles.pendingText}>⏳ Claim requested — waiting for the contractor to accept</Text>
+            <Text style={styles.payoutStatusLink}>You'll get a notification the moment they do.</Text>
+          </View>
+        )}
+        {claimPendingOther && (
+          <View style={styles.pendingBox}>
+            <Text style={styles.pendingText}>Another sub has a claim pending on this job</Text>
+          </View>
         )}
         {canStart && (
           <View style={styles.footerRow}>

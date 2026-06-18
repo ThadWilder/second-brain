@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator,
+  StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -52,17 +52,21 @@ export default function ClaimConfirmScreen() {
   async function handleClaim() {
     if (!job || !userId) return;
     setClaiming(true);
-    const { error } = await supabase
-      .from('jobs')
-      .update({ status: 'claimed', claimed_by: userId, claimed_at: new Date().toISOString() })
-      .eq('id', id);
+    // Submit a claim REQUEST — the contractor reviews and accepts/declines.
+    // The job only moves to 'claimed' once the contractor approves (server-side
+    // via accept_claim). See migration 035.
+    const { error } = await supabase.rpc('request_claim', { p_job: id });
+    setClaiming(false);
     if (error) {
-      setClaiming(false);
+      Alert.alert('Could not request', error.message ?? 'This job may no longer be available.');
       return;
     }
     await notify.jobClaimed(job.contractor_id, job.title, 'A subcontractor');
-    setClaiming(false);
-    router.replace({ pathname: '/(sub)/jobs/[id]', params: { id } } as any);
+    Alert.alert(
+      'Claim Requested ✅',
+      'The contractor has been notified to review your profile and accept. You\'ll get a notification as soon as they do.',
+      [{ text: 'OK', onPress: () => router.replace({ pathname: '/(sub)/jobs/[id]', params: { id } } as any) }],
+    );
   }
 
   if (loading) return <ActivityIndicator style={styles.loader} color={colors.accent} />;
@@ -187,7 +191,7 @@ export default function ClaimConfirmScreen() {
       >
         {claiming
           ? <ActivityIndicator color={colors.white} />
-          : <Text style={styles.claimBtnText}>Agree & Claim Job — {fmt(net)}</Text>}
+          : <Text style={styles.claimBtnText}>Agree & Request to Claim</Text>}
       </TouchableOpacity>
 
       {!canClaim && (

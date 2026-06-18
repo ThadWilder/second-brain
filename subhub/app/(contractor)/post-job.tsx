@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Alert,
+  StyleSheet, ActivityIndicator, Alert, Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
@@ -11,6 +13,27 @@ import { getMyFeeStatus, feeWaiverMessage, type FeeStatus } from '@/lib/fees';
 import type { MaterialStatus } from '@/lib/types';
 
 const INDUSTRIES = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
+
+// Trade-specific measurement: maps the selected trade/industry to the labeled
+// numeric input shown in the Scope step (persisted as trade_measure_type/value).
+function tradeMeasure(industry: string): { label: string; type: string } {
+  const key = industry.toLowerCase();
+  if (key.includes('fenc')) return { label: 'Linear feet', type: 'linear_feet' };
+  if (key.includes('deck')) return { label: 'Square feet', type: 'square_feet' };
+  if (key.includes('light')) return { label: 'Fixture count', type: 'fixture_count' };
+  if (key.includes('landscap') || key.includes('irrigation')) return { label: 'Square feet', type: 'square_feet' };
+  if (key.includes('paint')) return { label: 'Square feet', type: 'square_feet' };
+  return { label: 'Quantity', type: 'units' };
+}
+
+type StartWindowType = 'asap' | 'this_week' | 'custom';
+
+// Same MM/DD/YYYY string format the date inputs already use in this file.
+function fmtDate(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${mm}/${dd}/${d.getFullYear()}`;
+}
 
 const MATERIAL_OPTIONS: { label: string; value: MaterialStatus; desc: string }[] = [
   { label: 'On-site', value: 'on_site', desc: 'Material is already at the job site' },
@@ -32,11 +55,15 @@ export default function PostJobScreen() {
   const [crewPriority, setCrewPriority] = useState(true);
   const [feeStatus, setFeeStatus] = useState<FeeStatus | null>(null);
   const [crewMatch, setCrewMatch] = useState<{ score: number; reason: string } | null>(null);
+  const [startWindowType, setStartWindowType] = useState<StartWindowType>('custom');
+  const [sitePhoto, setSitePhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
   const [form, setForm] = useState({
     title: '',
     industry: 'Fencing',
     scope_of_work: '',
+    trade_measure_value: '',
+    access_notes: '',
     estimated_days: '1',
     start_window_start: '',
     start_window_end: '',
@@ -115,6 +142,65 @@ export default function PostJobScreen() {
     return (val: string) => setForm(f => ({ ...f, [key]: val }));
   }
 
+  // Start-window presets auto-fill the date strings; "custom" reveals the inputs.
+  function pickStartWindow(type: StartWindowType) {
+    setStartWindowType(type);
+    if (type === 'asap') {
+      const today = fmtDate(new Date());
+      setForm(f => ({ ...f, start_window_start: today, start_window_end: today }));
+    } else if (type === 'this_week') {
+      const now = new Date();
+      const end = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
+      setForm(f => ({ ...f, start_window_start: fmtDate(now), start_window_end: fmtDate(end) }));
+    }
+    // 'custom' keeps whatever the user has typed and shows the date inputs.
+  }
+
+  // Site photo is required before publishing. Pick locally now, upload after the
+  // job row exists (we need the job id for the storage path), mirroring PhotoUpload.
+  async function pickSitePhoto(source: 'camera' | 'library') {
+    const picker = source === 'camera'
+      ? ImagePicker.launchCameraAsync
+      : ImagePicker.launchImageLibraryAsync;
+    const result = await picker({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: false,
+    });
+    if (result.canceled) return;
+    setSitePhoto(result.assets[0]);
+  }
+
+  function promptSitePhoto() {
+    Alert.alert('Add Site Photo', undefined, [
+      { text: 'Camera', onPress: () => pickSitePhoto('camera') },
+      { text: 'Photo Library', onPress: () => pickSitePhoto('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  // Upload the chosen site photo to the job-media bucket and record it as a
+  // 'before' job_media row (same path/scheme as PhotoUpload). Returns the URL.
+  async function uploadSitePhoto(jobId: string, userId: string): Promise<string> {
+    const ext = sitePhoto!.uri.split('.').pop() ?? 'jpg';
+    const path = `${userId}/${jobId}/before/${Date.now()}.${ext}`;
+    const base64 = await FileSystem.readAsStringAsync(sitePhoto!.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const { error: uploadError } = await supabase.storage
+      .from('job-media')
+      .upload(path, decodeBase64(base64), { contentType: `image/${ext}` });
+    if (uploadError) throw uploadError;
+    const { data: { publicUrl } } = supabase.storage.from('job-media').getPublicUrl(path);
+    await supabase.from('job_media').insert({
+      job_id: jobId,
+      uploaded_by: userId,
+      phase: 'before',
+      url: publicUrl,
+    });
+    return publicUrl;
+  }
+
   function validateStep(): boolean {
     if (step === 1) {
       if (!form.title) { setError('Job title is required.'); return false; }
@@ -149,6 +235,7 @@ export default function PostJobScreen() {
     if (!form.homeowner_name || !form.homeowner_phone) {
       setError('Homeowner name and phone are required.'); return;
     }
+    if (!sitePhoto) { setError('Add at least one site photo before posting.'); return; }
     if (!feeAgreed) { setError('You must acknowledge the platform fee to post.'); return; }
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
@@ -156,13 +243,19 @@ export default function PostJobScreen() {
     if (!user) { setError('Session expired. Please sign in again.'); setLoading(false); return; }
     const subPayout = parseFloat(form.sub_payout);
     const installPrice = parseFloat(form.install_price);
+    const measure = tradeMeasure(form.industry);
+    const measureValue = parseFloat(form.trade_measure_value);
 
     const { data: newJob, error: err } = await supabase.from('jobs').insert({
       contractor_id: user.id,
       title: form.title,
       industry: form.industry,
       scope_of_work: form.scope_of_work,
+      access_notes: form.access_notes,
+      trade_measure_type: isNaN(measureValue) ? null : measure.type,
+      trade_measure_value: isNaN(measureValue) ? null : measureValue,
       estimated_days: parseInt(form.estimated_days, 10),
+      start_window_type: startWindowType,
       start_window_start: form.start_window_start || null,
       start_window_end: form.start_window_end || null,
       material_supplier: form.material_supplier,
@@ -185,6 +278,18 @@ export default function PostJobScreen() {
     }).select('id').single();
 
     if (err || !newJob) { setError(err?.message ?? 'Failed to post job.'); setLoading(false); return; }
+
+    // Upload the required site photo now that we have a job id. Store it as a
+    // 'before' job_media row and also stamp site_layout_url for quick reference.
+    try {
+      const photoUrl = await uploadSitePhoto(newJob.id, user.id);
+      await supabase.from('jobs').update({ site_layout_url: photoUrl }).eq('id', newJob.id);
+    } catch (photoErr) {
+      await supabase.from('jobs').delete().eq('id', newJob.id);
+      setError((photoErr as Error)?.message ?? 'Failed to upload site photo. Please try again.');
+      setLoading(false);
+      return;
+    }
 
     // Place $1,000 authorization hold on contractor's card
     const { data: holdData, error: holdErr } = await supabase.functions.invoke('hold-payment', {
@@ -290,9 +395,47 @@ export default function PostJobScreen() {
               placeholder="Describe exactly what needs to be installed. Be specific — a sub should be able to say yes without calling you."
               multiline
             />
+            <Field
+              label={`${tradeMeasure(form.industry).label} (optional)`}
+              value={form.trade_measure_value}
+              onChangeText={set('trade_measure_value')}
+              keyboardType="decimal-pad"
+              placeholder={`How many ${tradeMeasure(form.industry).label.toLowerCase()}?`}
+            />
             <Field label="Estimated Days to Complete" value={form.estimated_days} onChangeText={set('estimated_days')} keyboardType="number-pad" />
-            <Field label="Earliest Start Date" value={form.start_window_start} onChangeText={set('start_window_start')} placeholder="MM/DD/YYYY" />
-            <Field label="Latest Start Date" value={form.start_window_end} onChangeText={set('start_window_end')} placeholder="MM/DD/YYYY" />
+
+            <Text style={styles.label}>Start Window</Text>
+            <View style={styles.industryGrid}>
+              {([
+                { type: 'asap' as StartWindowType, label: 'ASAP' },
+                { type: 'this_week' as StartWindowType, label: 'This week' },
+                { type: 'custom' as StartWindowType, label: 'Custom' },
+              ]).map(opt => (
+                <TouchableOpacity
+                  key={opt.type}
+                  style={[styles.industryChip, startWindowType === opt.type && styles.industryChipSelected]}
+                  onPress={() => pickStartWindow(opt.type)}
+                >
+                  <Text style={[styles.industryChipText, startWindowType === opt.type && styles.industryChipTextSelected]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {startWindowType === 'custom' && (
+              <>
+                <Field label="Earliest Start Date" value={form.start_window_start} onChangeText={set('start_window_start')} placeholder="MM/DD/YYYY" />
+                <Field label="Latest Start Date" value={form.start_window_end} onChangeText={set('start_window_end')} placeholder="MM/DD/YYYY" />
+              </>
+            )}
+
+            <Field
+              label="Access notes"
+              value={form.access_notes}
+              onChangeText={set('access_notes')}
+              placeholder="Gate code? Parking? Pets on site? Where is material staged?"
+              multiline
+            />
           </Section>
           <NavRow onBack={back} onNext={next} nextLabel="Next: Materials →" />
         </>
@@ -361,6 +504,19 @@ export default function PostJobScreen() {
             </View>
           </View>
 
+          <Section title="Site Photo">
+            <Text style={styles.noticeText}>
+              At least one site photo is required before you can post. It becomes the job's "before" photo.
+            </Text>
+            <View style={styles.photoRow}>
+              {sitePhoto && <Image source={{ uri: sitePhoto.uri }} style={styles.thumb} />}
+              <TouchableOpacity style={styles.addPhotoButton} onPress={promptSitePhoto}>
+                <Text style={styles.addPhotoIcon}>{sitePhoto ? '↻' : '+'}</Text>
+              </TouchableOpacity>
+            </View>
+            {!sitePhoto && <Text style={styles.payoutNote}>Add at least one site photo before posting.</Text>}
+          </Section>
+
           <Section title="Homeowner Contact">
             <View style={styles.notice}>
               <Text style={styles.noticeText}>
@@ -408,9 +564,9 @@ export default function PostJobScreen() {
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.flex, !feeAgreed && styles.buttonDisabled]}
+              style={[styles.button, styles.flex, (!feeAgreed || !sitePhoto) && styles.buttonDisabled]}
               onPress={handleSubmit}
-              disabled={loading || !feeAgreed}
+              disabled={loading || !feeAgreed || !sitePhoto}
             >
               {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Post Job</Text>}
             </TouchableOpacity>
@@ -526,6 +682,16 @@ function LFBenchmark({ industry, payout }: { industry: string; payout: string })
       )}
     </View>
   );
+}
+
+// Decode base64 string to Uint8Array for Supabase storage upload (matches PhotoUpload).
+function decodeBase64(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
 }
 
 const styles = StyleSheet.create({
@@ -654,4 +820,12 @@ const styles = StyleSheet.create({
   ratingHigh: { color: '#15803d' },
   ratingFair: { color: '#92400e' },
   ratingLow: { color: colors.error },
+  photoRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  thumb: { width: 80, height: 80, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
+  addPhotoButton: {
+    width: 80, height: 80, borderRadius: radius.sm,
+    borderWidth: 2, borderColor: colors.border, borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
+  },
+  addPhotoIcon: { fontSize: 28, color: colors.textLight },
 });

@@ -60,6 +60,7 @@ export default function JobCard({ job, onPress, variant = 'board', onMessage }: 
         <Chip icon="📅" label={`${job.estimated_days}d`} />
         <Chip icon="🏗️" label={job.industry} />
         <Chip icon="📦" label={materialLabel(job.material_status)} />
+        {measureLabel(job) && <Chip icon="📐" label={measureLabel(job)!} />}
         {variant === 'manage' && (
           <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[job.status] + '20' }]}>
             <Text style={[styles.statusText, { color: STATUS_COLORS[job.status] }]}>
@@ -117,6 +118,23 @@ function materialLabel(status: Job['material_status']) {
   if (status === 'on_site') return 'Material on-site';
   if (status === 'local') return 'Local pickup';
   return 'Material distant';
+}
+
+// Compact trade-specific measurement, e.g. "180 linear ft" / "450 sq ft" / "12 fixtures".
+function measureUnit(type: string): string {
+  switch (type) {
+    case 'linear_feet': return 'linear ft';
+    case 'square_feet': return 'sq ft';
+    case 'fixture_count': return 'fixtures';
+    default: return 'units';
+  }
+}
+
+function measureLabel(job: Job): string | null {
+  if (job.trade_measure_value == null || !job.trade_measure_type) return null;
+  const n = Number(job.trade_measure_value);
+  if (!isFinite(n) || n <= 0) return null;
+  return `${n.toLocaleString('en-US')} ${measureUnit(job.trade_measure_type)}`;
 }
 
 const styles = StyleSheet.create({

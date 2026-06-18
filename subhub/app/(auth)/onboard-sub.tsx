@@ -10,7 +10,24 @@ import { claimReferral } from '@/lib/referrals';
 import { consumePendingRef, consumePendingJob } from '@/lib/pendingLink';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
-const SKILLS = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
+const TRADES: { label: string; emoji: string }[] = [
+  { label: 'Fencing', emoji: '🚧' },
+  { label: 'Decking', emoji: '🪵' },
+  { label: 'Outdoor Lighting', emoji: '💡' },
+  { label: 'Landscaping / Irrigation', emoji: '🌿' },
+  { label: 'Painting', emoji: '🎨' },
+  { label: 'Pergola / Shade', emoji: '⛱️' },
+  { label: 'Gates', emoji: '🚪' },
+  { label: 'Retaining Walls', emoji: '🧱' },
+  { label: 'General', emoji: '🛠️' },
+];
+
+const CREW_SIZES: { label: string; value: string }[] = [
+  { label: 'Solo', value: 'solo' },
+  { label: '2–3', value: '2-3' },
+  { label: '4–6', value: '4-6' },
+  { label: '7+', value: '7+' },
+];
 
 export default function OnboardSubScreen() {
   const router = useRouter();
@@ -27,13 +44,14 @@ export default function OnboardSubScreen() {
     bio: '',
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(['Fencing']);
+  const [crewSize, setCrewSize] = useState('solo');
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   function toggleSkill(skill: string) {
     setSelectedSkills(prev =>
-      prev.includes(skill) ? (prev.length > 1 ? prev.filter(s => s !== skill) : prev) : [...prev, skill]
+      prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]
     );
   }
 
@@ -46,6 +64,7 @@ export default function OnboardSubScreen() {
     for (const field of required) {
       if (!form[field]) { setError(`${field.replace(/_/g, ' ')} is required.`); return; }
     }
+    if (selectedSkills.length === 0) { setError('Select at least one trade to continue.'); return; }
     if (!termsAgreed) { setError('You must agree to the platform terms to continue.'); return; }
     setLoading(true);
     setError('');
@@ -64,6 +83,7 @@ export default function OnboardSubScreen() {
       phone_number: form.phone_number || null,
       bio: form.bio || null,
       skills: selectedSkills,
+      crew_size: crewSize,
       payout_type: 'bank',
       verified: false,
     });
@@ -109,17 +129,36 @@ export default function OnboardSubScreen() {
         />
       </View>
 
-      <Text style={styles.label}>Your skills / trades</Text>
-      <View style={styles.chipGrid}>
-        {SKILLS.map(skill => {
-          const selected = selectedSkills.includes(skill);
+      <Text style={styles.label}>Your trades (pick all that apply)</Text>
+      <View style={styles.tileGrid}>
+        {TRADES.map(trade => {
+          const selected = selectedSkills.includes(trade.label);
           return (
             <TouchableOpacity
-              key={skill}
-              style={[styles.chip, selected && styles.chipSelected]}
-              onPress={() => toggleSkill(skill)}
+              key={trade.label}
+              style={[styles.tile, selected && styles.tileSelected]}
+              onPress={() => toggleSkill(trade.label)}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{skill}</Text>
+              <Text style={styles.tileEmoji}>{trade.emoji}</Text>
+              <Text style={[styles.tileText, selected && styles.tileTextSelected]}>{trade.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <Text style={styles.label}>Crew size</Text>
+      <View style={styles.chipGrid}>
+        {CREW_SIZES.map(size => {
+          const selected = crewSize === size.value;
+          return (
+            <TouchableOpacity
+              key={size.value}
+              style={[styles.chip, selected && styles.chipSelected]}
+              onPress={() => setCrewSize(size.value)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{size.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -214,4 +253,10 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
   chipText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '500' },
   chipTextSelected: { color: colors.white },
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  tile: { width: '47%', flexGrow: 1, alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md, paddingHorizontal: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  tileSelected: { backgroundColor: colors.accentLight, borderColor: colors.accent },
+  tileEmoji: { fontSize: fontSize.xl },
+  tileText: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '500', textAlign: 'center' },
+  tileTextSelected: { color: colors.accent, fontWeight: '700' },
 });

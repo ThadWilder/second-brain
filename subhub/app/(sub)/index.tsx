@@ -202,6 +202,11 @@ export default function JobBoardScreen() {
 
   const activeFilters = (industry !== 'All' ? 1 : 0) + (duration !== 'all' ? 1 : 0) + (pay !== 'all' ? 1 : 0);
 
+  // Saved jobs that have dropped off the board (claimed by someone else or
+  // closed) — surface a brief notice instead of leaving a dead entry.
+  const boardIds = new Set(jobs.map(j => j.id));
+  const unavailableSaved = [...savedIds].filter(sid => !boardIds.has(sid)).length;
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -324,6 +329,13 @@ export default function JobBoardScreen() {
                   </TouchableOpacity>
                 )}
               </View>
+              {showSavedOnly && unavailableSaved > 0 && (
+                <View style={styles.savedNotice}>
+                  <Text style={styles.savedNoticeText}>
+                    {unavailableSaved} saved job{unavailableSaved !== 1 ? 's were' : ' was'} claimed by someone else or closed — no longer available.
+                  </Text>
+                </View>
+              )}
             </View>
           }
           ListEmptyComponent={
@@ -418,6 +430,11 @@ const styles = StyleSheet.create({
   count: { fontSize: fontSize.sm, color: colors.textMuted },
   savedCount: { fontSize: fontSize.sm, color: colors.accent, fontWeight: '700' },
   savedCountActive: { color: colors.primary },
+  savedNotice: {
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.sm,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginTop: spacing.xs,
+  },
+  savedNoticeText: { fontSize: fontSize.xs, color: colors.textMuted },
   list: { paddingBottom: spacing.xxl },
   empty: { alignItems: 'center', padding: spacing.xxl, gap: spacing.md },
   emptyIcon: { fontSize: 40 },

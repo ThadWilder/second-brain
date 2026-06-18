@@ -24,7 +24,7 @@ Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
 ## Supabase setup
 1. Create a new Supabase project
-2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `029`)
+2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `038`)
 3. Enable the `pg_trgm` extension: Dashboard → Database → Extensions → search "pg_trgm" → enable
 4. Copy the project URL and anon key into `.env`
 5. **Server-side push (migration 016)** needs the `pg_net` extension (the migration enables it) plus two Vault secrets so the DB trigger can call the edge function. In the SQL editor, run once with your real values:
@@ -111,9 +111,14 @@ User role is stored in `user_metadata.role` at signup and drives all routing.
 
 ## Job lifecycle
 ```
-draft → posted → claimed → in_progress → pending_review → complete
-                                       ↘ disputed
+draft → posted → (claim requested) → claimed → in_progress → pending_review → complete
+                                                          ↘ disputed
 ```
+A sub does not self-assign a posted job. They submit a **claim request**
+(`request_claim` RPC sets `jobs.pending_claim_by`); the contractor reviews the
+sub's profile/rating and **accepts** (`accept_claim` → posted→claimed) or
+**declines** (`reject_claim` → stays posted). Enforced server-side; the direct
+sub self-claim RLS policy was removed (migration 035).
 
 ## Platform rules (enforced in RLS + UX)
 - Homeowner phone/email never exposed to sub — all contact through the app
@@ -185,8 +190,18 @@ draft → posted → claimed → in_progress → pending_review → complete
 - **Native deep-link capture** (`lib/pendingLink.ts`, `app/_layout.tsx`) — `captureNativeLinkParams(url)` parses `?ref` / `?job` from a `subhub://` URI via `expo-linking` and stashes them in AsyncStorage. Called both on cold start (`Linking.getInitialURL()`) and via a `Linking.addEventListener('url', …)` listener while the app is running. If the user is already signed in and a `?job` arrives, they're navigated directly. Web capture (`captureEntryParams()`) unchanged.
 - **Market intelligence** (migration 034, `/(contractor)/market.tsx`, `/(sub)/market.tsx`) — Aggregate stats powered by three SECURITY DEFINER RPCs (`market_summary`, `market_stats_by_state`, `market_stats_by_industry`). Contractor side: "Market Pulse" — fill rates, time-to-claim, avg payout by state and trade. Sub side: "Where's the Work" — open jobs and highest-paying trades/states. Period selector (7d / 30d / 90d). Both screens show graceful empty states when data is sparse. 📊 Market tab added to both contractor and sub layouts.
 
+- **Four-tab navigation** (`app/(contractor)/_layout.tsx`, `app/(sub)/_layout.tsx`) — Per the Crew blueprint, the native bottom bar + compact mobile-web sidebar now show only four primary destinations. Contractor: **Jobs · Crew · Pay · Profile**. Sub: **Browse · My Jobs · Pay · Profile**. Secondary screens (Post Job, Bulk Post, Projects, Market, Find Subs / Reviews, Contractors) are `href: null` (off the bottom bar) and reachable from the full desktop-web sidebar. Home is the post-login splash, not a tab.
+- **Messaging lives in the job card** — there is no standalone Messages tab. Per-job threads open from the Communications section of each job detail (`chat/[jobId]`), with an inline 3-message preview + unread state. The `messages.tsx` route still exists (`href: null`) but is not surfaced in nav.
+- **Contractor claim approval** (migration 035) — see Job lifecycle above. `request_claim` / `accept_claim` / `reject_claim` SECURITY DEFINER RPCs. Sub claim-confirm submits a request; sub job detail shows "Claim requested — waiting for approval"; contractor job detail shows a **Claim Request card** (requesting sub's name, rating, Job Success score, tier, trades) with Accept / Decline.
+- **In-app notification feed** (migration 036, `lib/useNotifications.ts`, `components/NotificationBell.tsx`) — A 🔔 bell with unread badge sits in every screen header (`headerRight`). Tapping opens a dropdown tray (newest 50, Realtime live-prepend, "Mark all read", tap-through to the job). Backed by the `notifications` table; rows written only via the `create_notification()` SECURITY DEFINER helper. A `messages` INSERT trigger logs message notifications; the claim RPCs log claim_request/accepted/rejected. Independent of the OS push triggers (016/033). **Add `notifications` to the Realtime publication** (Database → Replication) for live updates.
+- **Job posting upgrades** (migration 037) — `post-job.tsx` now has: a **trade-specific measurement** field (linear ft / sq ft / fixture count / units, mapped from trade → `trade_measure_type` + `trade_measure_value`, shown on `JobCard`); an **Access notes** field (`access_notes`) with suggested prompts; **start-window presets** (ASAP / This week / Custom → `start_window_type`); and a **required site photo** before publish (uploads to the `job-media` bucket, `phase: 'before'`, URL also stamped on `site_layout_url`).
+- **Sub onboarding upgrades** (migration 038) — `onboard-sub.tsx` now uses a **visual trade tile grid** (multi-select, persisted to `skills`) and a **crew size** selector (Solo / 2–3 / 4–6 / 7+ → `sub_profiles.crew_size`). At least one trade is required.
+- **Saved-job availability notice** — in the sub board's saved-only view, saved jobs that have dropped off the board (claimed by someone else or closed) surface a brief "N saved jobs were claimed by someone else or closed" notice instead of a dead entry.
+- **Referral dual-boost** (already in migration 023) — a contractor→sub referral grants the referred sub a stronger "referred" visibility boost (weight 1.5 / 14d vs 1.0 / 7d for sub→sub) on top of the referrer's reward on first completed job. Confirmed aligned with the blueprint; no change needed.
+
 ### Not yet built
-- (All planned features are now built)
+- **In-app feed for change orders / sign-offs / payments / disputes** — these fire OS push (migrations 016/033) but are not yet written to the `notifications` feed table. Only messages + claim events populate the bell tray so far. To extend, call `create_notification()` from the relevant trigger functions or add a migration 039.
+- **Swipe gestures** — blueprint's edge-swipe nav drawer, swipe-to-reveal job-tile quick actions (Invite a Sub / Archive), and swipe-between-subtabs are not implemented; navigation is tap-based.
 
 ## Conventions
 - All Supabase queries use the anon client — RLS enforces access
