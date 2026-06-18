@@ -24,7 +24,7 @@ Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
 ## Supabase setup
 1. Create a new Supabase project
-2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `017`)
+2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `019`)
 3. Enable the `pg_trgm` extension: Dashboard → Database → Extensions → search "pg_trgm" → enable
 4. Copy the project URL and anon key into `.env`
 5. **Server-side push (migration 016)** needs the `pg_net` extension (the migration enables it) plus two Vault secrets so the DB trigger can call the edge function. In the SQL editor, run once with your real values:
@@ -159,6 +159,7 @@ draft → posted → claimed → in_progress → pending_review → complete
 - **Home splash** — both roles land on a full-bleed logo splash after login (`(sub)/home.tsx`, `(contractor)/home.tsx`) with live platform tallies (Jobs Completed, Paid to Crews) via the `get_platform_stats()` RPC. Navigation is via the tab bar / sidebar, not buttons.
 - **In-app messaging** — per-job threads with realtime updates, **unread badges** (Messages tab + per-thread counts), **read receipts** ("Read"/"Sent" under your last message), and a **typing indicator** (Realtime broadcast on the chat channel)
 - **Server-side message push** — `messages` INSERT fires the `on_message_insert` trigger (migration 016) → `send-notification` edge function via `pg_net`, so delivery no longer depends on the sender's app staying open. Recipient is resolved as the other job party; sender name + job title fill the notification
+- **Build Your Crew** (migration 019) — the contractor retention mechanic. A sub becomes crew-eligible after a threshold of completed jobs **and** total payout together (placeholder: 3 jobs, $5,000). Contractors add eligible subs to their crew (slot-limited via `contractor_profiles.crew_slots`, default 3). Crew gets a priority window on new posts: `jobs.crew_priority_until` makes a job visible/claimable only to the contractor's active crew until it expires, then it opens to the board. Eligibility + slot limits enforced server-side via SECURITY DEFINER RPCs (`add_to_crew`, `remove_from_crew`, `crew_candidates`) so crew status can't be faked client-side. Stats refresh via `trg_refresh_crew_stats` on job completion; `flag_stale_crew()` marks 90-day-idle pairs `at_risk` (cron-ready). UI: `/(contractor)/crew.tsx` (slot meter, eligible candidates, current crew), crew-priority toggle on the post-job review step, `👷 Crew priority` badge on the sub job board. Lib: `lib/crew.ts`.
 
 ### Not yet built
 - Push delivery from DB triggers for non-message events (claims, change orders, payments still fire client-side / from their own edge functions)

@@ -28,6 +28,7 @@ export interface ContractorProfile {
   rating_count: number;
   change_order_fee: number;
   delay_liability_cap: number;
+  crew_slots?: number;
   payment_terms_days: 10 | 14;
   delay_pay_rate_per_hour: number;
   addon_pay_rate_per_lf: number;
@@ -147,6 +148,33 @@ export interface Job {
 
   boosted?: boolean;
   boosted_at?: string;
+
+  // Crew priority window — only the contractor's active crew can see/claim
+  // this job until the timestamp passes, then it opens to the whole board.
+  crew_priority_until?: string;
+}
+
+// "Build Your Crew" — a proven sub a contractor has added to their bench.
+export interface CrewMember {
+  id: string;
+  contractor_id: string;
+  sub_id: string;
+  status: 'active' | 'at_risk' | 'removed';
+  jobs_together: number;
+  dollars_together: number;
+  added_at: string;
+  last_job_at?: string;
+  created_at: string;
+  sub?: SubProfile;
+}
+
+// A sub who has cleared the eligibility threshold but isn't on the crew yet.
+export interface CrewCandidate {
+  sub_id: string;
+  jobs_together: number;
+  dollars_together: number;
+  last_job_at?: string;
+  sub?: SubProfile;
 }
 
 export interface JobMaterial {

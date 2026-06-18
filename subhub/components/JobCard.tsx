@@ -40,6 +40,11 @@ export default function JobCard({ job, onPress, variant = 'board', onMessage }: 
           <Text style={styles.boostBadgeText}>⚡ Boosted</Text>
         </View>
       )}
+      {variant === 'board' && job.crew_priority_until && new Date(job.crew_priority_until) > new Date() && (
+        <View style={styles.crewBadge}>
+          <Text style={styles.crewBadgeText}>👷 Crew priority — yours to claim first</Text>
+        </View>
+      )}
       <View style={styles.row}>
         <View style={styles.flex}>
           <Text style={styles.title} numberOfLines={2}>{job.title}</Text>
@@ -141,6 +146,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   boostBadgeText: { fontSize: fontSize.xs, fontWeight: '800', color: '#92400e' },
+  crewBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#dbeafe',
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  crewBadgeText: { fontSize: fontSize.xs, fontWeight: '800', color: colors.primary },
   row: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1, gap: 2 },
   title: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },

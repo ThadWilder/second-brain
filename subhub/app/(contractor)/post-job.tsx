@@ -6,6 +6,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
+import { CREW_PRIORITY_HOURS } from '@/lib/crew';
 import type { MaterialStatus } from '@/lib/types';
 
 const INDUSTRIES = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
@@ -25,6 +26,8 @@ export default function PostJobScreen() {
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const [feeAgreed, setFeeAgreed] = useState(false);
+  const [crewCount, setCrewCount] = useState(0);
+  const [crewPriority, setCrewPriority] = useState(true);
 
   const [form, setForm] = useState({
     title: '',
@@ -59,6 +62,12 @@ export default function PostJobScreen() {
           .then(({ data }) => {
             setHasPaymentMethod(!!data?.stripe_customer_id);
           });
+        supabase
+          .from('crew_members')
+          .select('id', { count: 'exact', head: true })
+          .eq('contractor_id', session.user.id)
+          .eq('status', 'active')
+          .then(({ count }) => setCrewCount(count ?? 0));
       });
     }, [])
   );
@@ -126,6 +135,9 @@ export default function PostJobScreen() {
       homeowner_phone: form.homeowner_phone,
       homeowner_email: form.homeowner_email,
       status: 'posted',
+      crew_priority_until: (crewCount > 0 && crewPriority)
+        ? new Date(Date.now() + CREW_PRIORITY_HOURS * 3600 * 1000).toISOString()
+        : null,
     }).select('id').single();
 
     if (err || !newJob) { setError(err?.message ?? 'Failed to post job.'); setLoading(false); return; }
@@ -292,6 +304,21 @@ export default function PostJobScreen() {
             <Field label="Homeowner Phone" value={form.homeowner_phone} onChangeText={set('homeowner_phone')} keyboardType="phone-pad" />
             <Field label="Homeowner Email" value={form.homeowner_email} onChangeText={set('homeowner_email')} keyboardType="email-address" />
           </Section>
+
+          {crewCount > 0 && (
+            <TouchableOpacity style={styles.crewBox} onPress={() => setCrewPriority(v => !v)} activeOpacity={0.85}>
+              <View style={[styles.toggle, crewPriority && styles.toggleOn]}>
+                <View style={[styles.toggleKnob, crewPriority && styles.toggleKnobOn]} />
+              </View>
+              <View style={styles.flex}>
+                <Text style={styles.crewTitle}>⚡ Give your Crew first shot</Text>
+                <Text style={styles.crewDesc}>
+                  This job stays exclusive to your {crewCount} crew member{crewCount === 1 ? '' : 's'} for {CREW_PRIORITY_HOURS} hours
+                  before it opens to the full job board.
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.feeBox} onPress={() => setFeeAgreed(v => !v)} activeOpacity={0.85}>
             <View style={[styles.checkbox, feeAgreed && styles.checkboxOn]}>
@@ -513,6 +540,22 @@ const styles = StyleSheet.create({
   checkboxOn: { backgroundColor: colors.warning, borderColor: colors.warning },
   checkmark: { color: colors.white, fontSize: 16, fontWeight: '800' },
   buttonDisabled: { opacity: 0.4 },
+  crewBox: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    backgroundColor: '#eff6ff', borderRadius: radius.md,
+    padding: spacing.md, borderLeftWidth: 4, borderLeftColor: colors.primary,
+  },
+  crewTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary },
+  crewDesc: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18, marginTop: 2 },
+  toggle: {
+    width: 48, height: 28, borderRadius: 14, backgroundColor: colors.border,
+    padding: 3, justifyContent: 'center', flexShrink: 0,
+  },
+  toggleOn: { backgroundColor: colors.primary },
+  toggleKnob: {
+    width: 22, height: 22, borderRadius: 11, backgroundColor: colors.white,
+  },
+  toggleKnobOn: { alignSelf: 'flex-end' },
   paymentGate: {
     flex: 1, justifyContent: 'center', alignItems: 'center',
     gap: spacing.lg, padding: spacing.xl, marginTop: spacing.xxl,
