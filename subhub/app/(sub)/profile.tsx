@@ -11,6 +11,7 @@ import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import { tierMeta, profileCompletion, scoreColor } from '@/lib/reputation';
 import ReferralCard from '@/components/ReferralCard';
 import DiversificationBadge from '@/components/DiversificationBadge';
+import RecommendedTools from '@/components/RecommendedTools';
 import type { SubProfile } from '@/lib/types';
 
 const SKILLS = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
@@ -220,6 +221,8 @@ export default function SubProfileScreen() {
       </View>
 
       <ReferralCard />
+
+      <RecommendedTools audience="subcontractor" />
 
       {(() => {
         const completion = profileCompletion(profile);

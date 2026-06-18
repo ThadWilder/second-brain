@@ -7,6 +7,7 @@ import RatingStars from '@/components/RatingStars';
 import PaymentStatus from '@/components/PaymentStatus';
 import ReferralCard from '@/components/ReferralCard';
 import SubscriptionTierCard from '@/components/SubscriptionTierCard';
+import RecommendedTools from '@/components/RecommendedTools';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { ContractorProfile } from '@/lib/types';
 
@@ -92,6 +93,7 @@ export default function ContractorProfileScreen() {
 
       <SubscriptionTierCard />
       <ReferralCard />
+      <RecommendedTools audience="contractor" />
 
       <Section title="Business Credentials">
         <InfoRow label="License" value={profile.license_number} />
