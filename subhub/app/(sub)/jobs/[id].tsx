@@ -10,6 +10,7 @@ import RatingStars from '@/components/RatingStars';
 import ChangeOrderCard from '@/components/ChangeOrderCard';
 import PhotoUpload from '@/components/PhotoUpload';
 import { isDemoId, getDemoJob, getDemoMessages } from '@/lib/demo';
+import { shareJob } from '@/lib/referrals';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { Job, ChangeOrder, JobMedia } from '@/lib/types';
 
@@ -300,6 +301,12 @@ export default function SubJobDetailScreen() {
         </View>
         <Text style={styles.title}>{job.title}</Text>
         <Text style={styles.location}>📍 {job.city}, {job.state} · {job.estimated_days} day{job.estimated_days !== 1 ? 's' : ''}</Text>
+        <TouchableOpacity
+          style={styles.shareBtn}
+          onPress={() => shareJob({ id: job.id, industry: job.industry, sub_payout: job.sub_payout, city: job.city, state: job.state })}
+        >
+          <Text style={styles.shareBtnText}>↗ Share this job</Text>
+        </TouchableOpacity>
 
         {job.contractor && (
           <View style={styles.contractorRow}>
@@ -795,6 +802,8 @@ const styles = StyleSheet.create({
   payoutLabel: { fontSize: fontSize.sm, color: colors.textMuted },
   title: { fontSize: fontSize.xxl, fontWeight: '700', color: colors.text },
   location: { fontSize: fontSize.sm, color: colors.textMuted },
+  shareBtn: { alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, marginTop: spacing.xs },
+  shareBtnText: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '600' },
   contractorRow: {
     flexDirection: 'row', backgroundColor: colors.surface,
     padding: spacing.md, borderRadius: radius.md,

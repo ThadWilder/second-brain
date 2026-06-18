@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
 import { claimReferral } from '@/lib/referrals';
+import { consumePendingRef, consumePendingJob } from '@/lib/pendingLink';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 const SKILLS = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
@@ -67,10 +68,14 @@ export default function OnboardSubScreen() {
       verified: false,
     });
     if (err) { setError(err.message); setLoading(false); return; }
-    // Growth hooks: grant a new-user visibility boost and record any referral.
+    // Growth hooks: grant a new-user visibility boost and record any referral
+    // (from the route param or a link captured at launch).
     supabase.rpc('grant_new_user_boost', { p_user: user.id }).then(() => {});
-    if (ref) claimReferral(String(ref)).catch(() => {});
-    router.replace('/(sub)/home' as any);
+    const code = ref ? String(ref) : await consumePendingRef();
+    if (code) await claimReferral(code).catch(() => {});
+    // Account gate: if they arrived via a shared job link, land on that job.
+    const pendingJob = await consumePendingJob();
+    router.replace((pendingJob ? `/(sub)/jobs/${pendingJob}` : '/(sub)/home') as any);
   }
 
   return (

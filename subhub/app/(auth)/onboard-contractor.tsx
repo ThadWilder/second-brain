@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
 import { claimReferral } from '@/lib/referrals';
+import { consumePendingRef } from '@/lib/pendingLink';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 const PAYMENT_TERMS = [
@@ -88,7 +89,8 @@ export default function OnboardContractorScreen() {
     });
     if (err) { setError(err.message); setLoading(false); return; }
     supabase.rpc('grant_new_user_boost', { p_user: user.id }).then(() => {});
-    if (ref) claimReferral(String(ref)).catch(() => {});
+    const code = ref ? String(ref) : await consumePendingRef();
+    if (code) await claimReferral(code).catch(() => {});
     router.replace('/(contractor)/home' as any);
   }
 

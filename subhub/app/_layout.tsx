@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
 import { getUserRole } from '@/lib/auth';
 import { registerForPushNotifications } from '@/lib/notifications';
+import { captureEntryParams, consumePendingJob } from '@/lib/pendingLink';
 import type { UserRole } from '@/lib/types';
 
 const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
@@ -16,6 +17,9 @@ export default function RootLayout() {
   useEffect(() => {
     const DEMO = process.env.EXPO_PUBLIC_DEMO === '1';
     let bootstrapTimer: ReturnType<typeof setTimeout>;
+
+    // Stash any ?ref / ?job from a shared link before auth redirects clear them.
+    captureEntryParams();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (DEMO) return;
@@ -67,7 +71,14 @@ export default function RootLayout() {
 
   function redirectToRole(role: UserRole | null) {
     if (role === 'contractor') router.replace('/(contractor)/home' as any);
-    else if (role === 'subcontractor') router.replace('/(sub)/home' as any);
+    else if (role === 'subcontractor') {
+      // A shared job link (account gate): drop the signed-in sub straight onto
+      // the full job card instead of the home splash.
+      consumePendingJob().then(jobId => {
+        if (jobId) router.replace(`/(sub)/jobs/${jobId}` as any);
+        else router.replace('/(sub)/home' as any);
+      }).catch(() => router.replace('/(sub)/home' as any));
+    }
     else if (role === 'admin') router.replace('/(admin)/' as any);
     else router.replace('/(auth)/signup');
   }
