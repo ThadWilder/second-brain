@@ -24,7 +24,7 @@ Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
 ## Supabase setup
 1. Create a new Supabase project
-2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `019`)
+2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `026`)
 3. Enable the `pg_trgm` extension: Dashboard → Database → Extensions → search "pg_trgm" → enable
 4. Copy the project URL and anon key into `.env`
 5. **Server-side push (migration 016)** needs the `pg_net` extension (the migration enables it) plus two Vault secrets so the DB trigger can call the edge function. In the SQL editor, run once with your real values:
@@ -161,8 +161,21 @@ draft → posted → claimed → in_progress → pending_review → complete
 - **Server-side message push** — `messages` INSERT fires the `on_message_insert` trigger (migration 016) → `send-notification` edge function via `pg_net`, so delivery no longer depends on the sender's app staying open. Recipient is resolved as the other job party; sender name + job title fill the notification
 - **Build Your Crew** (migration 019) — the contractor retention mechanic. A sub becomes crew-eligible after a threshold of completed jobs **and** total payout together (placeholder: 3 jobs, $5,000). Contractors add eligible subs to their crew (slot-limited via `contractor_profiles.crew_slots`, default 3). Crew gets a priority window on new posts: `jobs.crew_priority_until` makes a job visible/claimable only to the contractor's active crew until it expires, then it opens to the board. Eligibility + slot limits enforced server-side via SECURITY DEFINER RPCs (`add_to_crew`, `remove_from_crew`, `crew_candidates`) so crew status can't be faked client-side. Stats refresh via `trg_refresh_crew_stats` on job completion; `flag_stale_crew()` marks 90-day-idle pairs `at_risk` (cron-ready). UI: `/(contractor)/crew.tsx` (slot meter, eligible candidates, current crew), crew-priority toggle on the post-job review step, `👷 Crew priority` badge on the sub job board. Lib: `lib/crew.ts`.
 
+- **Projects** (migration 022) — a coordination layer over multiple Jobs for one customer engagement. `projects` table; `jobs.project_id/sequence_order/depends_on_job_id`; `project_progress()` rollup RPC. Contractor `/(contractor)/projects` (list + create) and `/(contractor)/projects/[id]` (progress, sequenced jobs, attach via post-job `projectId` param). Projects tab in the contractor layout.
+- **Saved Jobs** (migration 021) — persistent per-sub shortlist (`saved_jobs` + RLS). Double-tap a card to save (heart pulse) or swipe right; saved-only filter on the board. `lib/savedJobs.ts`.
+- **Crew v2** (migration 020) — three-part eligibility (jobs **+** dollars **+** mutual star rating ≥4.0), rolling 3-month maintenance (`maintain_crew_status()`), subscription tiers → crew slots (`set_subscription_tier`, Starter/Pro/Crew Builder = 3/7/15), and crew-aware overflow (`overflow_until` + `sub_is_overflow_eligible` second priority tier in the RLS). AI crew-match score defaults the post-job priority toggle. `SubscriptionTierCard`.
+- **Fee waiver** (migration 023) — new users get a fixed number of fee-free jobs (`contractor_profiles.free_posts_remaining`, `sub_profiles.free_payouts_remaining`, default 3). Banner on post-job; consumed on post and (server-side) in `payout-sub`. `lib/fees.ts`.
+- **Referrals + earned visibility** (migration 023) — per-user `referral_code`, `referrals` ledger, `visibility_boosts` (Tier-3, always below Crew). `claim_referral`/`grant_referral_reward` (auto on referred user's first completed job), `grant_new_user_boost` at onboarding. `ReferralCard`, `lib/referrals.ts`.
+- **Backed By vouching** (migration 024) — capped (5) peer endorsements with reputational cost (`vouch_events` logged on ≤2-star ratings to a vouchee). `add_vouch`/`remove_vouch`/`vouches_for`. Surfaced on the sub-side contractor detail. `lib/vouches.ts`.
+- **Diversification Score** (migration 024) — anti-concentration metric (Herfindahl-based breadth+balance over trailing 6 months), `diversification_score()` RPC. `DiversificationBadge` on the sub profile.
+- **Reviews discovery** (migration 026) — public ratings read + `contractor_reviews()` RPC. Scrollable, trade-filterable Reviews feed (`/(sub)/reviews`) → sub-side contractor detail (`/(sub)/contractors/[id]`: profile, open jobs, reviews, Backed By, change-order health flag).
+- **Change-order safeguards + scope markup** (migration 025) — `change_orders.value_delta/platform_markup` stamped server-side (10% of the change delta); `contractor_change_metrics()` flags chronic frequency or underscoping. Markup shown on `ChangeOrderCard`; flag banner on contractor detail.
+
 ### Not yet built
 - Push delivery from DB triggers for non-message events (claims, change orders, payments still fire client-side / from their own edge functions)
+- Marketing-root deep-link capture of `?ref` / `?job` (account-gate on shared job links) — the referral RPCs/onboarding hooks are wired, but capturing the code from the public landing URL through signup is still manual
+- Scheduled invocation of `maintain_crew_status()` and diversification recompute (functions exist; wire to a cron)
+- Sponsored partner marketplace / Phase-3 (franchise bulk-posting, insurance marketplace, management API)
 
 ## Conventions
 - All Supabase queries use the anon client — RLS enforces access
