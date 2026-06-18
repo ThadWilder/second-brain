@@ -24,7 +24,7 @@ Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
 ## Supabase setup
 1. Create a new Supabase project
-2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `028`)
+2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `029`)
 3. Enable the `pg_trgm` extension: Dashboard → Database → Extensions → search "pg_trgm" → enable
 4. Copy the project URL and anon key into `.env`
 5. **Server-side push (migration 016)** needs the `pg_net` extension (the migration enables it) plus two Vault secrets so the DB trigger can call the edge function. In the SQL editor, run once with your real values:
@@ -170,12 +170,18 @@ draft → posted → claimed → in_progress → pending_review → complete
 - **Diversification Score** (migration 024) — anti-concentration metric (Herfindahl-based breadth+balance over trailing 6 months), `diversification_score()` RPC. `DiversificationBadge` on the sub profile.
 - **Reviews discovery** (migration 026) — public ratings read + `contractor_reviews()` RPC. Scrollable, trade-filterable Reviews feed (`/(sub)/reviews`) → sub-side contractor detail (`/(sub)/contractors/[id]`: profile, open jobs, reviews, Backed By, change-order health flag).
 - **Change-order safeguards + scope markup** (migration 025) — `change_orders.value_delta/platform_markup` stamped server-side (10% of the change delta); `contractor_change_metrics()` flags chronic frequency or underscoping. Markup shown on `ChangeOrderCard`; flag banner on contractor detail.
+- **Sponsored partners** (migration 028) — curated, clearly-labeled "Recommended Tools" (one per category) shown on profile/dashboard surfaces ONLY, never in the core post/board/claim/message/closeout flow. `recommended_partners()` RPC, `RecommendedTools` component, `lib/partners.ts`.
+- **Volume discount / loyalty fee** (migration 029) — Tier-0 incentive: a contractor↔sub PAIR earns a decreasing sub-side platform fee as they complete more jobs together (10% base → 8% at 3 jobs → 6% at 6 → 5% floor at 10). Rate is authoritative server-side (`pair_fee_rate`, SECURITY DEFINER) and read by `create-payment-intent` when stamping `platform_fee_sub`. `pair_discount_status` / `my_pair_discounts` RPCs surface it. Shown on the claim-confirm breakdown (discounted-fee line + nudge) and the sub-side contractor detail. `lib/fees.ts` (`getPairDiscount`, `pairDiscountMessage`).
+- **Claim Confirmation screen** (`/(sub)/claim-confirm/[id]`) — full-screen claim review (was an Alert): payout breakdown with loyalty/waiver-aware fee, availability + terms checkboxes, "what happens next" steps. Writes the claim only after both boxes are checked.
+- **Payout Status screen** (`/(sub)/payout-status/[jobId]`) — 4-step payment pipeline (Claimed → Work Started → Awaiting Release → Released), fee breakdown, instant-pay info. Linked from job detail (pending review) and the earnings "Pending Payouts" list.
+- **Contractor Payment Dashboard** (`/(contractor)/payments`) — Payments tab: Outstanding / Paid tabs, period-spend stats, per-job rows with status badges, tap-through to job detail.
+- **Contractor Fee Agreement** — onboarding step 2 now includes a platform-fee disclosure table (10% sub fee, $75 CO admin, $500 delay cap) and an expanded digital sign-off referencing SubHub platform terms.
 
 ### Not yet built
 - Push delivery from DB triggers for non-message events (claims, change orders, payments still fire client-side / from their own edge functions)
 - Marketing-root deep-link capture of `?ref` / `?job` (account-gate on shared job links) — the referral RPCs/onboarding hooks are wired, but capturing the code from the public landing URL through signup is still manual
 - Scheduled invocation of `maintain_crew_status()` and diversification recompute (functions exist; wire to a cron)
-- Sponsored partner marketplace / Phase-3 (franchise bulk-posting, insurance marketplace, management API)
+- Phase-3: franchise bulk-posting (blocked on per-job $1,000-hold behavior decision), management-system API, aggregate market-intelligence reports
 
 ## Conventions
 - All Supabase queries use the anon client — RLS enforces access

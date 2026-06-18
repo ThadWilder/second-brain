@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 type PaymentRow = {
+  id: string;
   sub_payout: number;
   platform_fee_sub: number;
   status: string;
@@ -50,7 +51,7 @@ export default function EarningsScreen() {
 
     const { data } = await supabase
       .from('payment_records')
-      .select('sub_payout, platform_fee_sub, status, paid_out_at, created_at, job_id')
+      .select('id, sub_payout, platform_fee_sub, status, paid_out_at, created_at, job_id')
       .eq('sub_id', user.id);
 
     setRows((data as PaymentRow[]) ?? []);

@@ -69,7 +69,7 @@ export default function PayoutStatusScreen() {
           .maybeSingle(),
       ]);
 
-      setJob(j);
+      setJob((j as unknown as Job) ?? null);
       setPayment(p ?? null);
       setLoading(false);
     }

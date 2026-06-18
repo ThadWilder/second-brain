@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import RatingStars from '@/components/RatingStars';
 import JobCard from '@/components/JobCard';
 import { getVouchesFor, getMyActiveVouches, addVouch, removeVouch, VOUCH_CAP } from '@/lib/vouches';
+import { getPairDiscount, pairDiscountMessage, pct, type PairDiscount } from '@/lib/fees';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { Job, ContractorProfile } from '@/lib/types';
 
@@ -21,12 +22,13 @@ export default function ContractorDetailScreen() {
   const [iVouched, setIVouched] = useState(false);
   const [vouching, setVouching] = useState(false);
   const [coFlag, setCoFlag] = useState<{ frequency_pct: number; avg_delta_pct: number } | null>(null);
+  const [discount, setDiscount] = useState<PairDiscount | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { load(); }, [id]);
 
   async function load() {
-    const [{ data: c }, { data: j }, { data: r }, vouches, mine] = await Promise.all([
+    const [{ data: c }, { data: j }, { data: r }, vouches, mine, pairDiscount] = await Promise.all([
       supabase.from('contractor_profiles').select('*').eq('user_id', id).single(),
       supabase.from('jobs').select('*, contractor:contractor_profiles(business_name, rating, rating_count)')
         .eq('contractor_id', id).eq('status', 'posted').order('created_at', { ascending: false }),
@@ -34,12 +36,14 @@ export default function ContractorDetailScreen() {
         .not('comment', 'is', null).order('created_at', { ascending: false }).limit(20),
       getVouchesFor(id).catch(() => []),
       getMyActiveVouches().catch(() => []),
+      getPairDiscount(id).catch(() => null),
     ]);
     setContractor(c as ContractorProfile);
     setJobs((j ?? []) as Job[]);
     setReviews(r ?? []);
     setVouchCount((vouches ?? []).length);
     setIVouched((mine ?? []).some(v => v.vouchee_id === id));
+    setDiscount(pairDiscount);
     setLoading(false);
     if (c) navigation.setOptions({ title: (c as any).business_name });
 
@@ -109,6 +113,23 @@ export default function ContractorDetailScreen() {
         </View>
       </View>
 
+      {discount && (
+        <View style={[styles.loyaltyCard, discount.currentRate < 0.10 && styles.loyaltyCardActive]}>
+          <View style={styles.loyaltyHead}>
+            <Text style={styles.loyaltyTitle}>
+              {discount.currentRate < 0.10 ? '🔥 Your loyalty rate' : '🤝 Loyalty discount'}
+            </Text>
+            <Text style={styles.loyaltyRate}>{pct(discount.currentRate)} fee</Text>
+          </View>
+          <Text style={styles.loyaltyText}>
+            {discount.jobsTogether > 0
+              ? `${discount.jobsTogether} job${discount.jobsTogether === 1 ? '' : 's'} completed together. `
+              : 'Work together to earn a lower platform fee. '}
+            {pairDiscountMessage(discount)}
+          </Text>
+        </View>
+      )}
+
       <Text style={styles.sectionTitle}>Open jobs ({jobs.length})</Text>
       {jobs.length === 0 ? (
         <Text style={styles.empty}>No open jobs right now.</Text>
@@ -159,6 +180,12 @@ const styles = StyleSheet.create({
   coFlagText: { fontSize: fontSize.sm, color: '#78350f', lineHeight: 20 },
   rateCard: { backgroundColor: colors.background, borderRadius: radius.md, padding: spacing.md, marginHorizontal: spacing.md, gap: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.primary },
   rateTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.primary },
+  loyaltyCard: { backgroundColor: colors.background, borderRadius: radius.md, padding: spacing.md, marginHorizontal: spacing.md, gap: spacing.xs, borderLeftWidth: 3, borderLeftColor: colors.textLight },
+  loyaltyCardActive: { backgroundColor: '#fff7ed', borderLeftColor: colors.warning },
+  loyaltyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  loyaltyTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.text },
+  loyaltyRate: { fontSize: fontSize.md, fontWeight: '800', color: colors.accent },
+  loyaltyText: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 20 },
   rateGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: { backgroundColor: colors.surface, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, borderWidth: 1, borderColor: colors.border },
   chipLabel: { fontSize: 10, color: colors.textMuted },

@@ -68,7 +68,7 @@ export default function ContractorPaymentsScreen() {
       .eq('contractor_id', user.id)
       .order('created_at', { ascending: false });
 
-    setRows((data as PayRow[]) ?? []);
+    setRows((data as unknown as PayRow[]) ?? []);
     setLoading(false);
   }
 

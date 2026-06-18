@@ -6,7 +6,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { notify } from '@/lib/notifications';
-import { getMyFeeStatus } from '@/lib/fees';
+import { getMyFeeStatus, getPairDiscount, pairDiscountMessage, pct, type PairDiscount } from '@/lib/fees';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { Job } from '@/lib/types';
 
@@ -23,6 +23,7 @@ export default function ClaimConfirmScreen() {
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [confirmedAvailable, setConfirmedAvailable] = useState(false);
   const [feeWaived, setFeeWaived] = useState(false);
+  const [pairDiscount, setPairDiscount] = useState<PairDiscount | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -30,12 +31,19 @@ export default function ClaimConfirmScreen() {
       if (!user) return;
       setUserId(user.id);
 
-      const [{ data: j }, feeStatus] = await Promise.all([
-        supabase.from('jobs').select('*, contractor:contractor_profiles(business_name, rating, rating_count)').eq('id', id).single(),
-        getMyFeeStatus(),
-      ]);
+      const { data: j } = await supabase
+        .from('jobs')
+        .select('*, contractor:contractor_profiles(business_name, rating, rating_count)')
+        .eq('id', id)
+        .single();
       setJob(j);
-      setFeeWaived((feeStatus?.free_payouts_remaining ?? 0) > 0);
+
+      const [feeStatus, discount] = await Promise.all([
+        getMyFeeStatus(),
+        j?.contractor_id ? getPairDiscount(j.contractor_id) : Promise.resolve(null),
+      ]);
+      setFeeWaived((feeStatus?.freeRemaining ?? 0) > 0);
+      setPairDiscount(discount);
       setLoading(false);
     }
     load();
@@ -61,7 +69,9 @@ export default function ClaimConfirmScreen() {
   if (!job) return <Text style={styles.notFound}>Job not found.</Text>;
 
   const gross = Number(job.sub_payout ?? 0);
-  const fee = feeWaived ? 0 : Math.round(gross * PLATFORM_FEE_PCT * 100) / 100;
+  const feeRate = pairDiscount?.currentRate ?? PLATFORM_FEE_PCT;
+  const isDiscounted = !feeWaived && feeRate < PLATFORM_FEE_PCT;
+  const fee = feeWaived ? 0 : Math.round(gross * feeRate * 100) / 100;
   const net = gross - fee;
   const canClaim = agreedTerms && confirmedAvailable;
 
@@ -83,7 +93,11 @@ export default function ClaimConfirmScreen() {
         <Text style={styles.breakdownTitle}>Payout Breakdown</Text>
         <Row label="Job payout" value={fmt(gross)} />
         <Row
-          label={feeWaived ? 'Platform fee (waived)' : `Platform fee (${Math.round(PLATFORM_FEE_PCT * 100)}%)`}
+          label={feeWaived
+            ? 'Platform fee (waived)'
+            : isDiscounted
+              ? `Platform fee (${pct(feeRate)} — loyalty rate)`
+              : `Platform fee (${pct(feeRate)})`}
           value={feeWaived ? '–$0.00' : `-${fmt(fee)}`}
           muted={feeWaived}
           strike={feeWaived}
@@ -93,6 +107,21 @@ export default function ClaimConfirmScreen() {
           <Text style={styles.totalValue}>{fmt(net)}</Text>
         </View>
       </View>
+
+      {/* Loyalty volume discount nudge */}
+      {pairDiscount && !feeWaived && (
+        <View style={[styles.loyaltyCard, isDiscounted && styles.loyaltyCardActive]}>
+          <Text style={styles.loyaltyTitle}>
+            {isDiscounted ? `🔥 Loyalty rate: ${pct(feeRate)} fee` : '🤝 Build a loyalty discount'}
+          </Text>
+          <Text style={styles.loyaltyText}>
+            {pairDiscount.jobsTogether > 0
+              ? `You've completed ${pairDiscount.jobsTogether} job${pairDiscount.jobsTogether === 1 ? '' : 's'} with ${(job.contractor as any)?.business_name ?? 'this contractor'}. `
+              : ''}
+            {pairDiscountMessage(pairDiscount)}
+          </Text>
+        </View>
+      )}
 
       {/* Job summary */}
       <View style={styles.jobCard}>
@@ -137,7 +166,7 @@ export default function ClaimConfirmScreen() {
         <Text style={styles.checkText}>
           I agree to the job terms: complete the full scope of work, upload before and after photos,
           collect customer sign-off, and settle any change orders through SubHub before closeout.
-          I understand SubHub will deduct {feeWaived ? '$0 (fee waived)' : `${Math.round(PLATFORM_FEE_PCT * 100)}% platform fee`} from my payout.
+          I understand SubHub will deduct {feeWaived ? '$0 (fee waived)' : `a ${pct(feeRate)} platform fee`} from my payout.
         </Text>
       </TouchableOpacity>
 
@@ -238,6 +267,14 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
   totalValue: { fontSize: fontSize.md, fontWeight: '800', color: colors.accent },
+
+  loyaltyCard: {
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.md,
+    padding: spacing.md, gap: spacing.xs, borderLeftWidth: 3, borderLeftColor: colors.textLight,
+  },
+  loyaltyCardActive: { backgroundColor: '#fff7ed', borderLeftColor: colors.warning },
+  loyaltyTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.text },
+  loyaltyText: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 20 },
 
   jobCard: {
     backgroundColor: colors.surface, borderRadius: radius.md,
