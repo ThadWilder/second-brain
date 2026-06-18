@@ -3,9 +3,10 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
+import { claimReferral } from '@/lib/referrals';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 const PAYMENT_TERMS = [
@@ -17,6 +18,7 @@ const INDUSTRIES = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining
 
 export default function OnboardContractorScreen() {
   const router = useRouter();
+  const { ref } = useLocalSearchParams<{ ref?: string }>();
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -85,6 +87,8 @@ export default function OnboardContractorScreen() {
       payment_terms_days: parseInt(form.payment_terms_days, 10) || 14,
     });
     if (err) { setError(err.message); setLoading(false); return; }
+    supabase.rpc('grant_new_user_boost', { p_user: user.id }).then(() => {});
+    if (ref) claimReferral(String(ref)).catch(() => {});
     router.replace('/(contractor)/home' as any);
   }
 

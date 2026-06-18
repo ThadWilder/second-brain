@@ -198,6 +198,13 @@ export default function PostJobScreen() {
       return;
     }
 
+    // Consume one fee-free post if the contractor still has waivers left.
+    if (feeStatus && feeStatus.role === 'contractor' && feeStatus.freeRemaining > 0) {
+      supabase.from('contractor_profiles')
+        .update({ free_posts_remaining: feeStatus.freeRemaining - 1 })
+        .eq('user_id', user.id).then(() => {});
+    }
+
     // Notify subs whose saved-search alerts match this job (best-effort)
     supabase.functions.invoke('match-saved-searches', { body: { jobId: newJob.id } }).catch(() => {});
 

@@ -34,17 +34,28 @@ serve(async (req) => {
     if (payment.contractor_id !== user.id) throw new Error('Not your job');
     if (payment.status !== 'held') throw new Error('Payment not in held state');
 
-    // Check sub's payout preference
+    // Check sub's payout preference + remaining fee waivers
     const { data: subProfile } = await supabase
       .from('sub_profiles')
-      .select('payout_type')
+      .select('payout_type, free_payouts_remaining')
       .eq('user_id', payment.sub_id)
       .single();
 
     const isInstant = subProfile?.payout_type === 'instant';
 
+    // Fee waiver: new subs get their first several payouts with no platform
+    // fee. Consume one waiver and zero the fee for this payout if available.
+    const hasWaiver = (subProfile?.free_payouts_remaining ?? 0) > 0;
+    const effectiveFee = hasWaiver ? 0 : payment.platform_fee_sub;
+    if (hasWaiver) {
+      await supabase
+        .from('sub_profiles')
+        .update({ free_payouts_remaining: (subProfile!.free_payouts_remaining as number) - 1 })
+        .eq('user_id', payment.sub_id);
+    }
+
     // Instant pay deducts an additional 1.5% fee from the sub's net
-    const basePayout = Math.round((payment.sub_payout - payment.platform_fee_sub) * 100);
+    const basePayout = Math.round((payment.sub_payout - effectiveFee) * 100);
     const instantFee = isInstant ? Math.round(basePayout * 0.015) : 0;
     const netPayout = basePayout - instantFee;
 

@@ -3,15 +3,17 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
+import { claimReferral } from '@/lib/referrals';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 const SKILLS = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
 
 export default function OnboardSubScreen() {
   const router = useRouter();
+  const { ref } = useLocalSearchParams<{ ref?: string }>();
   const [form, setForm] = useState({
     name: '',
     license_number: '',
@@ -65,6 +67,9 @@ export default function OnboardSubScreen() {
       verified: false,
     });
     if (err) { setError(err.message); setLoading(false); return; }
+    // Growth hooks: grant a new-user visibility boost and record any referral.
+    supabase.rpc('grant_new_user_boost', { p_user: user.id }).then(() => {});
+    if (ref) claimReferral(String(ref)).catch(() => {});
     router.replace('/(sub)/home' as any);
   }
 
