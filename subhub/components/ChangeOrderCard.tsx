@@ -97,6 +97,11 @@ export default function ChangeOrderCard({ changeOrder, role, contractorId, subId
             <Text style={styles.totalLabel}>Total adjustment</Text>
             <Text style={styles.totalAmount}>+${changeOrder.total_adjustment.toLocaleString()}</Text>
           </View>
+          {!!changeOrder.platform_markup && changeOrder.platform_markup > 0 && (
+            <Text style={styles.markupNote}>
+              Includes a platform fee of ${changeOrder.platform_markup.toLocaleString()} on the change value.
+            </Text>
+          )}
         </View>
       )}
 
@@ -180,6 +185,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: fontSize.sm, fontWeight: '700', color: colors.text },
   totalAmount: { fontSize: fontSize.sm, fontWeight: '800', color: colors.accent },
+  markupNote: { fontSize: fontSize.xs, color: colors.textMuted, fontStyle: 'italic', marginTop: 4 },
   approvalRow: { flexDirection: 'row', gap: spacing.lg },
   approvalItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   dot: { width: 8, height: 8, borderRadius: 4 },
