@@ -41,9 +41,19 @@ serve(async (req) => {
       .eq('user_id', job.claimed_by)
       .single();
 
-    // Platform fee: 5% from contractor side
+    // Loyalty volume discount (Tier-0): a proven contractor↔sub pair earns a
+    // lower sub-side platform fee as they complete more jobs together. The rate
+    // is authoritative server-side (pair_fee_rate); base is 10%, floor is 5%.
+    const { data: subFeeRate } = await supabase.rpc('pair_fee_rate', {
+      p_contractor: job.contractor_id,
+      p_sub: job.claimed_by,
+    });
+    const subFeePct = typeof subFeeRate === 'number' ? subFeeRate : 0.10;
+
+    // Platform fee: 5% from contractor side, discounted sub-side fee from payout.
     const platformFeeContractor = Math.round(job.sub_payout * 0.05 * 100);
-    const totalCharge = Math.round(job.sub_payout * 1.05 * 100); // payout + 5% fee
+    const subFeeAmount = job.sub_payout * subFeePct;
+    const totalCharge = Math.round(job.sub_payout * 1.05 * 100); // payout + 5% contractor fee
 
     let customerId = job.contractor?.stripe_customer_id;
     if (!customerId) {
@@ -64,7 +74,7 @@ serve(async (req) => {
       ...(sub?.stripe_account_id ? {
         transfer_data: {
           destination: sub.stripe_account_id,
-          amount: Math.round(job.sub_payout * 0.95 * 100), // sub gets payout minus 5%
+          amount: Math.round(job.sub_payout * (1 - subFeePct) * 100), // sub gets payout minus loyalty-discounted fee
         },
       } : {}),
     });
@@ -77,7 +87,7 @@ serve(async (req) => {
       install_price: job.install_price,
       sub_payout: job.sub_payout,
       platform_fee_contractor: platformFeeContractor / 100,
-      platform_fee_sub: job.sub_payout * 0.05,
+      platform_fee_sub: subFeeAmount,
       stripe_payment_intent_id: paymentIntent.id,
       stripe_sub_account_id: sub?.stripe_account_id ?? null,
       status: 'processing',

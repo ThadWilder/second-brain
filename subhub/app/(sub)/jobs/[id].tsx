@@ -22,7 +22,6 @@ export default function SubJobDetailScreen() {
   const [media, setMedia] = useState<JobMedia[]>([]);
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
-  const [claiming, setClaiming] = useState(false);
   const [questions, setQuestions] = useState<any[]>([]);
   const [newQuestion, setNewQuestion] = useState('');
   const [submittingQ, setSubmittingQ] = useState(false);
@@ -159,32 +158,12 @@ export default function SubJobDetailScreen() {
     setAnalysis(data);
   }
 
-  async function handleClaim() {
+  function handleClaim() {
     if (demo) {
       Alert.alert('Demo Job', 'This is a sample listing to show how the board works. Real jobs are claimed the same way — sign up to start claiming.');
       return;
     }
-    Alert.alert(
-      'Claim This Job',
-      `You're committing to complete this job for ${formatCurrency(job!.sub_payout)}. SubHub takes a platform fee from your payout.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Claim Job',
-          onPress: async () => {
-            setClaiming(true);
-            const { error } = await supabase
-              .from('jobs')
-              .update({ status: 'claimed', claimed_by: userId, claimed_at: new Date().toISOString() })
-              .eq('id', id);
-            if (error) { Alert.alert('Error', error.message); setClaiming(false); return; }
-            await notify.jobClaimed(job!.contractor_id, job!.title, 'A subcontractor');
-            setClaiming(false);
-            fetchAll();
-          },
-        },
-      ]
-    );
+    router.push({ pathname: '/(sub)/claim-confirm/[id]', params: { id } } as any);
   }
 
   async function handleStartWork() {
@@ -641,8 +620,8 @@ export default function SubJobDetailScreen() {
       {/* Fixed action footer */}
       <View style={styles.footer}>
         {canClaim && (
-          <TouchableOpacity style={styles.primaryButton} onPress={handleClaim} disabled={claiming}>
-            {claiming ? <ActivityIndicator color={colors.white} /> : <Text style={styles.primaryButtonText}>Claim Job — {formatCurrency(job.sub_payout)}</Text>}
+          <TouchableOpacity style={styles.primaryButton} onPress={handleClaim}>
+            <Text style={styles.primaryButtonText}>Review & Claim — {formatCurrency(job.sub_payout)}</Text>
           </TouchableOpacity>
         )}
         {canStart && (
@@ -680,6 +659,11 @@ export default function SubJobDetailScreen() {
         {pendingReview && (
           <View style={styles.pendingBox}>
             <Text style={styles.pendingText}>⏳ Waiting for contractor to review and release payment</Text>
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/(sub)/payout-status/[jobId]', params: { jobId: id } } as any)}
+            >
+              <Text style={styles.payoutStatusLink}>View payout status →</Text>
+            </TouchableOpacity>
           </View>
         )}
         {isMine && (job.status === 'in_progress' || job.status === 'pending_review') && (
@@ -847,9 +831,10 @@ const styles = StyleSheet.create({
   secondaryButtonText: { color: colors.text, fontSize: fontSize.sm, fontWeight: '600' },
   pendingBox: {
     backgroundColor: '#fef3c7', borderRadius: radius.md,
-    padding: spacing.md, alignItems: 'center',
+    padding: spacing.md, alignItems: 'center', gap: spacing.xs,
   },
   pendingText: { fontSize: fontSize.sm, color: '#92400e', fontWeight: '600' },
+  payoutStatusLink: { fontSize: fontSize.xs, color: colors.primary, fontWeight: '600' },
   reviewButton: {
     borderWidth: 2, borderColor: colors.accent, borderRadius: radius.md,
     padding: spacing.md, alignItems: 'center',

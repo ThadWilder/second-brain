@@ -209,9 +209,13 @@ export default function PostJobScreen() {
     supabase.functions.invoke('match-saved-searches', { body: { jobId: newJob.id } }).catch(() => {});
 
     setLoading(false);
-    Alert.alert('Job Posted!', 'A $1,000 hold has been placed on your card. Subs can now claim this job — the hold is released when the job is cancelled or replaced by full payment.', [
-      { text: 'View My Jobs', onPress: () => router.replace('/(contractor)/') },
-    ]);
+    const holdAmount = typeof holdData?.amount === 'number' ? holdData.amount : 1000;
+    const holdLabel = `$${holdAmount.toLocaleString()}`;
+    Alert.alert(
+      'Job Posted!',
+      `A ${holdLabel} hold has been placed on your card${holdAmount < 1000 ? ' (reduced rate — you already have a job in flight)' : ''}. Subs can now claim this job — the hold is released when the job is cancelled or replaced by full payment.`,
+      [{ text: 'View My Jobs', onPress: () => router.replace('/(contractor)/') }],
+    );
   }
 
   if (hasPaymentMethod === false) {

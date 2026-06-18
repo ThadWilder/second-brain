@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Notifications from 'expo-notifications';
+import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
 import { getUserRole } from '@/lib/auth';
 import { registerForPushNotifications } from '@/lib/notifications';
-import { captureEntryParams, consumePendingJob } from '@/lib/pendingLink';
+import { captureEntryParams, captureNativeLinkParams, consumePendingJob } from '@/lib/pendingLink';
 import type { UserRole } from '@/lib/types';
 
 const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
@@ -18,8 +20,31 @@ export default function RootLayout() {
     const DEMO = process.env.EXPO_PUBLIC_DEMO === '1';
     let bootstrapTimer: ReturnType<typeof setTimeout>;
 
-    // Stash any ?ref / ?job from a shared link before auth redirects clear them.
+    // Web: stash ?ref / ?job from the URL before auth redirects clear them.
     captureEntryParams();
+
+    // Native: capture params from the URL that opened the app (cold start).
+    let linkSub: { remove: () => void } | null = null;
+    if (Platform.OS !== 'web') {
+      Linking.getInitialURL().then(url => captureNativeLinkParams(url)).catch(() => {});
+      // Capture params from links received while the app is already running.
+      linkSub = Linking.addEventListener('url', ({ url }) => {
+        captureNativeLinkParams(url).then(() => {
+          // If user is already signed in, navigate to a pending job immediately.
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!session) return;
+            const parsed = Linking.parse(url);
+            const jobId = typeof parsed.queryParams?.job === 'string' ? parsed.queryParams.job : null;
+            if (jobId) {
+              getUserRole().then(role => {
+                if (role === 'subcontractor') router.push(`/(sub)/jobs/${jobId}` as any);
+                else if (role === 'contractor') router.push(`/(contractor)/jobs/${jobId}` as any);
+              }).catch(() => {});
+            }
+          }).catch(() => {});
+        }).catch(() => {});
+      });
+    }
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (DEMO) return;
@@ -66,6 +91,7 @@ export default function RootLayout() {
       clearTimeout(bootstrapTimer);
       listener.subscription.unsubscribe();
       sub.remove();
+      linkSub?.remove();
     };
   }, []);
 

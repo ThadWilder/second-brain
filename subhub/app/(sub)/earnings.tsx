@@ -3,11 +3,12 @@ import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   TouchableOpacity, Alert,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 
 type PaymentRow = {
+  id: string;
   sub_payout: number;
   platform_fee_sub: number;
   status: string;
@@ -37,6 +38,7 @@ function fmt(n: number): string {
 }
 
 export default function EarningsScreen() {
+  const router = useRouter();
   const [rows, setRows] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +51,7 @@ export default function EarningsScreen() {
 
     const { data } = await supabase
       .from('payment_records')
-      .select('sub_payout, platform_fee_sub, status, paid_out_at, created_at, job_id')
+      .select('id, sub_payout, platform_fee_sub, status, paid_out_at, created_at, job_id')
       .eq('sub_id', user.id);
 
     setRows((data as PaymentRow[]) ?? []);
@@ -135,6 +137,29 @@ export default function EarningsScreen() {
           ))}
         </View>
       )}
+
+      {rows.filter(r => PENDING_STATUSES.includes(r.status)).length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Pending Payouts</Text>
+          <View style={styles.monthList}>
+            {rows.filter(r => PENDING_STATUSES.includes(r.status)).map(r => (
+              <TouchableOpacity
+                key={r.id}
+                style={styles.pendingRow}
+                onPress={() => router.push({ pathname: '/(sub)/payout-status/[jobId]', params: { jobId: r.job_id } } as any)}
+              >
+                <View style={styles.flex}>
+                  <Text style={styles.monthLabel}>${fmt(Number(r.sub_payout ?? 0))}</Text>
+                  <Text style={styles.pendingStatus}>
+                    {r.status === 'held' ? '⏳ Held' : r.status === 'processing' ? '⚡ Processing' : '🕐 Pending'}
+                  </Text>
+                </View>
+                <Text style={styles.pendingArrow}>→</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -177,4 +202,12 @@ const styles = StyleSheet.create({
   monthTotal: { fontSize: fontSize.sm, color: colors.accent, fontWeight: '800' },
   monthEmpty: { padding: spacing.lg, backgroundColor: colors.background, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
   monthEmptyText: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
+  pendingRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: spacing.md, paddingHorizontal: spacing.md,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  flex: { flex: 1 },
+  pendingStatus: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  pendingArrow: { fontSize: fontSize.md, color: colors.textMuted },
 });

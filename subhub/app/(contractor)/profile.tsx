@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
@@ -10,6 +10,15 @@ import SubscriptionTierCard from '@/components/SubscriptionTierCard';
 import RecommendedTools from '@/components/RecommendedTools';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { ContractorProfile } from '@/lib/types';
+
+interface ApiKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  active: boolean;
+  last_used_at: string | null;
+  created_at: string;
+}
 
 export default function ContractorProfileScreen() {
   const router = useRouter();
@@ -25,8 +34,49 @@ export default function ContractorProfileScreen() {
     delay_liability_cap: '',
     payment_terms_days: '',
   });
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [generatingKey, setGeneratingKey] = useState(false);
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
 
-  useEffect(() => { fetchProfile(); }, []);
+  useEffect(() => { fetchProfile(); fetchApiKeys(); }, []);
+
+  async function fetchApiKeys() {
+    const { data } = await supabase
+      .from('api_keys')
+      .select('id, name, key_prefix, active, last_used_at, created_at')
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+    if (data) setApiKeys(data as ApiKey[]);
+  }
+
+  async function generateKey() {
+    if (!newKeyName.trim()) { Alert.alert('Name required', 'Enter a label for the key first.'); return; }
+    setGeneratingKey(true);
+    const { data, error } = await supabase.rpc('create_api_key', { p_name: newKeyName.trim() });
+    setGeneratingKey(false);
+    if (error) { Alert.alert('Error', error.message); return; }
+    setRevealedKey(data as string);
+    setNewKeyName('');
+    fetchApiKeys();
+  }
+
+  async function revokeKey(keyId: string, name: string) {
+    Alert.alert(
+      'Revoke key?',
+      `Revoking "${name}" will immediately block any integrations using it. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Revoke', style: 'destructive',
+          onPress: async () => {
+            await supabase.rpc('revoke_api_key', { p_key_id: keyId });
+            fetchApiKeys();
+          },
+        },
+      ]
+    );
+  }
 
   async function fetchProfile() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -147,6 +197,64 @@ export default function ContractorProfileScreen() {
         </View>
       )}
 
+      {/* ── API Keys (management-system integration) ── */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Developer / API Access</Text>
+      </View>
+      <Text style={styles.feeNote}>
+        Use API keys to push jobs from your field-management software.
+        Each key is shown only once — copy it immediately.
+      </Text>
+
+      {revealedKey && (
+        <View style={styles.revealCard}>
+          <Text style={styles.revealTitle}>Copy your new API key — it won't be shown again.</Text>
+          <Text style={styles.revealKey} selectable>{revealedKey}</Text>
+          <TouchableOpacity onPress={() => setRevealedKey(null)} style={styles.revealDismiss}>
+            <Text style={styles.revealDismissText}>I've copied it — dismiss</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {apiKeys.length > 0 && (
+        <View style={styles.feeCard}>
+          {apiKeys.map(k => (
+            <View key={k.id} style={styles.apiKeyRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.apiKeyName}>{k.name}</Text>
+                <Text style={styles.apiKeyMeta}>
+                  {k.key_prefix}… · {k.last_used_at
+                    ? `Last used ${new Date(k.last_used_at).toLocaleDateString()}`
+                    : `Created ${new Date(k.created_at).toLocaleDateString()}`}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => revokeKey(k.id, k.name)}>
+                <Text style={styles.revokeText}>Revoke</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <View style={styles.apiKeyCreate}>
+        <TextInput
+          style={[styles.rateInput, { flex: 1, width: undefined, textAlign: 'left' }]}
+          placeholder="Key label (e.g. ServiceTitan)"
+          placeholderTextColor={colors.textLight}
+          value={newKeyName}
+          onChangeText={setNewKeyName}
+        />
+        <TouchableOpacity
+          style={[styles.saveButton, { marginTop: 0, marginLeft: spacing.sm, paddingHorizontal: spacing.md }]}
+          onPress={generateKey}
+          disabled={generatingKey}
+        >
+          {generatingKey
+            ? <ActivityIndicator color={colors.white} size="small" />
+            : <Text style={styles.saveButtonText}>Generate</Text>}
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
@@ -213,4 +321,24 @@ const styles = StyleSheet.create({
   saveButtonText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
   signOutButton: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginTop: spacing.md },
   signOutText: { color: colors.textMuted, fontWeight: '600' },
+  revealCard: {
+    backgroundColor: '#fefce8', borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1, borderColor: '#fbbf24', marginBottom: spacing.sm,
+  },
+  revealTitle: { fontSize: fontSize.sm, fontWeight: '700', color: '#92400e', marginBottom: spacing.xs },
+  revealKey: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: fontSize.xs, color: '#1e293b', backgroundColor: '#fff',
+    padding: spacing.sm, borderRadius: radius.sm, marginBottom: spacing.sm,
+  },
+  revealDismiss: { alignSelf: 'flex-end' },
+  revealDismissText: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '600' },
+  apiKeyRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  apiKeyName: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
+  apiKeyMeta: { fontSize: fontSize.xs, color: colors.textMuted },
+  revokeText: { fontSize: fontSize.sm, color: '#ef4444', fontWeight: '600', paddingLeft: spacing.sm },
+  apiKeyCreate: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
 });

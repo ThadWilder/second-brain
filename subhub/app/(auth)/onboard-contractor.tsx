@@ -158,6 +158,28 @@ export default function OnboardContractorScreen() {
             </Text>
           </View>
 
+          <View style={styles.platformTermsCard}>
+            <Text style={styles.platformTermsTitle}>Platform Fee Agreement</Text>
+            <View style={styles.termRow}>
+              <Text style={styles.termLabel}>SubHub platform fee</Text>
+              <Text style={styles.termValue}>10% of sub payout</Text>
+            </View>
+            <View style={styles.termRow}>
+              <Text style={styles.termLabel}>Change order admin fee</Text>
+              <Text style={styles.termValue}>$75 per change order</Text>
+            </View>
+            <View style={styles.termRow}>
+              <Text style={styles.termLabel}>Max delay liability</Text>
+              <Text style={styles.termValue}>$500 per incident</Text>
+            </View>
+            <View style={styles.termDivider} />
+            <Text style={styles.termDisclosure}>
+              SubHub deducts the platform fee (10%) from each subcontractor payout before transfer.
+              This fee is transparent to subs — they see their net take-home before claiming.
+              You are not charged additional contractor fees beyond the change-order admin fee.
+            </Text>
+          </View>
+
           <Field label="Delay pay ($ per hour)" value={form.delay_pay_rate_per_hour} onChangeText={set('delay_pay_rate_per_hour')} keyboardType="decimal-pad" placeholder="35" />
           <Field label="Add-on pay ($ per linear foot)" value={form.addon_pay_rate_per_lf} onChangeText={set('addon_pay_rate_per_lf')} keyboardType="decimal-pad" placeholder="15" />
           <Field label="Return trip fee ($)" value={form.return_trip_fee} onChangeText={set('return_trip_fee')} keyboardType="decimal-pad" placeholder="150" />
@@ -184,8 +206,10 @@ export default function OnboardContractorScreen() {
               {feeAgreed && <Text style={styles.checkmark}>✓</Text>}
             </View>
             <Text style={styles.feeText}>
-              I agree to this fee schedule. These rates are non-negotiable on site and will auto-apply to
-              all change orders on my jobs. Subcontractors will see these rates before claiming any job I post.
+              I agree to this fee schedule and SubHub's platform terms. These rates are non-negotiable on
+              site and will auto-apply to all change orders on my jobs. Subcontractors will see these
+              rates before claiming any job I post. I understand SubHub deducts a 10% platform fee from
+              each sub payout and a $75 admin fee per change order, as disclosed above.
             </Text>
           </TouchableOpacity>
 
@@ -279,6 +303,16 @@ const styles = StyleSheet.create({
   notice: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.md, borderLeftWidth: 3, borderLeftColor: colors.primary, gap: spacing.xs },
   noticeTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.primary },
   noticeText: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
+  platformTermsCard: {
+    backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.border, gap: spacing.sm,
+  },
+  platformTermsTitle: { fontSize: fontSize.sm, fontWeight: '700', color: colors.text },
+  termRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  termLabel: { fontSize: fontSize.sm, color: colors.textMuted },
+  termValue: { fontSize: fontSize.sm, color: colors.text, fontWeight: '600' },
+  termDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.xs },
+  termDisclosure: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 },
   field: { gap: spacing.xs },
   label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, fontSize: fontSize.md, color: colors.text, backgroundColor: colors.surface },

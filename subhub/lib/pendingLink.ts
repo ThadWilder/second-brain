@@ -8,18 +8,35 @@
 //            after sign-up, so we route the new user straight to it.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
+import { Platform } from 'react-native';
 
 const REF_KEY = 'subhub.pending.ref';
 const JOB_KEY = 'subhub.pending.job';
 
 // Read ?ref / ?job from the web URL on launch and persist them. No-op on native
-// (native deep links arrive via expo-linking and carry their own params).
+// (native deep links arrive via expo-linking — see captureNativeLinkParams).
 export async function captureEntryParams(): Promise<void> {
   try {
     if (typeof window === 'undefined' || !window.location?.search) return;
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
     const job = params.get('job');
+    if (ref) await AsyncStorage.setItem(REF_KEY, ref);
+    if (job) await AsyncStorage.setItem(JOB_KEY, job);
+  } catch { /* ignore */ }
+}
+
+// Parse ?ref / ?job from a native deep-link URL (subhub://...) and persist
+// them. Called from the expo-linking initial-URL check and the URL listener in
+// the root layout.
+export async function captureNativeLinkParams(url: string | null): Promise<void> {
+  if (!url || Platform.OS === 'web') return;
+  try {
+    const parsed = Linking.parse(url);
+    const qp = parsed.queryParams ?? {};
+    const ref = typeof qp.ref === 'string' ? qp.ref : null;
+    const job = typeof qp.job === 'string' ? qp.job : null;
     if (ref) await AsyncStorage.setItem(REF_KEY, ref);
     if (job) await AsyncStorage.setItem(JOB_KEY, job);
   } catch { /* ignore */ }
