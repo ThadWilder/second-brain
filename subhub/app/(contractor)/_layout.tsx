@@ -5,6 +5,7 @@ import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import { useUnreadMessages } from '@/lib/useUnreadMessages';
 
 const SIDEBAR_W = 240;
+const COMPACT_W = 64;
 const BREAKPOINT = 768;
 
 const TABS = [
@@ -21,10 +22,34 @@ const TABS = [
   { segment: 'profile',   icon: '👤', label: 'Profile'    },
 ];
 
-function ContractorSidebar({ unread }: { unread: number }) {
+function ContractorSidebar({ unread, compact }: { unread: number; compact?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const current = pathname.split('/').filter(Boolean)[0] ?? '';
+
+  if (compact) {
+    return (
+      <View style={s.sidebarCompact}>
+        {TABS.map(t => {
+          const active = t.segment === current;
+          return (
+            <TouchableOpacity
+              key={t.segment}
+              style={[s.compactItem, active && s.compactItemOn]}
+              onPress={() => router.push((t.segment ? `/(contractor)/${t.segment}` : '/(contractor)/') as any)}
+            >
+              <Text style={s.compactIcon}>{t.icon}</Text>
+              {t.segment === 'messages' && unread > 0 && (
+                <View style={s.compactBadge}>
+                  <Text style={s.compactBadgeText}>{unread > 9 ? '9+' : unread}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  }
 
   return (
     <View style={s.sidebar}>
@@ -55,28 +80,32 @@ export default function ContractorLayout() {
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
   const isWide = isWeb && width >= BREAKPOINT;
+  const isCompact = isWeb && !isWide;   // mobile web: icon-only sidebar
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const isHome = pathname === '/home';
-  const showSidebar = isWide && sidebarOpen;
   const unread = useUnreadMessages();
 
-  // Land on the home splash with the sidebar collapsed for a clean full-bleed
-  // logo; the divider handle stays available to open navigation.
+  // On wide screens, auto-collapse sidebar on home splash for a clean full-bleed logo.
+  // On compact (mobile web), sidebar is always visible so don't collapse it.
   useEffect(() => {
-    if (isHome) setSidebarOpen(false);
-  }, [isHome]);
+    if (isHome && isWide) setSidebarOpen(false);
+  }, [isHome, isWide]);
+
+  // Sidebar visibility: compact sidebar is always shown; wide sidebar respects toggle.
+  const showSidebar = isCompact || (isWide && sidebarOpen);
 
   return (
-    <View style={{ flex: 1, flexDirection: isWide ? 'row' : 'column' }}>
-      {showSidebar && <ContractorSidebar unread={unread} />}
+    <View style={{ flex: 1, flexDirection: isWeb ? 'row' : 'column' }}>
+      {showSidebar && <ContractorSidebar unread={unread} compact={isCompact} />}
       <View style={{ flex: 1 }}>
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.textLight,
             tabBarLabelStyle: { fontSize: fontSize.xs, fontWeight: '600' },
-            tabBarStyle: isWide ? { display: 'none' } : { borderTopColor: colors.border },
+            // Hide bottom tabs on all web — sidebar handles navigation.
+            tabBarStyle: isWeb ? { display: 'none' } : { borderTopColor: colors.border },
             headerStyle: { backgroundColor: colors.primary },
             headerTintColor: colors.white,
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
@@ -101,7 +130,7 @@ export default function ContractorLayout() {
         </Tabs>
       </View>
 
-      {/* Collapse / expand handle — sits on the divider line between sidebar and content */}
+      {/* Collapse / expand handle — wide sidebar only */}
       {isWide && (
         <TouchableOpacity
           onPress={() => setSidebarOpen(o => !o)}
@@ -128,6 +157,16 @@ const s = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xl,
     gap: 2,
+  },
+  sidebarCompact: {
+    width: COMPACT_W,
+    backgroundColor: colors.surface,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    alignItems: 'center',
+    gap: 0,
   },
   logoRow: {
     flexDirection: 'row',
@@ -191,4 +230,30 @@ const s = StyleSheet.create({
     backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
   sidebarBadgeText: { color: colors.white, fontSize: fontSize.xs, fontWeight: '700' },
+  compactItem: {
+    width: 48,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    marginVertical: 2,
+    position: 'relative',
+  },
+  compactItemOn: {
+    backgroundColor: '#dbeafe',
+  },
+  compactIcon: { fontSize: 22 },
+  compactBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  compactBadgeText: { color: colors.white, fontSize: 10, fontWeight: '700', lineHeight: 12 },
 });
