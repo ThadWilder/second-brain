@@ -17,6 +17,7 @@ const TABS = [
   { segment: 'payments',  icon: '💳', label: 'Payments'   },
   { segment: 'messages',  icon: '💬', label: 'Messages'   },
   { segment: 'subs',      icon: '🔍', label: 'Find Subs'  },
+  { segment: 'market',    icon: '📊', label: 'Market'     },
   { segment: 'profile',   icon: '👤', label: 'Profile'    },
 ];
 
@@ -91,6 +92,7 @@ export default function ContractorLayout() {
           <Tabs.Screen name="payments" options={{ title: 'Payments',  tabBarIcon: ({ color }) => <Icon e="💳" c={color} /> }} />
           <Tabs.Screen name="messages" options={{ title: 'Messages',  tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
           <Tabs.Screen name="subs"     options={{ title: 'Find Subs', tabBarIcon: ({ color }) => <Icon e="🔍" c={color} /> }} />
+          <Tabs.Screen name="market"   options={{ title: 'Market',    tabBarIcon: ({ color }) => <Icon e="📊" c={color} /> }} />
           <Tabs.Screen name="profile"  options={{ title: 'Profile',   tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
           <Tabs.Screen name="jobs/[id]"    options={{ href: null }} />
           <Tabs.Screen name="chat/[jobId]" options={{ href: null, title: 'Chat' }} />

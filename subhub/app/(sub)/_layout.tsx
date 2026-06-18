@@ -14,6 +14,7 @@ const TABS = [
   { segment: 'earnings',    icon: '💰', label: 'Earnings'    },
   { segment: 'contractors', icon: '🏗️', label: 'Contractors' },
   { segment: 'reviews',     icon: '⭐', label: 'Reviews'     },
+  { segment: 'market',      icon: '📊', label: 'Market'      },
   { segment: 'messages',    icon: '💬', label: 'Messages'    },
   { segment: 'profile',     icon: '👤', label: 'Profile'     },
 ];
@@ -86,6 +87,7 @@ export default function SubLayout() {
           <Tabs.Screen name="contractors"  options={{ title: 'Contractors', tabBarIcon: ({ color }) => <Icon e="🏗️" c={color} /> }} />
           <Tabs.Screen name="contractors/[id]" options={{ href: null, title: 'Contractor' }} />
           <Tabs.Screen name="reviews"      options={{ title: 'Reviews',     tabBarIcon: ({ color }) => <Icon e="⭐" c={color} /> }} />
+          <Tabs.Screen name="market"       options={{ title: 'Market',      tabBarIcon: ({ color }) => <Icon e="📊" c={color} /> }} />
           <Tabs.Screen name="messages"     options={{ title: 'Messages',    tabBarBadge: unread > 0 ? unread : undefined, tabBarIcon: ({ color }) => <Icon e="💬" c={color} /> }} />
           <Tabs.Screen name="profile"      options={{ title: 'Profile',     tabBarIcon: ({ color }) => <Icon e="👤" c={color} /> }} />
           <Tabs.Screen name="saved-searches"            options={{ href: null, title: 'Job Alerts' }} />
