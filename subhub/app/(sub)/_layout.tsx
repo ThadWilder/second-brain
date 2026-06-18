@@ -4,6 +4,7 @@ import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import { useUnreadMessages } from '@/lib/useUnreadMessages';
 import NotificationBell from '@/components/NotificationBell';
+import GestureNav from '@/components/GestureNav';
 
 const SIDEBAR_W = 240;
 const COMPACT_W = 64;
@@ -93,6 +94,7 @@ export default function SubLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const isHome = pathname === '/home';
+  const current = pathname.split('/').filter(Boolean)[0] ?? '';
   const unread = useUnreadMessages();
 
   // On wide screens, auto-collapse sidebar on home splash for a clean full-bleed logo.
@@ -107,7 +109,15 @@ export default function SubLayout() {
   return (
     <View style={{ flex: 1, flexDirection: isWeb ? 'row' : 'column' }}>
       {showSidebar && <SubSidebar unread={unread} compact={isCompact} />}
-      <View style={{ flex: 1 }}>
+      <GestureNav
+        enabled={!isWeb}
+        routePrefix="/(sub)"
+        primary={PRIMARY}
+        full={FULL}
+        current={current}
+        accent={colors.accent}
+        accentLight={colors.accentLight}
+      >
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: colors.accent,
@@ -144,7 +154,7 @@ export default function SubLayout() {
           <Tabs.Screen name="change-order"            options={{ href: null, title: 'Change Order' }} />
           <Tabs.Screen name="connect-stripe"          options={{ href: null, title: 'Payout Account' }} />
         </Tabs>
-      </View>
+      </GestureNav>
 
       {/* Collapse / expand handle — wide sidebar only */}
       {isWide && (

@@ -4,6 +4,7 @@ import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import { useUnreadMessages } from '@/lib/useUnreadMessages';
 import NotificationBell from '@/components/NotificationBell';
+import GestureNav from '@/components/GestureNav';
 
 const SIDEBAR_W = 240;
 const COMPACT_W = 64;
@@ -96,6 +97,7 @@ export default function ContractorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const isHome = pathname === '/home';
+  const current = pathname.split('/').filter(Boolean)[0] ?? '';
   const unread = useUnreadMessages();
 
   // On wide screens, auto-collapse sidebar on home splash for a clean full-bleed logo.
@@ -110,7 +112,15 @@ export default function ContractorLayout() {
   return (
     <View style={{ flex: 1, flexDirection: isWeb ? 'row' : 'column' }}>
       {showSidebar && <ContractorSidebar unread={unread} compact={isCompact} />}
-      <View style={{ flex: 1 }}>
+      <GestureNav
+        enabled={!isWeb}
+        routePrefix="/(contractor)"
+        primary={PRIMARY}
+        full={FULL}
+        current={current}
+        accent={colors.primary}
+        accentLight="#dbeafe"
+      >
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: colors.primary,
@@ -145,7 +155,7 @@ export default function ContractorLayout() {
           <Tabs.Screen name="change-order" options={{ href: null, title: 'Change Order' }} />
           <Tabs.Screen name="add-payment"  options={{ href: null, title: 'Payment Method' }} />
         </Tabs>
-      </View>
+      </GestureNav>
 
       {/* Collapse / expand handle — wide sidebar only */}
       {isWide && (
