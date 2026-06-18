@@ -24,7 +24,7 @@ Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
 ## Supabase setup
 1. Create a new Supabase project
-2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `038`)
+2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `039`)
 3. Enable the `pg_trgm` extension: Dashboard → Database → Extensions → search "pg_trgm" → enable
 4. Copy the project URL and anon key into `.env`
 5. **Server-side push (migration 016)** needs the `pg_net` extension (the migration enables it) plus two Vault secrets so the DB trigger can call the edge function. In the SQL editor, run once with your real values:
@@ -199,9 +199,11 @@ sub self-claim RLS policy was removed (migration 035).
 - **Saved-job availability notice** — in the sub board's saved-only view, saved jobs that have dropped off the board (claimed by someone else or closed) surface a brief "N saved jobs were claimed by someone else or closed" notice instead of a dead entry.
 - **Referral dual-boost** (already in migration 023) — a contractor→sub referral grants the referred sub a stronger "referred" visibility boost (weight 1.5 / 14d vs 1.0 / 7d for sub→sub) on top of the referrer's reward on first completed job. Confirmed aligned with the blueprint; no change needed.
 
+- **Full notification feed** (migration 039) — feed-writing triggers for every remaining lifecycle event so the bell tray covers change orders (filed + approved), disputes, sign-off (`pending_review`), job complete, payment released, and job invites — in addition to messages (036) and claims (035). These are the FEED counterpart to the push triggers in 033 (separate trigger names, independent). All bail silently if `create_notification()` is unavailable.
+- **Swipe-to-reveal quick actions** (`components/SwipeableRow.tsx`) — contractor My Jobs tiles swipe left to reveal **Invite a Sub** (→ Find Subs with the job preselected) and **Archive** (`jobs.archived`, migration 039; archived jobs are hidden from My Jobs). Built on RN's built-in `PanResponder` + `Animated` (no `react-native-gesture-handler` / `reanimated` dependency) so it works on web and native.
+
 ### Not yet built
-- **In-app feed for change orders / sign-offs / payments / disputes** — these fire OS push (migrations 016/033) but are not yet written to the `notifications` feed table. Only messages + claim events populate the bell tray so far. To extend, call `create_notification()` from the relevant trigger functions or add a migration 039.
-- **Swipe gestures** — blueprint's edge-swipe nav drawer, swipe-to-reveal job-tile quick actions (Invite a Sub / Archive), and swipe-between-subtabs are not implemented; navigation is tap-based.
+- **Edge-swipe nav drawer & swipe-between-subtabs** — the remaining two blueprint gestures. Deferred deliberately: they'd need `react-native-gesture-handler` + `react-native-reanimated` (babel plugin + `GestureHandlerRootView` wrap) and offer low marginal value over the existing sidebar/filter taps. The high-value tile-swipe gesture IS built (see above) using `PanResponder`, so no gesture library is currently a dependency.
 
 ## Conventions
 - All Supabase queries use the anon client — RLS enforces access

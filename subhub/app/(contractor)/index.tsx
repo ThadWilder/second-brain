@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import JobCard from '@/components/JobCard';
+import SwipeableRow from '@/components/SwipeableRow';
 import { colors, spacing, fontSize } from '@/lib/theme';
 import type { Job, JobStatus } from '@/lib/types';
 
@@ -29,9 +30,21 @@ export default function ContractorDashboard() {
       .from('jobs')
       .select('*')
       .eq('contractor_id', user!.id)
+      .eq('archived', false)
       .order('created_at', { ascending: false });
     setJobs(data ?? []);
     setLoading(false);
+  }
+
+  async function archiveJob(job: Job) {
+    setJobs(prev => prev.filter(j => j.id !== job.id));  // optimistic
+    const { error } = await supabase.from('jobs').update({ archived: true }).eq('id', job.id);
+    if (error) { Alert.alert('Could not archive', error.message); fetchJobs(); }
+  }
+
+  function inviteSub(job: Job) {
+    // Open Find Subs to invite someone to this specific job.
+    router.push({ pathname: '/(contractor)/subs', params: { jobId: job.id } } as any);
   }
 
   const filtered = filter === 'all' ? jobs : jobs.filter(j => j.status === filter);
@@ -57,14 +70,26 @@ export default function ContractorDashboard() {
       ) : (
         <FlatList
           data={filtered}
+          ListHeaderComponent={
+            filtered.length > 0
+              ? <Text style={styles.swipeHint}>← Swipe a job for quick actions</Text>
+              : null
+          }
           keyExtractor={j => j.id}
           renderItem={({ item }) => (
-            <JobCard
-              job={item}
-              variant="manage"
-              onPress={() => router.push(`/(contractor)/jobs/${item.id}`)}
-              onMessage={item.claimed_by ? () => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: item.id } }) : undefined}
-            />
+            <SwipeableRow
+              actions={[
+                { label: 'Invite a Sub', icon: '📨', color: colors.primary, onPress: () => inviteSub(item) },
+                { label: 'Archive', icon: '🗂️', color: colors.textMuted, onPress: () => archiveJob(item) },
+              ]}
+            >
+              <JobCard
+                job={item}
+                variant="manage"
+                onPress={() => router.push(`/(contractor)/jobs/${item.id}`)}
+                onMessage={item.claimed_by ? () => router.push({ pathname: '/(contractor)/chat/[jobId]', params: { jobId: item.id } }) : undefined}
+              />
+            </SwipeableRow>
           )}
           ListEmptyComponent={<EmptyState filter={filter} />}
           contentContainerStyle={styles.list}
@@ -107,6 +132,7 @@ const styles = StyleSheet.create({
   filterTextActive: { color: colors.white },
   loader: { marginTop: spacing.xxl },
   list: { paddingTop: spacing.md, paddingBottom: spacing.xxl },
+  swipeHint: { fontSize: fontSize.xs, color: colors.textLight, textAlign: 'right', paddingHorizontal: spacing.md, paddingBottom: spacing.xs },
   empty: { alignItems: 'center', padding: spacing.xxl, gap: spacing.md },
   emptyIcon: { fontSize: 40 },
   emptyText: { fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center' },
