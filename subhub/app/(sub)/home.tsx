@@ -1,6 +1,8 @@
-import { View, Image, StyleSheet, StatusBar } from 'react-native';
+import { View, Image, StyleSheet, StatusBar, useWindowDimensions } from 'react-native';
 
 export default function SubHomeScreen() {
+  const { width, height } = useWindowDimensions();
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -8,7 +10,7 @@ export default function SubHomeScreen() {
       {/* Full-bleed brand logo — clean splash; navigate via the sidebar / tabs */}
       <Image
         source={require('@/assets/logo-hero.jpeg')}
-        style={StyleSheet.absoluteFillObject}
+        style={{ width, height }}
         resizeMode="cover"
       />
     </View>
@@ -18,6 +20,8 @@ export default function SubHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#0d1117',
   },
 });

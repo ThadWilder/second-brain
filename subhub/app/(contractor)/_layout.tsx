@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Platform, View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Image } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
@@ -54,8 +54,14 @@ export default function ContractorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
   const isHome = pathname === '/home';
-  const showSidebar = isWide && sidebarOpen && !isHome;
+  const showSidebar = isWide && sidebarOpen;
   const unread = useUnreadMessages();
+
+  // Land on the home splash with the sidebar collapsed for a clean full-bleed
+  // logo; the divider handle stays available to open navigation.
+  useEffect(() => {
+    if (isHome) setSidebarOpen(false);
+  }, [isHome]);
 
   return (
     <View style={{ flex: 1, flexDirection: isWide ? 'row' : 'column' }}>
@@ -72,7 +78,7 @@ export default function ContractorLayout() {
             headerTitleStyle: { fontWeight: '700', fontSize: 20 },
           }}
         >
-          <Tabs.Screen name="home"     options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} />, tabBarStyle: { display: 'none' } }} />
+          <Tabs.Screen name="home"     options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
           <Tabs.Screen name="index"    options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
           <Tabs.Screen name="post-job" options={{ title: 'Post Job',  tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
           <Tabs.Screen name="crew"     options={{ title: 'Crew',      tabBarIcon: ({ color }) => <Icon e="👷" c={color} /> }} />
@@ -87,7 +93,7 @@ export default function ContractorLayout() {
       </View>
 
       {/* Collapse / expand handle — sits on the divider line between sidebar and content */}
-      {isWide && !isHome && (
+      {isWide && (
         <TouchableOpacity
           onPress={() => setSidebarOpen(o => !o)}
           style={[s.collapseHandle, { left: sidebarOpen ? SIDEBAR_W - 13 : -1 }]}
