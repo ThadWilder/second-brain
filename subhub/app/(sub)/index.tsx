@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import FlipJobCard from '@/components/FlipJobCard';
 import { DEMO_JOBS } from '@/lib/demo';
+import { getSavedJobIds, saveJob, unsaveJob } from '@/lib/savedJobs';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import type { Job } from '@/lib/types';
 
@@ -81,8 +82,13 @@ export default function JobBoardScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [passedIds, setPassedIds] = useState<Set<string>>(new Set());
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
 
-  useEffect(() => { fetchJobs(); fetchInvites(); }, []);
+  useEffect(() => { fetchJobs(); fetchInvites(); fetchSaved(); }, []);
+
+  async function fetchSaved() {
+    try { setSavedIds(await getSavedJobIds()); } catch { /* not signed in / demo */ }
+  }
 
   async function fetchJobs() {
     const { data } = await supabase
@@ -135,10 +141,22 @@ export default function JobBoardScreen() {
 
   function handleSave(id: string) {
     setSavedIds(prev => new Set([...prev, id]));
+    if (!id.startsWith('demo-')) saveJob(id).catch(() => {});
   }
 
   function handlePass(id: string) {
     setPassedIds(prev => new Set([...prev, id]));
+  }
+
+  // Double-tap toggles save (and persists for real jobs).
+  function handleToggleSave(id: string, next: boolean) {
+    setSavedIds(prev => {
+      const s = new Set(prev);
+      if (next) s.add(id); else s.delete(id);
+      return s;
+    });
+    if (id.startsWith('demo-')) return;
+    (next ? saveJob(id) : unsaveJob(id)).catch(() => {});
   }
 
   async function saveCurrentSearch() {
@@ -168,6 +186,7 @@ export default function JobBoardScreen() {
   const filtered = jobs
     .filter(j =>
       !passedIds.has(j.id) &&
+      (!showSavedOnly || savedIds.has(j.id)) &&
       (!search || j.title.toLowerCase().includes(search.toLowerCase()) || j.city.toLowerCase().includes(search.toLowerCase())) &&
       (industry === 'All' || j.industry === industry) &&
       matchesDuration(j.estimated_days, duration) &&
@@ -256,6 +275,7 @@ export default function JobBoardScreen() {
               onViewDetail={() => router.push(`/(sub)/jobs/${item.id}`)}
               onSave={handleSave}
               onPass={handlePass}
+              onToggleSave={handleToggleSave}
             />
           )}
           ListHeaderComponent={
@@ -293,9 +313,15 @@ export default function JobBoardScreen() {
                 </View>
               )}
               <View style={styles.countRow}>
-                <Text style={styles.count}>{filtered.length} job{filtered.length !== 1 ? 's' : ''} available</Text>
+                <Text style={styles.count}>
+                  {filtered.length} job{filtered.length !== 1 ? 's' : ''} {showSavedOnly ? 'saved' : 'available'}
+                </Text>
                 {savedIds.size > 0 && (
-                  <Text style={styles.savedCount}>💰 {savedIds.size} saved</Text>
+                  <TouchableOpacity onPress={() => setShowSavedOnly(v => !v)}>
+                    <Text style={[styles.savedCount, showSavedOnly && styles.savedCountActive]}>
+                      {showSavedOnly ? '← All jobs' : `💚 ${savedIds.size} saved`}
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
@@ -391,6 +417,7 @@ const styles = StyleSheet.create({
   countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
   count: { fontSize: fontSize.sm, color: colors.textMuted },
   savedCount: { fontSize: fontSize.sm, color: colors.accent, fontWeight: '700' },
+  savedCountActive: { color: colors.primary },
   list: { paddingBottom: spacing.xxl },
   empty: { alignItems: 'center', padding: spacing.xxl, gap: spacing.md },
   emptyIcon: { fontSize: 40 },

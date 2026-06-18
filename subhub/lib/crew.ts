@@ -2,13 +2,30 @@ import { supabase } from './supabase';
 import type { CrewMember, CrewCandidate, SubProfile } from './types';
 
 // Eligibility thresholds — kept in sync with the SQL constants in
-// migration 019 (add_to_crew / crew_candidates). Used for client-side
-// copy only; the server is authoritative on whether an add succeeds.
+// migrations 019/020 (add_to_crew / crew_candidates). Display copy only;
+// the server is authoritative on whether an add succeeds.
 export const CREW_MIN_JOBS = 3;
 export const CREW_MIN_DOLLARS = 5000;
+export const CREW_MIN_RATING = 4.0;
 
 // How long a freshly posted job stays exclusive to the crew.
 export const CREW_PRIORITY_HOURS = 24;
+// Optional second priority tier (other contractors' highly-rated crew).
+export const CREW_OVERFLOW_HOURS = 24;
+
+export type SubscriptionTier = 'starter' | 'pro' | 'crew_builder';
+
+export const TIER_INFO: Record<SubscriptionTier, { label: string; slots: number; price: string }> = {
+  starter:      { label: 'Starter',      slots: 3,  price: 'Free' },
+  pro:          { label: 'Pro',          slots: 7,  price: '$49/mo' },
+  crew_builder: { label: 'Crew Builder', slots: 15, price: '$129/mo' },
+};
+
+// Switch subscription tier (server resets crew_slots to the tier default).
+export async function setSubscriptionTier(tier: SubscriptionTier): Promise<void> {
+  const { error } = await supabase.rpc('set_subscription_tier', { p_tier: tier });
+  if (error) throw new Error(error.message);
+}
 
 // Hydrate a list of sub user_ids into their profiles, keyed by user_id.
 async function fetchSubProfiles(subIds: string[]): Promise<Record<string, SubProfile>> {

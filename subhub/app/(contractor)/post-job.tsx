@@ -3,10 +3,11 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing, fontSize, radius } from '@/lib/theme';
 import { CREW_PRIORITY_HOURS } from '@/lib/crew';
+import { getMyFeeStatus, feeWaiverMessage, type FeeStatus } from '@/lib/fees';
 import type { MaterialStatus } from '@/lib/types';
 
 const INDUSTRIES = ['Fencing', 'Decking', 'Pergola / Shade', 'Gates', 'Retaining Walls', 'General'];
@@ -21,6 +22,7 @@ const STEPS = ['Basics', 'Scope', 'Materials', 'Payout', 'Review'];
 
 export default function PostJobScreen() {
   const router = useRouter();
+  const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [loading, setLoading] = useState(false);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
@@ -28,6 +30,8 @@ export default function PostJobScreen() {
   const [feeAgreed, setFeeAgreed] = useState(false);
   const [crewCount, setCrewCount] = useState(0);
   const [crewPriority, setCrewPriority] = useState(true);
+  const [feeStatus, setFeeStatus] = useState<FeeStatus | null>(null);
+  const [crewMatch, setCrewMatch] = useState<{ score: number; reason: string } | null>(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -69,8 +73,43 @@ export default function PostJobScreen() {
           .eq('status', 'active')
           .then(({ count }) => setCrewCount(count ?? 0));
       });
+      getMyFeeStatus().then(setFeeStatus).catch(() => {});
     }, [])
   );
+
+  // Lightweight AI-style match: score this job against the contractor's recent
+  // posting pattern (trade, payout range, duration). High match → crew priority
+  // defaults on with the reasoning shown; low match → defaults off.
+  async function scoreCrewMatch() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: recent } = await supabase
+      .from('jobs')
+      .select('industry, sub_payout, estimated_days')
+      .eq('contractor_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (!recent || recent.length < 3) {
+      setCrewMatch({ score: 60, reason: 'Not enough history yet — defaulting on for your crew.' });
+      setCrewPriority(true);
+      return;
+    }
+    const payout = parseFloat(form.sub_payout) || 0;
+    const days = parseInt(form.estimated_days, 10) || 1;
+    const sameTrade = recent.filter(r => r.industry === form.industry);
+    const tradeShare = sameTrade.length / recent.length;
+    const base = sameTrade.length ? sameTrade : recent;
+    const avgPay = base.reduce((s, r) => s + (r.sub_payout || 0), 0) / base.length;
+    const avgDays = base.reduce((s, r) => s + (r.estimated_days || 1), 0) / base.length;
+    const payClose = avgPay > 0 ? Math.max(0, 1 - Math.abs(payout - avgPay) / avgPay) : 0.5;
+    const daysClose = avgDays > 0 ? Math.max(0, 1 - Math.abs(days - avgDays) / avgDays) : 0.5;
+    const score = Math.round((tradeShare * 0.5 + payClose * 0.3 + daysClose * 0.2) * 100);
+    const reason = score >= 60
+      ? `Matches your typical ${form.industry} work (~$${Math.round(avgPay).toLocaleString()}, ${Math.round(avgDays)}d).`
+      : `Differs from your usual pattern — review before giving crew first shot.`;
+    setCrewMatch({ score, reason });
+    setCrewPriority(score >= 60);
+  }
 
   function set(key: keyof typeof form) {
     return (val: string) => setForm(f => ({ ...f, [key]: val }));
@@ -99,7 +138,11 @@ export default function PostJobScreen() {
     return true;
   }
 
-  function next() { if (validateStep()) setStep(s => (s + 1) as any); }
+  function next() {
+    if (!validateStep()) return;
+    if (step === 4 && crewCount > 0) scoreCrewMatch();
+    setStep(s => (s + 1) as any);
+  }
   function back() { setError(''); setStep(s => (s - 1) as any); }
 
   async function handleSubmit() {
@@ -135,6 +178,7 @@ export default function PostJobScreen() {
       homeowner_phone: form.homeowner_phone,
       homeowner_email: form.homeowner_email,
       status: 'posted',
+      project_id: projectId ?? null,
       crew_priority_until: (crewCount > 0 && crewPriority)
         ? new Date(Date.now() + CREW_PRIORITY_HOURS * 3600 * 1000).toISOString()
         : null,
@@ -183,6 +227,18 @@ export default function PostJobScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <StepIndicator current={step} />
+
+      {projectId ? (
+        <View style={styles.projectTag}>
+          <Text style={styles.projectTagText}>📋 Adding this job to a project</Text>
+        </View>
+      ) : null}
+
+      {feeStatus && feeStatus.role === 'contractor' && feeStatus.freeRemaining > 0 && step === 1 ? (
+        <View style={styles.waiverBanner}>
+          <Text style={styles.waiverText}>{feeWaiverMessage(feeStatus)}</Text>
+        </View>
+      ) : null}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -316,6 +372,11 @@ export default function PostJobScreen() {
                   This job stays exclusive to your {crewCount} crew member{crewCount === 1 ? '' : 's'} for {CREW_PRIORITY_HOURS} hours
                   before it opens to the full job board.
                 </Text>
+                {crewMatch && (
+                  <Text style={[styles.matchNote, crewMatch.score >= 60 ? styles.matchHigh : styles.matchLow]}>
+                    {crewMatch.score >= 60 ? '🟢' : '🟡'} {crewMatch.score}% match · {crewMatch.reason}
+                  </Text>
+                )}
               </View>
             </TouchableOpacity>
           )}
@@ -547,6 +608,13 @@ const styles = StyleSheet.create({
   },
   crewTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary },
   crewDesc: { fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18, marginTop: 2 },
+  matchNote: { fontSize: fontSize.xs, fontWeight: '600', marginTop: 4 },
+  matchHigh: { color: '#15803d' },
+  matchLow: { color: '#92400e' },
+  projectTag: { backgroundColor: '#eff6ff', borderRadius: radius.md, padding: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.primary },
+  projectTagText: { fontSize: fontSize.sm, color: colors.primary, fontWeight: '600' },
+  waiverBanner: { backgroundColor: colors.accentLight, borderRadius: radius.md, padding: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.accent },
+  waiverText: { fontSize: fontSize.sm, color: '#166534', fontWeight: '600' },
   toggle: {
     width: 48, height: 28, borderRadius: 14, backgroundColor: colors.border,
     padding: 3, justifyContent: 'center', flexShrink: 0,

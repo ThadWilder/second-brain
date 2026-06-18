@@ -12,13 +12,38 @@ interface Props {
   onViewDetail: () => void;
   onSave: (id: string) => void;
   onPass: (id: string) => void;
+  onToggleSave?: (id: string, next: boolean) => void;
   saved?: boolean;
 }
 
-export default function FlipJobCard({ job, onViewDetail, onSave, onPass, saved }: Props) {
+export default function FlipJobCard({ job, onViewDetail, onSave, onPass, onToggleSave, saved }: Props) {
   const [flipped, setFlipped] = useState(false);
   const flipVal  = useRef(new Animated.Value(0)).current;
   const swipeVal = useRef(new Animated.Value(0)).current;
+  const heartVal = useRef(new Animated.Value(0)).current;
+  const lastTap  = useRef(0);
+  const flipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Single tap flips; double-tap saves (the familiar "like" gesture). We delay
+  // the flip briefly so a second tap can cancel it and trigger a save instead.
+  function handleTap() {
+    const now = Date.now();
+    if (now - lastTap.current < 280) {
+      if (flipTimer.current) { clearTimeout(flipTimer.current); flipTimer.current = null; }
+      lastTap.current = 0;
+      onToggleSave?.(job.id, !saved);
+      if (!saved) {
+        heartVal.setValue(0);
+        Animated.sequence([
+          Animated.spring(heartVal, { toValue: 1, friction: 4, useNativeDriver: false }),
+          Animated.timing(heartVal, { toValue: 0, delay: 400, duration: 250, useNativeDriver: false }),
+        ]).start();
+      }
+      return;
+    }
+    lastTap.current = now;
+    flipTimer.current = setTimeout(() => { toggleFlip(); flipTimer.current = null; }, 280);
+  }
 
   // Flip: instant opacity swap at the 90° midpoint (no ghosting)
   const frontRY  = flipVal.interpolate({ inputRange: [0, 1], outputRange: ['0deg',   '180deg'] });
@@ -82,15 +107,27 @@ export default function FlipJobCard({ job, onViewDetail, onSave, onPass, saved }
         job.boosted && s.boostedBorder,
         { opacity: frontOp, transform: [{ perspective: 1200 }, { rotateY: frontRY }] },
       ]}>
-        <TouchableOpacity activeOpacity={0.9} onPress={toggleFlip} style={s.inner}>
+        <Animated.View pointerEvents="none" style={[s.heartBurst, {
+          opacity: heartVal,
+          transform: [{ scale: heartVal.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1.4] }) }],
+        }]}>
+          <Text style={s.heartGlyph}>💚</Text>
+        </Animated.View>
+        <TouchableOpacity activeOpacity={0.9} onPress={handleTap} style={s.inner}>
 
           {/* Badges */}
-          {(job.boosted || saved || (job.crew_priority_until && new Date(job.crew_priority_until) > new Date())) && (
+          {(job.boosted || saved
+            || (job.crew_priority_until && new Date(job.crew_priority_until) > new Date())
+            || (job.overflow_until && new Date(job.overflow_until) > new Date())) && (
             <View style={s.badgeRow}>
               {job.boosted && <View style={s.boostBadge}><Text style={s.boostText}>⚡ Boosted</Text></View>}
-              {saved       && <View style={s.savedBadge}><Text style={s.savedText}>💰 Saved</Text></View>}
+              {saved       && <View style={s.savedBadge}><Text style={s.savedText}>💚 Saved</Text></View>}
               {job.crew_priority_until && new Date(job.crew_priority_until) > new Date() && (
                 <View style={s.crewBadge}><Text style={s.crewText}>👷 Crew Priority</Text></View>
+              )}
+              {(!job.crew_priority_until || new Date(job.crew_priority_until) <= new Date())
+                && job.overflow_until && new Date(job.overflow_until) > new Date() && (
+                <View style={s.overflowBadge}><Text style={s.overflowText}>🌐 Crew Overflow</Text></View>
               )}
             </View>
           )}
@@ -122,7 +159,7 @@ export default function FlipJobCard({ job, onViewDetail, onSave, onPass, saved }
             {job.contractor
               ? <Text style={s.biz} numberOfLines={1}>{(job.contractor as any).business_name}</Text>
               : <View />}
-            <Text style={s.hint}>Tap to flip · swipe ← / →</Text>
+            <Text style={s.hint}>Tap to flip · double-tap to save · swipe ←/→</Text>
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -232,6 +269,11 @@ const s = StyleSheet.create({
     borderColor: colors.warning,
     backgroundColor: '#fffdf7',
   },
+  heartBurst: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center', justifyContent: 'center', zIndex: 30,
+  },
+  heartGlyph: { fontSize: 88 },
   inner: {
     flex: 1,
     padding: spacing.md,
@@ -244,6 +286,8 @@ const s = StyleSheet.create({
   savedText:  { fontSize: 11, fontWeight: '800', color: colors.accent },
   crewBadge:  { backgroundColor: '#dbeafe', borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
   crewText:   { fontSize: 11, fontWeight: '800', color: colors.primary },
+  overflowBadge: { backgroundColor: '#e0e7ff', borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
+  overflowText:  { fontSize: 11, fontWeight: '800', color: '#4338ca' },
   titleRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   titleCol: { flex: 1, gap: 3 },
   title:    { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
