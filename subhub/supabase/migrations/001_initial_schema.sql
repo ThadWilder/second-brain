@@ -164,7 +164,7 @@ declare
   cnt       int;
   ratee_role text;
 begin
-  select user_metadata->>'role' into ratee_role
+  select raw_user_meta_data->>'role' into ratee_role
   from auth.users where id = new.ratee_id;
 
   select avg(stars), count(*) into avg_stars, cnt
