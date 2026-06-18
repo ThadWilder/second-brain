@@ -8,15 +8,16 @@ const SIDEBAR_W = 240;
 const BREAKPOINT = 768;
 
 const TABS = [
-  { segment: 'home',     icon: '🏠', label: 'Home'      },
-  { segment: '',         icon: '📋', label: 'My Jobs'   },
-  { segment: 'post-job', icon: '➕', label: 'Post Job'  },
-  { segment: 'projects', icon: '🗂️', label: 'Projects'  },
-  { segment: 'crew',     icon: '👷', label: 'Crew'      },
-  { segment: 'payments', icon: '💳', label: 'Payments'  },
-  { segment: 'messages', icon: '💬', label: 'Messages'  },
-  { segment: 'subs',     icon: '🔍', label: 'Find Subs' },
-  { segment: 'profile',  icon: '👤', label: 'Profile'   },
+  { segment: 'home',      icon: '🏠', label: 'Home'       },
+  { segment: '',          icon: '📋', label: 'My Jobs'    },
+  { segment: 'post-job',  icon: '➕', label: 'Post Job'   },
+  { segment: 'bulk-post', icon: '📦', label: 'Bulk Post'  },
+  { segment: 'projects',  icon: '🗂️', label: 'Projects'   },
+  { segment: 'crew',      icon: '👷', label: 'Crew'       },
+  { segment: 'payments',  icon: '💳', label: 'Payments'   },
+  { segment: 'messages',  icon: '💬', label: 'Messages'   },
+  { segment: 'subs',      icon: '🔍', label: 'Find Subs'  },
+  { segment: 'profile',   icon: '👤', label: 'Profile'    },
 ];
 
 function ContractorSidebar({ unread }: { unread: number }) {
@@ -82,7 +83,8 @@ export default function ContractorLayout() {
         >
           <Tabs.Screen name="home"     options={{ headerShown: false, title: 'Home', tabBarIcon: ({ color }) => <Icon e="🏠" c={color} /> }} />
           <Tabs.Screen name="index"    options={{ title: 'My Jobs',   tabBarIcon: ({ color }) => <Icon e="📋" c={color} /> }} />
-          <Tabs.Screen name="post-job" options={{ title: 'Post Job',  tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
+          <Tabs.Screen name="post-job"  options={{ title: 'Post Job',  tabBarIcon: ({ color }) => <Icon e="➕" c={color} /> }} />
+          <Tabs.Screen name="bulk-post" options={{ title: 'Bulk Post', tabBarIcon: ({ color }) => <Icon e="📦" c={color} /> }} />
           <Tabs.Screen name="projects" options={{ title: 'Projects',  tabBarIcon: ({ color }) => <Icon e="🗂️" c={color} /> }} />
           <Tabs.Screen name="projects/[id]" options={{ href: null, title: 'Project' }} />
           <Tabs.Screen name="crew"     options={{ title: 'Crew',      tabBarIcon: ({ color }) => <Icon e="👷" c={color} /> }} />

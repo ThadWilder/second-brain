@@ -57,6 +57,7 @@ supabase functions deploy analyze-job           # AI job analysis (sub side)
 supabase functions deploy admin-action          # admin portal actions + PIN gate
 supabase functions deploy compute-job-success   # recompute sub reputation
 supabase functions deploy match-saved-searches  # push alerts on matching jobs
+supabase functions deploy management-api        # franchise management-system REST API
 ```
 
 ## Project structure
@@ -176,12 +177,15 @@ draft → posted → claimed → in_progress → pending_review → complete
 - **Payout Status screen** (`/(sub)/payout-status/[jobId]`) — 4-step payment pipeline (Claimed → Work Started → Awaiting Release → Released), fee breakdown, instant-pay info. Linked from job detail (pending review) and the earnings "Pending Payouts" list.
 - **Contractor Payment Dashboard** (`/(contractor)/payments`) — Payments tab: Outstanding / Paid tabs, period-spend stats, per-job rows with status badges, tap-through to job detail.
 - **Contractor Fee Agreement** — onboarding step 2 now includes a platform-fee disclosure table (10% sub fee, $75 CO admin, $500 delay cap) and an expanded digital sign-off referencing SubHub platform terms.
+- **Graduated posting hold** (migration 030) — `posting_hold_amount()` SECURITY DEFINER RPC returns $1,000 cents for the first concurrent hold, $250 for each additional. `hold-payment` edge function calls it instead of hardcoding; `post-job.tsx` shows the actual hold amount in the success alert. Unblocks franchise bulk-posting.
+- **Cron schedules** (migration 027) — `maintain_crew_status()` daily at 08:00 UTC, `recompute_diversification()` daily at 08:30 UTC via pg_cron (idempotently scheduled; wrapped so a missing pg_cron extension doesn't fail the migration).
+- **Franchise bulk-posting** (`/(contractor)/bulk-post.tsx`, migration 032) — Contractors fill a shared template (trade, material info, start window) then add per-job rows (title, address, payout, optional scope override). Jobs post sequentially so the graduated hold applies correctly: first job in the batch $1,000, each additional $250. Per-row status indicators (idle / posting / done / error); stops on the first failure. New "📦 Bulk Post" tab in the contractor layout.
+- **Management-system API** (migration 031, `management-api` edge function) — External REST API for franchise field-management software (e.g. ServiceTitan). Auth via `sk_subhub_…` bearer tokens stored as SHA-256 hashes in `api_keys` table. Supported actions: `create_job` (inserts + places hold), `list_jobs`, `cancel_job` (releases hold + cancels). Optional `external_ref` field (migration 032) stores the franchise system's work-order ID. API key management UI (generate/revoke) in the contractor profile under "Developer / API Access".
 
 ### Not yet built
 - Push delivery from DB triggers for non-message events (claims, change orders, payments still fire client-side / from their own edge functions)
 - Marketing-root deep-link capture of `?ref` / `?job` (account-gate on shared job links) — the referral RPCs/onboarding hooks are wired, but capturing the code from the public landing URL through signup is still manual
-- Scheduled invocation of `maintain_crew_status()` and diversification recompute (functions exist; wire to a cron)
-- Phase-3: franchise bulk-posting (blocked on per-job $1,000-hold behavior decision), management-system API, aggregate market-intelligence reports
+- Phase-3: aggregate market-intelligence reports (regional demand, pay-rate benchmarks — needs real data volume)
 
 ## Conventions
 - All Supabase queries use the anon client — RLS enforces access
