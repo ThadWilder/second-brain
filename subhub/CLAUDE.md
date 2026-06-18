@@ -24,7 +24,7 @@ Press `i` for iOS simulator, `a` for Android emulator, `w` for web.
 
 ## Supabase setup
 1. Create a new Supabase project
-2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `026`)
+2. Run all migrations in order in the SQL editor (`supabase/migrations/001` through `028`)
 3. Enable the `pg_trgm` extension: Dashboard → Database → Extensions → search "pg_trgm" → enable
 4. Copy the project URL and anon key into `.env`
 5. **Server-side push (migration 016)** needs the `pg_net` extension (the migration enables it) plus two Vault secrets so the DB trigger can call the edge function. In the SQL editor, run once with your real values:
