@@ -59,6 +59,9 @@ returns numeric language sql stable security definer set search_path = public as
 $$;
 
 -- ── candidates now also require a minimum mutual rating ──
+-- 019 created this returning 4 columns; adding mutual_rating changes the
+-- return type, so the old definition must be dropped before recreating.
+drop function if exists crew_candidates();
 create or replace function crew_candidates()
 returns table(sub_id uuid, jobs_together int, dollars_together numeric, last_job_at timestamptz, mutual_rating numeric)
 language sql stable security definer set search_path = public as $$
